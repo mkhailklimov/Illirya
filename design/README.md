@@ -5,7 +5,7 @@ This folder is the reference for all Illyria artwork, in the flat "antique" silh
 | Folder | What's in it |
 |---|---|
 | `images/` | Approved reference images: profile pictures, Facebook cover, Tiberius, Jesus of Nazareth, Pola–Acruvium map |
-| `pieces/` | Reusable parts (ship icon, compass rose) as SVG and PNG |
+| `pieces/` | Reusable parts: ship icon and compass rose (SVG and PNG), the wind compass for each wind (`winds/`), and the d20 with every face 1–20 on a transparent background (`dice/`) |
 | `source/` | The Python code that draws every image, the render script and the fonts (SIL Open Font License) |
 
 ## Making a new image
@@ -18,6 +18,8 @@ Every image is drawn as SVG code and then rendered to PNG with headless Chromium
    - `tiberius.py`: coin medallion, temple, aqueduct, cypress
    - `jesus.py`: robed figures and crowds, olive tree, palm, hill town
    - `map.py`: coastline projection, dotted route (`route_svg()`), ship icon (`ship_icon()`), compass (`compass()`), city labels
+   - `winds.py`: the wind compass, one image per wind in `rules/winds.csv` (names and effect lines are read from the game rules)
+   - `dice.py`: the d20, one image per face (render with `transparent` as the 6th argument of `render.js`)
 3. Run the script. It writes an HTML file to `build/`.
    ```
    cd design/source

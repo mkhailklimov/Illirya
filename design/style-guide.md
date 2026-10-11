@@ -36,6 +36,8 @@ Use these rules for every game element (social posts, UI, cards, icons, maps), s
 - Rome: a temple with a pediment and columns, aqueduct arches, umbrella pines and cypresses.
 - Legion standard (signum): a pole with discs and a gold eagle on top.
 - Greek key (meander) band in gold along the bottom edge, as a frame.
+- Wind compass: a tyrian-purple medallion with a beaded gold rim and an eight-point rose; the active wind's sector glows gold with cream wind strokes blowing inward, and its Latin name (V for U) sits below in Caesar Dressing. A dead calm glows at the centre instead.
+- The die: a gold d20 in flat facets, the rolled number on the central face in Marcellus; a natural 20 glows, a natural 1 has a crimson face.
 
 ## Maps
 - Sea is Adriatic blue with small light-blue wave strokes. Land is parchment cream (#efe0b4 to #dcc48e) with a thin gold coastline and a soft blue halo offshore.
