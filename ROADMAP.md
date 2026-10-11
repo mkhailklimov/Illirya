@@ -20,7 +20,7 @@ Full concept: [docs/governor-concept.md](docs/governor-concept.md) (core loop, c
 
 ### 2. Design direction
 - **Keep** the ancient mosaic and fresco style of the current visuals (see [design/style-guide.md](design/style-guide.md)).
-- **Change the lettering** to a style reminiscent of an *Abecedarium* (ancient carved and painted Roman letters). Candidates: **Caesar Dressing** (recommended) and **Marcellus**. The final pick is pending. It will replace Cinzel for titles, names and dates in the style guide and image sources.
+- **Change the lettering** to a style reminiscent of an *Abecedarium* (ancient carved and painted Roman letters). **Decided 11 October 2026: the pair.** Caesar Dressing for the logo and big titles, Marcellus for names, dates and small labels. Cinzel is replaced in the style guide and all image sources, and the images are re-rendered.
 
 ## Later
 

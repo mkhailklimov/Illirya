@@ -22,7 +22,8 @@ Use these rules for every game element (social posts, UI, cards, icons, maps), s
 | Foreground silhouette | | #1a1430 |
 
 ## Type
-- **Cinzel** (Black 900 or Bold 700), all caps with wide letter-spacing, for titles, names and dates.
+- **Caesar Dressing**, all caps with wide letter-spacing, for the logo and big titles ("ILLYRIA", a ruler's name, ending cards, dispatch headers). It looks carved and hand-painted, like an *abecedarium*. Use it from about 60 px up; its C and S are stylised, so keep long words and small text in Marcellus.
+- **Marcellus**, all caps with wide letter-spacing, for names, dates and small labels ("AD 30", map cities, coin legends, UI numbers). It has one weight; to make a label bolder, add a thin outline in the same colour.
 - **Cormorant Garamond Italic** (500) for taglines and narrative lines, in sentence case.
 - Dates are written "AD 30". Latin inscriptions on coins use V for U (AVGVSTVS).
 - Large text gets a soft dark drop shadow (dy 5, blur 7, ~75% of #0a0718).
@@ -38,8 +39,8 @@ Use these rules for every game element (social posts, UI, cards, icons, maps), s
 
 ## Maps
 - Sea is Adriatic blue with small light-blue wave strokes. Land is parchment cream (#efe0b4 to #dcc48e) with a thin gold coastline and a soft blue halo offshore.
-- Mountains are small cream-brown triangles with white caps. Region names are wide-spaced Cinzel in faded brown.
-- Cities are gold dots. The Roman name is in Cinzel with the modern name in italic underneath (cream text on the sea, purple on the land).
+- Mountains are small cream-brown triangles with white caps. Region names are wide-spaced Marcellus in faded brown.
+- Cities are gold dots. The Roman name is in Marcellus (outlined for major cities) with the modern name in italic underneath (cream text on the sea, purple on the land).
 - Routes are dotted cream lines. Use the ship icon and compass rose in `pieces/` as they are.
 - The coastline comes from Natural Earth 1:10m (public domain). The Bay of Kotor is hand-drawn because the dataset is too coarse there.
 

@@ -10,7 +10,7 @@ def P(lon, lat): return ((lon - LON0) * KX, (LAT1 - lat) * KY)
 def rings():
     out = []
     for f in ("ne_10m_land", "ne_10m_minor_islands"):
-        for feat in json.load(open(os.path.join(NE, f + ".geojson")))["features"]:
+        for feat in json.load(open(os.path.join(NE, f + ".geojson"), encoding="utf-8"))["features"]:
             g = feat["geometry"]
             polys = g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]
             for poly in polys:
@@ -75,7 +75,7 @@ def compass(cx, cy, r):
             for side, col in ((-1, "#f6e3a1"), (1, "#b98a2e")):
                 s += f'<path transform="rotate({ang})" d="M0,{-L:.1f} L{side*wd:.1f},{-wd:.1f} L0,0Z" fill="{col}"/>'
     s += f'<circle r="{r*.07}" fill="#4a1030" stroke="url(#gold)" stroke-width="2"/>'
-    s += f'<text y="{-r*1.18:.1f}" text-anchor="middle" font-family="Cinzel" font-weight="900" font-size="{r*.26:.0f}" fill="#f6e3a1">N</text></g>'
+    s += f'<text y="{-r*1.18:.1f}" text-anchor="middle" font-family="Marcellus" font-weight="400" font-size="{r*.26:.0f}" fill="#f6e3a1">N</text></g>'
     return s
 
 def mountain(x, y, s, col, snow):
@@ -89,7 +89,8 @@ def city(lon, lat, roman, modern, major, dx=14, dy=-10, anchor="start", sea=Fals
     if major: s += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="#4a1030"/>'
     fs = 34 if major else 22
     c1, c2, flt = ("#f6e3a1", "#cfe3ef", "tsh") if sea else ("#4a1030" if major else "#3a2c5c", "#5a4377", "lsh")
-    s += f'<g filter="url(#{flt})" text-anchor="{anchor}"><text x="{x+dx:.1f}" y="{y+dy:.1f}" font-family="Cinzel" font-weight="{900 if major else 700}" font-size="{fs}" letter-spacing="2" fill="{c1}">{roman}</text>'
+    bold = f' stroke="{c1}" stroke-width="1.4"' if major else ''  # Marcellus has one weight; outline = bold
+    s += f'<g filter="url(#{flt})" text-anchor="{anchor}"><text x="{x+dx:.1f}" y="{y+dy:.1f}" font-family="Marcellus" font-weight="400" font-size="{fs}" letter-spacing="2" fill="{c1}"{bold}>{roman}</text>'
     s += f'<text x="{x+dx:.1f}" y="{y+dy+fs*.85:.1f}" font-family="Corm" font-style="italic" font-weight="500" font-size="{fs*.78:.0f}" fill="{c2}">{modern}</text></g>'
     return s
 
@@ -109,7 +110,7 @@ def scene():
                          (16.0,44.62,1),(17.0,44.15,1.1),(17.55,43.85,1.2),(18.05,43.55,1.1),(18.8,43.2,1.2),(15.75,44.95,.9),(16.5,44.4,1),(18.45,43.85,1),
                          (13.15,42.95,1.1),(12.85,43.45,1)]:
         x, y = P(lon, lat); mts += mountain(x, y, sc*1.6, "#c4a46a", "#f4ead0")
-    rlab = lambda lon, lat, t, fs, rot=0, sp=14: (lambda x, y: f'<text x="{x:.0f}" y="{y:.0f}" transform="rotate({rot} {x:.0f} {y:.0f})" text-anchor="middle" font-family="Cinzel" font-weight="700" font-size="{fs}" letter-spacing="{sp}" fill="#8a6d3b" opacity=".75">{t}</text>')(*P(lon, lat))
+    rlab = lambda lon, lat, t, fs, rot=0, sp=14: (lambda x, y: f'<text x="{x:.0f}" y="{y:.0f}" transform="rotate({rot} {x:.0f} {y:.0f})" text-anchor="middle" font-family="Marcellus" font-weight="400" font-size="{fs}" letter-spacing="{sp}" fill="#8a6d3b" opacity=".75">{t}</text>')(*P(lon, lat))
     BAY = [(18.44,42.37),(18.49,42.41),(18.53,42.45),(18.60,42.47),(18.66,42.49),(18.69,42.53),(18.73,42.52),(18.72,42.48),(18.76,42.46),(18.785,42.42),(18.755,42.405),(18.70,42.445),(18.66,42.455),(18.60,42.43),(18.56,42.40),(18.52,42.35)]
     bay = "M" + " L".join("%.1f,%.1f" % P(*q) for q in BAY) + "Z"
     km = sum(hav(ROUTE[i], ROUTE[i+1]) for i in range(len(ROUTE)-1))
@@ -149,8 +150,8 @@ def scene():
 <rect width="470" height="215" rx="10" fill="#2c0819" opacity=".88"/>
 <rect x="8" y="8" width="454" height="199" rx="6" fill="none" stroke="url(#gold)" stroke-width="2"/>
 <g text-anchor="middle" filter="url(#tsh)">
-<text x="235" y="62" font-family="Cinzel" font-weight="700" font-size="22" letter-spacing="8" fill="#f6e3a1">SEA ROUTE · AD 30</text>
-<text x="235" y="118" font-family="Cinzel" font-weight="900" font-size="38" letter-spacing="2" fill="url(#gold)">POLA → ACRVVIVM</text>
+<text x="235" y="62" font-family="Marcellus" font-weight="400" font-size="22" letter-spacing="8" fill="#f6e3a1">SEA ROUTE · AD 30</text>
+<text x="235" y="118" font-family="Caesar" font-weight="400" font-size="38" letter-spacing="2" fill="url(#gold)">POLA → ACRVVIVM</text>
 <text x="235" y="166" font-family="Corm" font-style="italic" font-weight="500" font-size="32" fill="#fbeedd">about {round(km/1.48/10)*10} Roman miles by sea</text>
 </g></g>
 <rect width="{W}" height="{H}" fill="url(#vig)"/>
@@ -161,9 +162,9 @@ def scene():
     print("route km", round(km), "RM", round(km/1.48))
     return svg
 
-open(os.path.join(OUT, "map.html"), "w").write(HEAD + scene() + TAIL)
+open(os.path.join(OUT, "map.html"), "w", encoding="utf-8").write(HEAD + scene() + TAIL)
 
 # reusable pieces as standalone SVGs
 for name, body, w, h in (("ship-icon", ship_icon(70, 50, .17), 140, 100), ("compass", compass(140, 150, 90), 280, 290)):
-    open(os.path.join(OUT, name + ".svg"), "w").write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}"><defs>{GOLD}</defs>{body}</svg>')
-    open(os.path.join(OUT, name + ".html"), "w").write(HEAD + f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}"><defs>{GOLD}</defs>{body}</svg>' + TAIL)
+    open(os.path.join(OUT, name + ".svg"), "w", encoding="utf-8").write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}"><defs>{GOLD}</defs>{body}</svg>')
+    open(os.path.join(OUT, name + ".html"), "w", encoding="utf-8").write(HEAD + f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}"><defs>{GOLD}</defs>{body}</svg>' + TAIL)

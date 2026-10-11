@@ -47,7 +47,7 @@ def medallion(cx, cy, r):
 <circle cx="{cx}" cy="{cy}" r="{r-4}" fill="none" stroke="url(#gold)" stroke-width="7"/>
 {beads}
 <circle cx="{cx}" cy="{cy}" r="{r-36}" fill="none" stroke="url(#gold)" stroke-width="2" opacity=".8"/>
-<text font-family="Cinzel" font-weight="700" font-size="{30*s:.0f}" letter-spacing="{5*s:.0f}" fill="url(#gold)"><textPath href="#legend" startOffset="50%" text-anchor="middle">TI · CAESAR · DIVI · AVG · F · AVGVSTVS</textPath></text>
+<text font-family="Marcellus" font-weight="400" font-size="{30*s:.0f}" letter-spacing="{5*s:.0f}" fill="url(#gold)"><textPath href="#legend" startOffset="50%" text-anchor="middle">TI · CAESAR · DIVI · AVG · F · AVGVSTVS</textPath></text>
 <g transform="translate({cx-205*s:.1f},{cy-250*s:.1f}) scale({s*1.02:.3f})" filter="url(#tsh)">{bust("url(#gold)", "#4a1030")}</g>
 """
 
@@ -116,12 +116,12 @@ def scene():
 {standard(170, 300)}{standard(870, 300)}
 {medallion(520, 395, 300)}
 <g filter="url(#tsh)" text-anchor="middle">
-<text x="1245" y="300" font-family="Cinzel" font-weight="700" font-size="44" letter-spacing="12" fill="#f6e3a1">EMPEROR</text>
-<text x="1245" y="400" font-family="Cinzel" font-weight="900" font-size="104" letter-spacing="8" fill="url(#gold)">TIBERIUS</text>
+<text x="1245" y="300" font-family="Marcellus" font-weight="400" font-size="44" letter-spacing="12" fill="#f6e3a1">EMPEROR</text>
+<text x="1245" y="400" font-family="Caesar" font-weight="400" font-size="104" letter-spacing="8" fill="url(#gold)">TIBERIUS</text>
 <text x="1245" y="470" font-family="Corm" font-style="italic" font-weight="500" font-size="56" fill="#fbeedd">rules Rome’s vast empire</text>
 <line x1="1080" y1="520" x2="1180" y2="520" stroke="url(#gold)" stroke-width="3"/>
 <line x1="1310" y1="520" x2="1410" y2="520" stroke="url(#gold)" stroke-width="3"/>
-<text x="1245" y="532" font-family="Cinzel" font-weight="700" font-size="34" letter-spacing="4" fill="#f6e3a1">AD 30</text>
+<text x="1245" y="532" font-family="Marcellus" font-weight="400" font-size="34" letter-spacing="4" fill="#f6e3a1">AD 30</text>
 </g>
 <rect x="0" y="858" width="{W}" height="42" fill="#0b0f22" opacity=".9"/>
 {meander}
@@ -130,5 +130,5 @@ def scene():
 
 if __name__ == "__main__":
   svg = scene()
-  open(os.path.join(OUT, "tiberius.html"), "w").write(HEAD + svg + TAIL)
+  open(os.path.join(OUT, "tiberius.html"), "w", encoding="utf-8").write(HEAD + svg + TAIL)
   print("ok")

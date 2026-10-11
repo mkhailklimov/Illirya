@@ -1,11 +1,18 @@
-import math, random, os
+import math, random, os, pathlib
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', 'build')
 os.makedirs(OUT, exist_ok=True)
-FONTS = os.path.join(HERE, 'fonts')
+FONTS = pathlib.Path(HERE, 'fonts').as_uri()  # file:///... on Linux, macOS and Windows
+# Lettering (decided 11 Oct 2026, task 0.1):
+#   Caesar  = Caesar Dressing — logo and big titles (abecedarium look)
+#   Marcellus — names, small labels, dates, map cities, coin legends
+#   Corm    = Cormorant Garamond Italic — taglines and narrative lines
+#   Cinzel  — kept only so older scripts still render; don't use in new art
 HEAD = f"""<!doctype html><html><head><meta charset="utf-8"><style>
-@font-face{{font-family:Cinzel;src:url('file://{FONTS}/cinzel.woff2') format('woff2');font-weight:400 900}}
-@font-face{{font-family:Corm;src:url('file://{FONTS}/cormorant-italic.woff2') format('woff2');font-style:italic;font-weight:300 700}}
+@font-face{{font-family:Caesar;src:url('{FONTS}/caesar-dressing.ttf') format('truetype')}}
+@font-face{{font-family:Marcellus;src:url('{FONTS}/marcellus.ttf') format('truetype')}}
+@font-face{{font-family:Cinzel;src:url('{FONTS}/cinzel.woff2') format('woff2');font-weight:400 900}}
+@font-face{{font-family:Corm;src:url('{FONTS}/cormorant-italic.woff2') format('woff2');font-style:italic;font-weight:300 700}}
 html,body{{margin:0;padding:0;background:transparent}} svg{{display:block}}
 </style></head><body>"""
 TAIL = "</body></html>"
@@ -69,8 +76,8 @@ def profile_coin():
 <g>{left}</g>
 <g transform="translate(720,0) scale(-1,1)">{left}</g>
 {sun(360, 112, 30, "url(#gold)")}
-<text x="360" y="420" text-anchor="middle" font-family="Cinzel" font-weight="900" font-size="300" fill="url(#gold)">I</text>
-<text x="360" y="508" text-anchor="middle" font-family="Cinzel" font-weight="700" font-size="58" letter-spacing="6" fill="url(#gold)">AD 30</text>
+<text x="360" y="420" text-anchor="middle" font-family="Caesar" font-weight="400" font-size="300" fill="url(#gold)">I</text>
+<text x="360" y="508" text-anchor="middle" font-family="Marcellus" font-weight="400" font-size="58" letter-spacing="6" fill="url(#gold)">AD 30</text>
 </g>
 </svg>"""
     return svg
@@ -111,8 +118,8 @@ def profile_ship():
 </g>
 <circle cx="360" cy="360" r="318" fill="none" stroke="url(#gold)" stroke-width="4"/>
 <circle cx="360" cy="360" r="346" fill="none" stroke="url(#gold)" stroke-width="6"/>
-<text font-family="Cinzel" font-weight="900" font-size="46" letter-spacing="10" fill="url(#gold)"><textPath href="#top" startOffset="50%" text-anchor="middle">ILLYRIA</textPath></text>
-<text font-family="Cinzel" font-weight="700" font-size="34" letter-spacing="8" fill="url(#gold)"><textPath href="#bot" startOffset="50%" text-anchor="middle">· AD 30 ·</textPath></text>
+<text font-family="Caesar" font-weight="400" font-size="46" letter-spacing="10" fill="url(#gold)"><textPath href="#top" startOffset="50%" text-anchor="middle">ILLYRIA</textPath></text>
+<text font-family="Marcellus" font-weight="400" font-size="34" letter-spacing="8" fill="url(#gold)"><textPath href="#bot" startOffset="50%" text-anchor="middle">· AD 30 ·</textPath></text>
 </svg>"""
     return svg
 
@@ -169,10 +176,10 @@ def cover():
 <rect x="0" y="582" width="{W}" height="42" fill="#0b0f22" opacity=".85"/>
 {meander}
 <g filter="url(#tsh)" text-anchor="middle">
-<text x="820" y="262" font-family="Cinzel" font-weight="900" font-size="150" letter-spacing="22" fill="url(#gold)">ILLYRIA</text>
+<text x="820" y="262" font-family="Caesar" font-weight="400" font-size="150" letter-spacing="22" fill="url(#gold)">ILLYRIA</text>
 <line x1="590" y1="318" x2="720" y2="318" stroke="url(#gold)" stroke-width="3"/>
 <line x1="920" y1="318" x2="1050" y2="318" stroke="url(#gold)" stroke-width="3"/>
-<text x="820" y="336" font-family="Cinzel" font-weight="700" font-size="52" letter-spacing="10" fill="#f6e3a1">AD 30</text>
+<text x="820" y="336" font-family="Marcellus" font-weight="400" font-size="52" letter-spacing="10" fill="#f6e3a1">AD 30</text>
 <text x="820" y="392" font-family="Corm" font-style="italic" font-weight="500" font-size="40" fill="#fbeedd">Rule the Roman Balkans. A strategy game of history &amp; geography.</text>
 </g>
 </svg>"""
@@ -180,6 +187,6 @@ def cover():
 
 if __name__ == "__main__":
   for name, svg in (("profile-coin", profile_coin()), ("profile-ship", profile_ship()), ("cover", cover())):
-    with open(os.path.join(OUT, name + ".html"), "w") as f:
+    with open(os.path.join(OUT, name + ".html"), "w", encoding="utf-8") as f:
         f.write(HEAD + svg + TAIL)
   print("ok")

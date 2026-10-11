@@ -108,18 +108,18 @@ def scene():
 {crowd}
 <rect width="{W}" height="{H}" fill="url(#vig)"/>
 <g filter="url(#tsh)" text-anchor="middle">
-<text x="1245" y="250" font-family="Cinzel" font-weight="900" font-size="120" letter-spacing="14" fill="url(#gold)">JESUS</text>
-<text x="1245" y="312" font-family="Cinzel" font-weight="700" font-size="44" letter-spacing="10" fill="#f6e3a1">OF NAZARETH</text>
+<text x="1245" y="250" font-family="Caesar" font-weight="400" font-size="120" letter-spacing="14" fill="url(#gold)">JESUS</text>
+<text x="1245" y="312" font-family="Marcellus" font-weight="400" font-size="44" letter-spacing="10" fill="#f6e3a1">OF NAZARETH</text>
 <text x="1245" y="388" font-family="Corm" font-style="italic" font-weight="500" font-size="50" fill="#fbeedd">preaches to crowds in Judea</text>
 <text x="1245" y="446" font-family="Corm" font-style="italic" font-weight="500" font-size="50" fill="#fbeedd">and gathers followers</text>
 <line x1="1080" y1="494" x2="1180" y2="494" stroke="url(#gold)" stroke-width="3"/>
 <line x1="1310" y1="494" x2="1410" y2="494" stroke="url(#gold)" stroke-width="3"/>
-<text x="1245" y="506" font-family="Cinzel" font-weight="700" font-size="34" letter-spacing="4" fill="#f6e3a1">AD 30</text>
+<text x="1245" y="506" font-family="Marcellus" font-weight="400" font-size="34" letter-spacing="4" fill="#f6e3a1">AD 30</text>
 </g>
 <rect x="0" y="858" width="{W}" height="42" fill="#0b0f22" opacity=".9"/>
 {meander}
 </svg>"""
     return svg
 
-open(os.path.join(OUT, "jesus.html"), "w").write(HEAD + scene() + TAIL)
+open(os.path.join(OUT, "jesus.html"), "w", encoding="utf-8").write(HEAD + scene() + TAIL)
 print("ok")
