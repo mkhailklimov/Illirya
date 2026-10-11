@@ -17,7 +17,7 @@ Status: draft concept, 11 October 2026. **Priority 1** for the next development 
 3. **Resolution.** The game engine applies the decrees with simple formulas, then rolls for events.
 4. **The story.** The AI narrates the outcome in 4–6 sentences, adds a one-line historical note, and the next season begins.
 
-- **Pace:** 1 turn per day through the Telegram bot (4 turns = 1 game year). A full game from AD 30 to AD 42 is 48 turns, about 7 weeks.
+- **Pace (confirmed 11 October 2026):** 1 turn = 1 season; 1 turn per real day through the Telegram bot, so 1 game year = 4 real days. A full game from AD 30 to AD 42 is 48 turns, about 7 weeks. The early no-code poll game on the Telegram channel runs at 1 turn per week.
 - **Session length:** 3–5 minutes. No timers, no clicking speed.
 
 ## 3. The city's numbers

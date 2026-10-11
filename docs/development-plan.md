@@ -14,7 +14,8 @@ Game concept: [governor-concept.md](governor-concept.md). Roadmap: [../ROADMAP.m
 2. **The code keeps the numbers, the AI tells the story.** Game rules live in a spreadsheet and a small engine; the AI only interprets orders and narrates.
 3. **Historical realism.** Places, peoples and rulers fit AD 30–42. **Epidaurum** (Cavtat) is the city on the Dubrovnik coast; Ragusa/Dubrovnik appears only in a later-era expansion.
 4. **Cheap stack.** Telegram bot + one small database + one AI API + free hosting tier where possible. Target running cost under 20 € a month until Phase 4.
-5. **Grow the audience alongside the game.** The Telegram channel and Facebook page get a regular rhythm from Phase 0 so there is an audience at every demo.
+5. **Time flow (confirmed).** 1 turn = 1 season, 1 turn per real day, 1 game year = 4 days, a full game (AD 30–42) = 48 turns, about 7 weeks. The Phase 0 poll game runs at 1 turn per week.
+6. **Grow the audience alongside the game.** The Telegram channel and Facebook page get a regular rhythm from Phase 0 so there is an audience at every demo.
 
 ---
 
@@ -23,7 +24,7 @@ Game concept: [governor-concept.md](governor-concept.md). Roadmap: [../ROADMAP.m
 | Phase | When | Goal | Demo at the end |
 |---|---|---|---|
 | **0. Foundations** | Oct – Dec 2026 | Rules on paper, brand finished, channels live | **Demo 0:** "Community Governor" poll game on t.me/Illyria30 |
-| **1. Bot prototype** | Jan – Jun 2027 | Single-player Telegram bot, 12 game years playable | **Demo 1:** closed alpha with 20–50 players |
+| **1. Bot prototype** | Jan – Jun 2027 | Single-player Telegram bot, 12 game years playable | **Demo 1a (Mar 2027):** first playable MVP for one player; **Demo 1:** closed alpha with 20–50 players |
 | **2. Full single-player game** | Jul 2027 – Jun 2028 | Complete content AD 30–42, polish, art | **Demo 2:** public beta + investor demo pack |
 | **3. Map and trade world** | Jul 2028 – Jun 2029 | Web map, more cities, multiplayer trade | **Demo 3:** "Season One" with other players' cities |
 | **4. Launch preparation** | Jul 2029 – Mar 2030 | Monetization, scale, languages, marketing | **Soft launch** (autumn 2029) |
@@ -60,6 +61,8 @@ Deliverables:
 - 40 event cards, 3 trade towns (Risinium, Butua, Epidaurum), sea convoys only.
 - One turn per day with a reminder message; status screen with the 8 numbers.
 - Basic analytics: turns played, day-7 retention, where players lose.
+
+**Demo 1a: first playable MVP (March 2027).** One player can play the first year in Acruvium (AD 30, 4–8 turns) in the bot: buttons and free-text orders, the 8 numbers, 15–20 events, AI narration. Good enough to screen-record for the channel, Facebook and first informal investor talks. Needs tasks 1.1–1.11 with a reduced event deck.
 
 **Demo 1: closed alpha (June 2027).** 20–50 players from the channel play a shortened game (AD 30–34, 16 turns). Short feedback form at the end.
 
@@ -126,6 +129,18 @@ Deliverables:
 - Post-launch plan: one new season every 2–3 months, then the later-era expansion (Huns, Bulgars, Ragusa/Dubrovnik founded by refugees from Epidaurum).
 
 ---
+
+## AI running cost and scale
+
+There is no always-running agent per player. Each daily turn is 2 short AI requests (understand the orders, write the dispatch); the engine does the rest. Rough estimate with about 4,000 input and 500 output tokens per request, at list prices in October 2026:
+
+| Model choice | Per player per month (30 turns) | 100 players | 1,000 players |
+|---|---|---|---|
+| Small fast model for both requests | about 0.05 € | about 5 € | about 50 € |
+| Small model for orders, mid-size model for the dispatch | about 0.30–0.45 € | 30–45 € | 300–450 € |
+| Mid-size model for both requests | about 0.50–0.80 € | 50–80 € | 500–800 € |
+
+What keeps it cheap: prompt caching of the fixed system prompt and event deck, the code (not the AI) keeping the numbers, one turn a day, and a spending cap per player. 100 players means about 200 requests a day, which a small server and the AI API handle easily. Measure real costs in the alpha (task 1.14) before choosing the model.
 
 ## Decision points
 
@@ -245,7 +260,7 @@ Sized for one person: **S** = an evening (2–3 h), **M** = a weekend (6–10 h)
 |---|---|---|
 | Domain | ~15 €/year | ~15 €/year |
 | Hosting (small VPS or free tier) | 0–6 €/month | 6–20 €/month |
-| AI API | under 10 €/month (alpha) | 10–50 €/month (depends on players) |
+| AI API | under 10 €/month (alpha) | 10–80 €/month (about 100 players; see AI running cost) |
 | Art and video tools | 0 (own design kit) | optional |
 
 Everything above Phase 3 scale is what an investment or grant would pay for: an artist, a part-time developer, marketing.
