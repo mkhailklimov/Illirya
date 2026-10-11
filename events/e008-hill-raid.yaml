@@ -1,0 +1,32 @@
+id: e008-hill-raid
+title: Raiders come down from the hills
+category: raiders
+seasons: [Spring, Summer, Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.08
+once: false
+effects: {}
+choice:
+  prompt: >-
+    A war band from the mountain tribes has burned farms above the bay and
+    driven off cattle. Marcus Antistius awaits your order.
+  options:
+    - label: Meet them in battle
+      effects: {}
+      roll:                                   # d20 + 1 per 50 soldiers; need 13
+        die: 20
+        bonus: army / 50
+        target: 13
+        success: {favour: 4, loyalty: 3, goods: 5}        # DRAFT: spoils and glory
+        failure: {army: -30, people: -100, loyalty: -4}   # DRAFT: a costly defeat
+    - label: Pay them to go back to their valleys
+      effects: {treasury: -400, favour: -4}               # DRAFT: Rome hates paying barbarians
+    - label: Shelter the farmers inside the walls
+      effects: {grain: -1, loyalty: -2}                   # DRAFT: the fields are left to burn
+scribe_hint: Smoke on the hillside at dawn; Antistius already has his armour on.
+historical_note: >-
+  The Great Illyrian Revolt of AD 6–9, led by two chiefs both called Bato,
+  took Tiberius himself three years of hard fighting to put down; the hill
+  tribes of Dalmatia were still remembered as dangerous in AD 30.
+source: "Velleius Paterculus II.110–116; Cassius Dio 55.29–56.17 — check before publishing"

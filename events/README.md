@@ -23,11 +23,12 @@ Copy [_template.yaml](_template.yaml) to start a card. The two examples, [e001-d
 | `advisor` | For `council` cards: who brings it (`fleet`, `general`, `economist`, `treasurer`, `priest`; see `../rules/advisors.csv`) |
 | `seasons` | Seasons it can happen in (`any`, or a list) |
 | `years` | Earliest and latest year, e.g. `[30, 42]` |
-| `trigger` | When it can fire: `random`, or a condition on the numbers |
+| `trigger` | When it can fire: `random`, a condition on the numbers (`loyalty < 30`), or the wind (`wind == S`) |
 | `chance` | Chance per season when the trigger holds (0–1) |
 | `once` | `true` if it can only happen once per game |
 | `effects` | Changes applied immediately (numbers only) |
 | `choice` | Optional: options with their own effects; the player picks one |
+| `roll` | Optional, inside a choice option: `die` (4, 6, 8, 10, 12 or 20), `bonus` (e.g. `army / 50`), `target`, and `success` / `failure` effects. See [e008-hill-raid.yaml](e008-hill-raid.yaml) |
 | `scribe_hint` | One line for the AI scribe about tone or detail |
 | `historical_note` | The short accurate note shown at the end of the dispatch |
 | `source` | Where the history was checked |

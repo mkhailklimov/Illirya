@@ -53,6 +53,13 @@ The governor is not alone. Five advisors speak every season, each watching part 
 
 In the bot, the AI scribe can let them speak in their own voices; their advice is still based only on the real numbers.
 
+## 3b. Wind, sea and dice (added 11 October 2026)
+
+- **A wind compass** each season shows the wind and the current. The winds carry their Latin names: cold **Aquilo** (the bora) from the north can ruin crops; hot **Auster** from the south brings drought; **Favonius** from the west brings moisture; **Africus** from the south-west brings warmth and rain, the best growing weather; **Eurus** from the east is neutral; a **dead calm** stops winnowing and keeps ships in harbour.
+- **The Adriatic current** turns anticlockwise, north along the Dalmatian coast. With wind and current behind it, a convoy trades better; against them, worse.
+- **A multi-sided die** (d4 to d20, as in tabletop role-playing games) decides battles and risky choices: roll, add a bonus (for example from the size of the army) and beat a target. A natural 20 always succeeds, a 1 always fails.
+- In the bot, the compass and the die roll can become images in the mosaic style (the design kit already has a compass rose).
+
 ## 4. Buildings and development
 
 Each building costs treasury and goods and takes 1–4 seasons to finish.

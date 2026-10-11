@@ -1,10 +1,10 @@
 id: e001-drought
 title: The springs run dry
 category: nature
-seasons: [Summer]
+seasons: [Spring, Summer]
 years: [30, 42]
-trigger: random
-chance: 0.15
+trigger: "wind == S"     # Auster, the hot south wind
+chance: 0.40
 once: false
 effects:
   grain: -2               # DRAFT: the summer harvest fails by half

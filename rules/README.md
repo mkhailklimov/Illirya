@@ -12,6 +12,7 @@ The game's numbers live here, not in code. The bot (Phase 1) will read these fil
 | [seasons.csv](seasons.csv) | 0.5 | What changes by season (harvest, sailing, tribute due) |
 | [playtest-log.md](playtest-log.md) | 0.6 | 12 turns played by hand, with the numbers after each turn |
 | [advisors.csv](advisors.csv) | 0.7 | The governor's council: five advisors with names, roles and voices |
+| [winds.csv](winds.csv) | 0.5 | The six winds: effect on harvest and on sailing, and how often each blows per season |
 | [play.py](play.py) | 0.6 | Plays the game in the terminal using all of the above |
 
 Open the CSV files in Excel or Google Sheets (File → Import), or in VS Code with the Rainbow CSV extension. Keep the column names unchanged; the bot will rely on them.

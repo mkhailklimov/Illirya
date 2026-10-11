@@ -89,6 +89,29 @@ favour_new = favour + tribute_effect + decree_effects + unrest_effect + event_ef
 ```
 Favour also drifts by −1 each season while the army is below 100 ("Rome expects order").
 
+## Weather and the sea (rolled at the start of every season)
+
+**Wind:** drawn from [winds.csv](winds.csv), weighted by season (more cold Aquilo in winter, more hot Auster and calm in summer). The wind multiplies the season's harvest:
+
+| Wind | Latin name | Harvest | Ships sailing north | Ships sailing south |
+|---|---|---|---|---|
+| North | Aquilo (the bora) | ×0.75, cold | headwind −1 | tailwind +1 |
+| South | Auster | ×0.8, heat and drought; makes the drought card likely | tailwind +1 | headwind −1 |
+| West | Favonius | ×1.15, moist | 0 | 0 |
+| South-west | Africus | ×1.25, warm and wet | +1 | −1 |
+| East | Eurus | ×1, neutral | 0 | 0 |
+| Calm | — | ×0.9, winnowing stalls | convoys wait one season | convoys wait one season |
+
+(Windmills were not invented until the Middle Ages; a calm hurt the harvest because threshed grain was winnowed by tossing it into the wind.)
+
+**Current:** roll a d6. 1 = slack (0), 2–5 = running (1), 6 = strong (2). The Adriatic circulates anticlockwise, so the current runs **north along our coast**: it adds to voyages north and subtracts from voyages south.
+
+**Convoy prices:** sailing advantage = wind + current for the chosen direction. Each point changes the price by 10% in the convoy's favour (cheaper grain, better sale prices), at most ±30%.
+
+## Dice (battles and risky choices)
+
+An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
+
 ## Lose checks (end of season)
 
 - **Recalled:** Roman favour 0.

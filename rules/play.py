@@ -50,6 +50,10 @@ UNREST_BELOW, UNREST_FAVOUR = 30, -3
 UPRISING_BELOW = 20
 ORDER_ARMY, ORDER_FAVOUR = 100, -1
 EVENT_ROLLS_PER_SEASON = 1   # at most this many cards fire per season
+# Weather and the sea (winds.csv; formulas.md "Weather and the sea")
+CURRENT_DIE = 6              # d6 each season: 1 slack, 2-5 running, 6 strong
+SAIL_STEP, SAIL_CAP = 0.10, 0.30   # convoy price change per point of sailing advantage, and its limit
+ROLL_BONUS_CAP = 5           # most a number can add to a die roll
 
 NUMBERS = ["grain", "treasury", "goods", "wine_oil", "people", "loyalty", "favour", "army"]
 BUILDINGS = {"build_terraces": "terraces", "build_workshop": "workshops", "plant_vines_olives": "groves"}
@@ -70,6 +74,7 @@ RULES = {r["id"]: r for r in read_csv("numbers.csv")}
 DECREES = read_csv("decrees.csv")
 SEASONS = sorted(read_csv("seasons.csv"), key=lambda r: int(r["order"]))
 ADVISORS = {r["id"]: r for r in read_csv("advisors.csv")}
+WINDS = {r["id"]: r for r in read_csv("winds.csv")}
 CARDS = []
 for path in sorted(glob.glob(os.path.join(EVENTS, "e*.yaml"))):
     with open(path, encoding="utf-8") as f:
@@ -79,7 +84,7 @@ for path in sorted(glob.glob(os.path.join(EVENTS, "e*.yaml"))):
 # --- Game state ----------------------------------------------------------------
 def new_game():
     s = {n: num(RULES[n]["start"]) for n in NUMBERS}
-    s.update(turn=1, tax="normal", buildings=[], convoys=[], tribute_debt=0,
+    s.update(turn=1, tax="normal", buildings=[], convoys=[], tribute_debt=0, wind="E", current=1, weather_turn=0,
              hunger_streak=0, last_festival=-9, once_fired=[], over=None,
              log=os.path.join(RUNS, datetime.datetime.now().strftime("run-%Y-%m-%d_%H%M.csv")))
     return s
@@ -96,6 +101,75 @@ def fmt(n, v):
 def built(s, kind, turn=None):
     turn = s["turn"] if turn is None else turn
     return sum(1 for b in s["buildings"] if b["kind"] == kind and turn >= b["done"])
+
+
+# --- Dice and weather -----------------------------------------------------------
+def roll(die, bonus=0, target=None, why=""):
+    """Roll a die like a tabletop RPG: d4, d6, d8, d10, d12 or d20. With a target,
+    the highest face always succeeds and a 1 always fails."""
+    r = random.randint(1, die)
+    total = r + bonus
+    text = f"  [d{die}] {why}: rolled {r}" + (f" {'+' if bonus >= 0 else '-'} {abs(bonus)} = {total}" if bonus else "")
+    if target is None:
+        print(text)
+        return total, None
+    ok = total >= target
+    if r == die:
+        ok, tag = True, "CRITICAL SUCCESS"
+    elif r == 1:
+        ok, tag = False, "CRITICAL FAILURE"
+    else:
+        tag = "SUCCESS" if ok else "FAILURE"
+    print(f"{text}  (needed {target})  -> {tag}")
+    return total, ok
+
+
+def roll_bonus(s, expr):
+    """'army / 50' -> army // 50, '2' -> 2. Capped at ROLL_BONUS_CAP."""
+    expr = str(expr or "0").replace(" ", "")
+    m = re.fullmatch(r"(\w+)/(\d+)", expr)
+    b = int(s.get(m.group(1), 0) // int(m.group(2))) if m else int(float(expr or 0))
+    return max(-ROLL_BONUS_CAP, min(ROLL_BONUS_CAP, b))
+
+
+def roll_weather(s):
+    """New wind and current at the start of each season (kept in the save)."""
+    if s.get("weather_turn") == s["turn"]:
+        return
+    season, _ = season_of(s["turn"])
+    key = "weight_" + season["season"].lower()
+    ids = list(WINDS)
+    s["wind"] = random.choices(ids, weights=[num(WINDS[i][key], 1) for i in ids])[0]
+    c = random.randint(1, CURRENT_DIE)
+    s["current"] = 0 if c == 1 else 2 if c == CURRENT_DIE else 1
+    s["weather_turn"] = s["turn"]
+
+
+CURRENT_TEXT = {0: "slack", 1: "running north along our coast", 2: "running strongly north along our coast"}
+
+
+def show_compass(s):
+    w = WINDS[s["wind"]]
+    lab = lambda k: (f"[{k}]" if k == s["wind"] else f" {k} ").center(4)
+    centre = "o" if s["wind"] == "CALM" else "+"
+    rose = [f"            {lab('N')}",
+            f"      {lab('NW')}    |    {lab('NE')}",
+            f"   {lab('W')} -----{centre}----- {lab('E')}",
+            f"      {lab('SW')}    |    {lab('SE')}",
+            f"            {lab('S')}"]
+    wind = "dead calm" if s["wind"] == "CALM" else f"{w['latin']}, from the {w['from']}"
+    info = [f"Wind: {wind}", f"  {w['effect']}", f"Current: {CURRENT_TEXT[s['current']]}",
+            "  (the Adriatic turns anticlockwise)", ""]
+    print()
+    for a, b in zip(rose, info):
+        print(f"{a:<30}{b}")
+
+
+def sailing(s, north):
+    """Price factor for a convoy: wind behind you and the current with you help."""
+    w = WINDS[s["wind"]]
+    adv = num(w["sail_north" if north else "sail_south"]) + (s["current"] if north else -s["current"])
+    return max(-SAIL_CAP, min(SAIL_CAP, adv * SAIL_STEP)), int(num(w["delay"]))
 
 
 # --- Screens -------------------------------------------------------------------
@@ -117,6 +191,7 @@ def show_status(s):
         print(f"  ... convoy returns in turn {c['arrive']}")
     if s["tribute_debt"]:
         print(f"  Unpaid tribute owed to Rome: {int(s['tribute_debt']):,} denarii")
+    show_compass(s)
 
 
 def council(s):
@@ -131,12 +206,15 @@ def council(s):
     else:
         when = "this season" if turns_to_tribute == 0 else f"in {turns_to_tribute} season(s)"
         say["treasurer"] = f"The chest holds {int(s['treasury']):,} denarii. Tribute of {int(due):,} is due {when}."
+    mult = num(WINDS[s["wind"]]["harvest_mult"], 1)
     if s["grain"] < 3:
         say["economist"] = f"Only {s['grain']:.1f} months of grain left. Buy grain by convoy or the people will starve."
     elif s["grain"] < 6:
         say["economist"] = "Our fields feed us only 8 months a year. Terraces or bought grain, Governor, or we go short."
     elif s["wine_oil"] >= 10 and season["sailing"] == "yes":
         say["economist"] = f"{int(s['wine_oil'])} amphorae wait in the stores. Brundisium pays well for wine and oil."
+    elif mult != 1 and num(season["harvest_grain"]) > 0:
+        say["economist"] = f"With this wind the harvest will be {'better' if mult > 1 else 'worse'} than usual ({mult - 1:+.0%})."
     else:
         say["economist"] = "The markets are steady. A workshop would give us goods to sell."
     if s["army"] < ORDER_ARMY:
@@ -145,10 +223,18 @@ def council(s):
         say["general"] = "The mood in the streets is sour. My men can keep order, but not forever."
     else:
         say["general"] = f"The garrison of {int(s['army'])} stands ready. Its pay is {int(s['army'] * ARMY_PAY):,} denarii a season."
+    north, _ = sailing(s, True)
+    south, _ = sailing(s, False)
     if season["sailing"] == "no":
         say["fleet"] = "Mare clausum. No ship of mine leaves the bay until spring."
+    elif s["wind"] == "CALM":
+        say["fleet"] = "Not a breath of wind. Any convoy we send will sit a season in harbour."
+    elif north > south:
+        say["fleet"] = f"Wind and current favour a voyage north up the coast ({north:+.0%} on prices)."
+    elif south > north:
+        say["fleet"] = f"The wind is with us for a voyage south ({south:+.0%} on prices)."
     else:
-        say["fleet"] = "The sea is open. A good season to send a convoy, if the pirates allow."
+        say["fleet"] = "The sea is open; wind and current favour neither course."
     if s["loyalty"] < 40:
         say["priest"] = "The people murmur against you. A festival would please the gods and men alike."
     elif s["favour"] < 40:
@@ -252,20 +338,29 @@ def apply_decrees(s, orders, notes):
 
 
 def convoy(s, notes):
+    print("    Epicadus: which way?  1) north up the coast (Narona, Salona, Aquileia)  2) south (Dyrrachium, Brundisium)")
+    north = (ask_int("    > ", 1, 2) or 1) == 1
+    factor, delay = sailing(s, north)
+    if factor:
+        print(f"    Wind and current {'help' if factor > 0 else 'hinder'} this voyage: {factor:+.0%} on prices.")
+    if delay:
+        print("    Dead calm: the convoy waits a season in harbour before it can sail.")
     print("    Nikandros: what shall the convoy do?  1) buy grain  2) sell wine & oil  3) sell goods")
     kind = ask_int("    > ", 1, 3) or 1
-    c = {"arrive": s["turn"] + 1, "grain": 0, "treasury": 0}
+    c = {"arrive": s["turn"] + 1 + delay, "grain": 0, "treasury": 0}
+    grain_price = round(GRAIN_PRICE * (1 - factor))
     if kind == 1:
-        most = int(s["treasury"] // GRAIN_PRICE)
+        most = int(s["treasury"] // grain_price)
         if most < 1:
             notes.append("The convoy sails empty: no money to buy grain.")
         else:
-            m = ask_int(f"    Months of grain to buy at {GRAIN_PRICE} denarii each (1-{min(most, 12)}): ", 1, min(most, 12)) or 1
-            s["treasury"] -= m * GRAIN_PRICE
+            m = ask_int(f"    Months of grain to buy at {grain_price} denarii each (1-{min(most, 12)}): ", 1, min(most, 12)) or 1
+            s["treasury"] -= m * grain_price
             c["grain"] = m
             notes.append(f"A convoy sails to buy {m} months of grain.")
     else:
         key, price = ("wine_oil", WINE_OIL_PRICE) if kind == 2 else ("goods", GOODS_PRICE)
+        price = round(price * (1 + factor))
         have = int(s[key])
         if have < 1:
             notes.append(f"The convoy sails empty: no {RULES[key]['name'].lower()} to sell.")
@@ -317,7 +412,10 @@ def resolve(s, notes):
             notes.append(f"Rome receives only part of its tribute. {s['tribute_debt']:,} denarii are owed next year.")
     # grain
     eaters = s["people"] + s["army"]
-    harvest = num(season["harvest_grain"]) * GRAIN_BASE_EATERS / eaters + built(s, "terraces") * num(season["terrace_bonus"])
+    mult = num(WINDS[s["wind"]]["harvest_mult"], 1)
+    harvest = (num(season["harvest_grain"]) * GRAIN_BASE_EATERS / eaters + built(s, "terraces") * num(season["terrace_bonus"])) * mult
+    if harvest and mult != 1:
+        notes.append(f"The wind made the harvest {'richer' if mult > 1 else 'poorer'} ({mult - 1:+.0%}).")
     bought = sum(c["grain"] for c in arrived)
     if bought:
         notes.append(f"The convoy unloads {bought} months of grain.")
@@ -351,6 +449,9 @@ def trigger_holds(s, trig):
     trig = str(trig or "random").strip()
     if trig == "random":
         return True
+    w = re.fullmatch(r"wind\s*(==|!=)\s*(\w+)", trig)
+    if w:
+        return (s["wind"] == w.group(2)) == (w.group(1) == "==")
     m = re.fullmatch(r"(\w+)\s*(<=|>=|<|>|==)\s*(-?\d+(?:\.\d+)?)", trig)
     if not m or m.group(1) not in s:
         return False
@@ -386,7 +487,14 @@ def draw_event(s, notes):
             for i, o in enumerate(ch["options"], 1):
                 print(f"    {i}) {o['label']}")
             pick = ask_int("  Your choice > ", 1, len(ch["options"])) or 1
-            eff.update(ch["options"][pick - 1].get("effects") or {})
+            opt = ch["options"][pick - 1]
+            eff.update(opt.get("effects") or {})
+            r = opt.get("roll")
+            if r:
+                _, ok = roll(int(r.get("die", 20)), roll_bonus(s, r.get("bonus")), int(r["target"]), opt["label"])
+                for n, v in (r.get("success" if ok else "failure") or {}).items():
+                    eff[n] = eff.get(n, 0) + v
+                notes.append(f"Die roll for '{opt['label']}': {'success' if ok else 'failure'}.")
         for n, v in eff.items():
             if n in NUMBERS:
                 s[n] += v
@@ -420,8 +528,8 @@ def log_turn(s, orders, event, notes):
     with open(s["log"], "a", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         if new:
-            w.writerow(["turn", "season", "year", "decrees", "event", *NUMBERS, "tax_rate", "notes"])
-        w.writerow([s["turn"], season["season"], f"AD {year}", " + ".join(d["id"] for d in orders), event,
+            w.writerow(["turn", "season", "year", "wind", "current", "decrees", "event", *NUMBERS, "tax_rate", "notes"])
+        w.writerow([s["turn"], season["season"], f"AD {year}", s["wind"], s["current"], " + ".join(d["id"] for d in orders), event,
                     *[fmt(n, s[n]).replace(",", "") for n in NUMBERS], s["tax"], " | ".join(notes)])
 
 
@@ -441,6 +549,8 @@ def main():
             s = json.load(f)
         print(f"\nContinuing your governorship (turn {s['turn']}). Use --new to start again.")
     while not s.get("over"):
+        roll_weather(s)
+        save(s)
         before = {n: s[n] for n in NUMBERS}
         show_status(s)
         council(s)
