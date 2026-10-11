@@ -1,0 +1,24 @@
+id: e020-lightning
+deck: omen
+title: Lightning strikes the temple
+category: omen
+seasons: [Spring, Summer, Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.08
+once: false
+effects: {}
+choice:
+  prompt: >-
+    A thunderbolt has struck the temple roof. The people say Jupiter is
+    angry; Tertius Volusius asks for a purification.
+  options:
+    - label: Pay for the purification rites
+      effects: {treasury: -150, loyalty: 2}       # DRAFT
+    - label: Just repair the roof
+      effects: {treasury: -50, loyalty: -4}       # DRAFT
+scribe_hint: The scorched beam still smokes; nobody will walk under it.
+historical_note: >-
+  Romans treated ground struck by lightning as sacred: the bolt was ritually
+  buried and the spot walled off, as a bidental.
+source: "General background on Roman religion (fulgur conditum, bidental) - check before publishing"

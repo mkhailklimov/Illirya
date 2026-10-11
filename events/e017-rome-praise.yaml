@@ -1,0 +1,15 @@
+id: e017-rome-praise
+deck: sea
+title: A letter from Capri
+category: rome
+seasons: any
+years: [30, 37]
+trigger: "favour >= 70"
+chance: 0.10
+once: true
+effects: {favour: 3, loyalty: 2}             # DRAFT
+scribe_hint: The letter is short and cool, as Tiberius's letters are, but it is praise.
+historical_note: >-
+  Tiberius ruled from his villa on the island of Capri from AD 26 until his
+  death in AD 37; governors received his orders by letter from there.
+source: "Tacitus, Annals IV.67; Suetonius, Tiberius 40 - check before publishing"

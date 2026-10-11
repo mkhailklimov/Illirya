@@ -60,6 +60,10 @@ In the bot, the AI scribe can let them speak in their own voices; their advice i
 - **A multi-sided die** (d4 to d20, as in tabletop role-playing games) decides battles and risky choices: roll, add a bonus (for example from the size of the army) and beat a target. A natural 20 always succeeds, a 1 always fails.
 - In the bot, the compass and the die roll can become images in the mosaic style (the design kit already has a compass rose).
 
+## 3c. Three cards a season (added 11 October 2026)
+
+Each season the governor draws **three face-down cards, one from each deck: Land, Sea and Omen**, and all three are turned over at once at the start of the season, before the decrees, so the governor can react to them. Letters from Rome (orders, demands, praise) travel in the Sea deck. Cards range from bad (pirates, floods, earthquakes, unrest, invasions) to good (a bumper harvest, a buried hoard, cheap oil from Istrian merchants, a great vintage, the new screw press), and each deck has a quiet card so some seasons pass calmly. Cards with a choice may be answered in any order; risky options are settled with a die. Revealing them one by one, or with hints on the card backs, can be tried later.
+
 ## 4. Buildings and development
 
 Each building costs treasury and goods and takes 1–4 seasons to finish.

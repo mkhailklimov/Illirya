@@ -1,0 +1,15 @@
+id: e019-eagles
+deck: omen
+title: Eagles over the forum
+category: omen
+seasons: any
+years: [30, 42]
+trigger: random
+chance: 0.10
+once: false
+effects: {loyalty: 3, favour: 1}             # DRAFT
+scribe_hint: Two eagles circle above the forum and fly towards Rome; Tertius declares it a sign of favour.
+historical_note: >-
+  Romans read the flight of birds as messages from the gods; the augurs took
+  the auspices before every public act.
+source: "General background on Roman augury - check before publishing"

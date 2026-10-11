@@ -1,0 +1,25 @@
+id: e016-rome-troops
+deck: sea
+title: A letter from Rome demands troops
+category: rome
+seasons: [Spring, Summer]
+years: [30, 42]
+trigger: "army >= 120"
+chance: 0.08
+once: false
+effects: {}
+choice:
+  prompt: >-
+    A sealed letter arrives on the courier ship: the governor of Moesia
+    needs men on the Danube. Send fifty of your soldiers.
+  options:
+    - label: Obey and send them
+      effects: {army: -50, favour: 6}             # DRAFT
+    - label: Write back that the bay cannot spare them
+      effects: {favour: -6}                       # DRAFT
+scribe_hint: The seal is the Emperor's; the courier waits for an answer.
+historical_note: >-
+  In these years the Danube frontier in Moesia and Pannonia was guarded by
+  legions and auxiliaries, and detachments (vexillationes) were drawn from
+  other provinces when trouble came.
+source: "General background on the Danube frontier under Tiberius - check before publishing"

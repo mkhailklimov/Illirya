@@ -1,0 +1,15 @@
+id: e012-bumper-crop
+deck: land
+title: A bumper harvest
+category: nature
+seasons: [Summer, Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.10
+once: false
+effects: {grain: 2.5, loyalty: 2}            # DRAFT
+scribe_hint: Carts groan under the sheaves; the threshing floors are busy until dark.
+historical_note: >-
+  Ancient farmers stored a good year's surplus in pits and great jars
+  (dolia) against the next bad one, and thanked Ceres with the first fruits.
+source: "General background on Roman farming - check before publishing"

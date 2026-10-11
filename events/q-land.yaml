@@ -1,0 +1,14 @@
+id: q-land
+deck: land
+quiet: true                # drawn when nothing else happens; keeps seasons from being all drama
+title: A quiet season in the fields
+category: quiet
+seasons: any
+years: [30, 42]
+trigger: random
+chance: 0.30               # DRAFT: weight against the deck's other cards
+once: false
+effects: {}
+scribe_hint: Nothing remarkable; the farmers work and the goats graze.
+historical_note: ""
+source: ""

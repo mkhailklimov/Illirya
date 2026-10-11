@@ -1,0 +1,14 @@
+id: q-omen
+deck: omen
+quiet: true                # drawn when nothing else happens; keeps seasons from being all drama
+title: The gods are silent
+category: quiet
+seasons: any
+years: [30, 42]
+trigger: random
+chance: 0.30               # DRAFT: weight against the deck's other cards
+once: false
+effects: {}
+scribe_hint: The sacrifices are ordinary and the omens unremarkable.
+historical_note: ""
+source: ""

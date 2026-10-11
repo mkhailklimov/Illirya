@@ -1,0 +1,24 @@
+id: e018-screw-press
+deck: sea
+title: A Greek engineer and his new press
+category: trade
+seasons: [Spring, Summer]
+years: [30, 42]
+trigger: random
+chance: 0.06
+once: true
+effects: {}
+choice:
+  prompt: >-
+    An engineer from Alexandria arrives with plans for a press worked by a
+    great wooden screw. He says it squeezes more oil from every olive.
+  options:
+    - label: Pay him to build one
+      effects: {treasury: -400, goods: -5, wine_oil: 10}   # DRAFT
+    - label: Our old beam presses will do
+      effects: {}
+scribe_hint: He draws the screw on a wax tablet; Nikandros counts the profit in his head.
+historical_note: >-
+  The screw press was the newest technology of the age: Pliny writes that
+  the Greek screw press had come into use within the last hundred years.
+source: "Pliny, Natural History XVIII.317 - check before publishing"

@@ -1,0 +1,33 @@
+id: e011-unrest
+deck: land
+title: Angry crowds in the forum
+category: locals
+seasons: any
+years: [30, 42]
+trigger: "loyalty < 40"
+chance: 0.30
+once: false
+effects: {}
+choice:
+  prompt: >-
+    Townspeople gather in the forum shouting against taxes and hunger.
+    Antistius has his men ready; Felix urges patience.
+  options:
+    - label: Send the soldiers to clear the forum
+      effects: {}
+      roll:                                       # d20 + 1 per 50 soldiers; need 11
+        die: 20
+        bonus: army / 50
+        target: 11
+        success: {loyalty: 2}                     # DRAFT: order restored quietly
+        failure: {loyalty: -6, people: -20}       # DRAFT: blood on the stones
+    - label: Hear their grievances and give alms
+      effects: {treasury: -200, loyalty: 3}       # DRAFT
+    - label: Ignore them
+      effects: {loyalty: -4}                      # DRAFT
+scribe_hint: The crowd chants the governor's name, and not kindly.
+historical_note: >-
+  The Great Illyrian Revolt of AD 6 began when men gathered for an army
+  levy turned on the Romans: taxes and levies were the sparks of unrest in
+  this province.
+source: "Cassius Dio 55.29 - check before publishing"

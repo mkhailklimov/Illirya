@@ -49,7 +49,7 @@ LOYALTY_LOW_FOOD, LOYALTY_HUNGER = -3, -10
 UNREST_BELOW, UNREST_FAVOUR = 30, -3
 UPRISING_BELOW = 20
 ORDER_ARMY, ORDER_FAVOUR = 100, -1
-EVENT_ROLLS_PER_SEASON = 1   # at most this many cards fire per season
+DECKS = [("land", "LAND"), ("sea", "SEA"), ("omen", "OMEN")]  # one card from each, every season
 # Weather and the sea (winds.csv; formulas.md "Weather and the sea")
 CURRENT_DIE = 6              # d6 each season: 1 slack, 2-5 running, 6 strong
 SAIL_STEP, SAIL_CAP = 0.10, 0.30   # convoy price change per point of sailing advantage, and its limit
@@ -76,7 +76,9 @@ SEASONS = sorted(read_csv("seasons.csv"), key=lambda r: int(r["order"]))
 ADVISORS = {r["id"]: r for r in read_csv("advisors.csv")}
 WINDS = {r["id"]: r for r in read_csv("winds.csv")}
 CARDS = []
-for path in sorted(glob.glob(os.path.join(EVENTS, "e*.yaml"))):
+for path in sorted(glob.glob(os.path.join(EVENTS, "*.yaml"))):
+    if os.path.basename(path).startswith("_"):
+        continue
     with open(path, encoding="utf-8") as f:
         CARDS.append(yaml.safe_load(f))
 
@@ -459,51 +461,94 @@ def trigger_holds(s, trig):
     return {"<": a < b, "<=": a <= b, ">": a > b, ">=": a >= b, "==": a == b}[op]
 
 
-def draw_event(s, notes):
+def card_fits(s, c):
     season, year = season_of(s["turn"])
-    deck = []
-    for c in CARDS:
-        seasons = c.get("seasons", "any")
-        if seasons != "any" and season["season"] not in seasons:
-            continue
-        lo, hi = c.get("years", [30, 42])
-        if not lo <= year <= hi or (c.get("once") and c["id"] in s["once_fired"]):
-            continue
-        if trigger_holds(s, c.get("trigger")):
-            deck.append(c)
-    random.shuffle(deck)
-    fired = 0
-    for c in deck:
-        if fired >= EVENT_ROLLS_PER_SEASON or random.random() >= float(c.get("chance", 0)):
-            continue
-        fired += 1
-        s["once_fired"].append(c["id"])
+    seasons = c.get("seasons", "any")
+    if seasons != "any" and season["season"] not in seasons:
+        return False
+    lo, hi = c.get("years", [30, 42])
+    if not lo <= year <= hi or (c.get("once") and c["id"] in s["once_fired"]):
+        return False
+    return trigger_holds(s, c.get("trigger"))
+
+
+def draw_season_cards(s):
+    """One card from each deck (land, sea, omen), weighted by each card's chance."""
+    drawn = []
+    for deck, _ in DECKS:
+        pool = [c for c in CARDS if c.get("deck") == deck and card_fits(s, c)]
+        if pool:
+            drawn.append(random.choices(pool, weights=[float(c.get("chance", 0.1)) for c in pool])[0])
+    return drawn
+
+
+def effects_text(eff):
+    return ", ".join(f"{RULES[n]['name'].lower()} {'+' if v > 0 else ''}{v:g}" for n, v in eff.items() if n in NUMBERS) or "no effect"
+
+
+def apply_effects(s, eff):
+    for n, v in eff.items():
+        if n in NUMBERS:
+            s[n] += v
+
+
+def answer_card(s, c, notes):
+    """Ask the player's choice on a card (and roll the die if the option says so)."""
+    ch = c["choice"]
+    label = dict(DECKS)[c["deck"]]
+    print(f"\n  [{label}] {c['title']}")
+    print("  " + " ".join(str(ch["prompt"]).split()))
+    for i, o in enumerate(ch["options"], 1):
+        r = o.get("roll")
+        odds = f"   [d{r.get('die', 20)} + {roll_bonus(s, r.get('bonus'))}, need {r['target']}]" if r else ""
+        print(f"    {i}) {o['label']}{odds}")
+    pick = ask_int("  Your choice > ", 1, len(ch["options"])) or 1
+    opt = ch["options"][pick - 1]
+    eff = dict(opt.get("effects") or {})
+    r = opt.get("roll")
+    if r:
+        _, ok = roll(int(r.get("die", 20)), roll_bonus(s, r.get("bonus")), int(r["target"]), opt["label"])
+        for n, v in (r.get("success" if ok else "failure") or {}).items():
+            eff[n] = eff.get(n, 0) + v
+        notes.append(f"{c['title']}: you chose '{opt['label']}' and the die says {'success' if ok else 'failure'} ({effects_text(eff)}).")
+    else:
+        notes.append(f"{c['title']}: you chose '{opt['label']}' ({effects_text(eff)}).")
+    apply_effects(s, eff)
+
+
+def reveal_cards(s, notes):
+    """Draw the season's three cards and turn them all over at once."""
+    cards = draw_season_cards(s)
+    print("\n  The season's cards are turned over:")
+    for c in cards:
+        label = dict(DECKS)[c["deck"]]
         who = ADVISORS.get(c.get("advisor", ""), {}).get("name")
-        print(f"\n  EVENT: {c['title']}" + (f"  ({who})" if who else ""))
-        eff = dict(c.get("effects") or {})
-        ch = c.get("choice")
-        if ch:
-            print("  " + " ".join(str(ch["prompt"]).split()))
-            for i, o in enumerate(ch["options"], 1):
-                print(f"    {i}) {o['label']}")
-            pick = ask_int("  Your choice > ", 1, len(ch["options"])) or 1
-            opt = ch["options"][pick - 1]
-            eff.update(opt.get("effects") or {})
-            r = opt.get("roll")
-            if r:
-                _, ok = roll(int(r.get("die", 20)), roll_bonus(s, r.get("bonus")), int(r["target"]), opt["label"])
-                for n, v in (r.get("success" if ok else "failure") or {}).items():
-                    eff[n] = eff.get(n, 0) + v
-                notes.append(f"Die roll for '{opt['label']}': {'success' if ok else 'failure'}.")
-        for n, v in eff.items():
-            if n in NUMBERS:
-                s[n] += v
+        what = "your decision" if c.get("choice") else effects_text(c.get("effects") or {})
+        title = c["title"] + (f" ({who})" if who else "")
+        print(f"   [{label:<4}]  {title:<48} {what}")
+    for c in cards:
+        if c.get("once"):
+            s["once_fired"].append(c["id"])
+        if not c.get("choice"):
+            eff = dict(c.get("effects") or {})
+            apply_effects(s, eff)
+            if not c.get("quiet"):
+                notes.append(f"{c['title']}: {effects_text(eff)}.")
+    open_cards = [c for c in cards if c.get("choice")]
+    while open_cards:
+        if len(open_cards) > 1:
+            print("\n  Which card do you deal with first?")
+            for i, c in enumerate(open_cards, 1):
+                print(f"    {i}) [{dict(DECKS)[c['deck']]}] {c['title']}")
+            i = ask_int("  > ", 1, len(open_cards)) or 1
+        else:
+            i = 1
+        answer_card(s, open_cards.pop(i - 1), notes)
+    for c in cards:
         note = " ".join(str(c.get("historical_note", "")).split())
-        notes.append(f"Event: {c['title']}.")
         if note:
-            notes.append(f"History: {note}")
-        return c["id"]
-    return ""
+            notes.append(f"History ({c['title']}): {note}")
+    return " + ".join(c["id"] for c in cards)
 
 
 def clamp_and_check(s, notes):
@@ -550,19 +595,32 @@ def main():
         print(f"\nContinuing your governorship (turn {s['turn']}). Use --new to start again.")
     while not s.get("over"):
         roll_weather(s)
-        save(s)
-        before = {n: s[n] for n in NUMBERS}
-        show_status(s)
+        if s.get("cards_turn") != s["turn"]:
+            s["before"] = {n: s[n] for n in NUMBERS}
+            show_status(s)
+            notes = []
+            s["events"] = reveal_cards(s, notes)
+            s["season_notes"] = notes
+            s["cards_turn"] = s["turn"]
+            save(s)
+            changed = [f"{RULES[n]['name']} {fmt(n, s['before'][n])} -> {fmt(n, s[n])}"
+                       for n in NUMBERS if abs(s[n] - s["before"][n]) >= 0.05]
+            if changed:
+                print("\n  After the cards: " + ";  ".join(changed))
+        else:
+            show_status(s)
+            print(f"\n  This season's cards are already played: {s['events']}")
+        before = s["before"]
         council(s)
         orders = choose_decrees(s)
         if orders is None:
             save(s)
             print(f"\nSaved. Run again to continue. Log: {os.path.relpath(s['log'])}")
             return
-        notes = []
+        notes = list(s["season_notes"])
         apply_decrees(s, orders, notes)
         resolve(s, notes)
-        event = draw_event(s, notes)
+        event = s["events"]
         clamp_and_check(s, notes)
         print("\n  The season ends:")
         for line in notes:

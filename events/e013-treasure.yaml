@@ -1,0 +1,27 @@
+id: e013-treasure
+deck: land
+title: A farmer ploughs up a hoard
+category: locals
+seasons: [Spring, Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.05
+once: true
+effects: {}
+choice:
+  prompt: >-
+    A farmer above the bay has struck a jar full of old coins: bronze and
+    silver of the Illyrian kings, buried long ago.
+  options:
+    - label: Claim it for the treasury
+      effects: {treasury: 500, loyalty: -2}       # DRAFT
+    - label: Let the farmer keep it
+      effects: {loyalty: 3}                       # DRAFT
+    - label: Send it to the Emperor as a curiosity
+      effects: {favour: 4}                        # DRAFT
+scribe_hint: The coins are green with age; one shows a king's head and a ship.
+historical_note: >-
+  King Gentius, the last Illyrian king, minted coins at Scodra and Lissus
+  before Rome defeated him in 168 BC; such coins still turn up in hoards
+  along this coast.
+source: "Livy 44.30-32 on Gentius; numismatic finds - check before publishing"

@@ -1,0 +1,16 @@
+id: e009-flood
+deck: land
+title: The torrents flood the lower fields
+category: nature
+seasons: [Autumn, Winter, Spring]
+years: [30, 42]
+trigger: random
+chance: 0.10
+once: false
+effects: {grain: -1.5, goods: -5}            # DRAFT: stores soaked, tools lost in the mud
+scribe_hint: Brown water pours off the mountains into the bay; the lower terraces are gone.
+historical_note: >-
+  The Bay of Kotor sits beneath some of the rainiest mountains in Europe;
+  sudden torrents off the slopes have always threatened its narrow strip of
+  farmland.
+source: "General geography of the Orjen massif - check before publishing"

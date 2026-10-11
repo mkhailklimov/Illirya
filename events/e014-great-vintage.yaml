@@ -1,0 +1,15 @@
+id: e014-great-vintage
+deck: land
+title: A great vintage
+category: trade
+seasons: [Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.10
+once: false
+effects: {wine_oil: 6, loyalty: 2}           # DRAFT
+scribe_hint: The treading vats overflow; even Felix allows himself a cup.
+historical_note: >-
+  Wine from the Greek island colony of Issa (Vis), further up this coast,
+  was praised in antiquity as among the finest of all.
+source: "Athenaeus, Deipnosophists I.28d (quoting Agatharchides) - check before publishing"

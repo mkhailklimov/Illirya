@@ -6,6 +6,7 @@ Starting values are in [numbers.csv](numbers.csv), decrees in [decrees.csv](decr
 
 ## Order of resolution (one turn = one season)
 
+0. **Weather and cards.** Roll the wind and current, then draw one card each from the Land, Sea and Omen decks and turn all three over. Apply their effects and answer their choices (any order) *before* the decrees.
 1. **Decrees.** Pay each decree's cost now. Refuse any decree that can't be paid. Apply instant effects; queue buildings with their `seasons_to_finish`.
 2. **Finished buildings** start producing this season.
 3. **Income:** taxes, then trade income from convoys that arrived.
@@ -14,7 +15,7 @@ Starting values are in [numbers.csv](numbers.csv), decrees in [decrees.csv](decr
 6. **Goods and wine & oil:** production in, upkeep out.
 7. **People:** growth or loss.
 8. **Loyalty and Roman favour.**
-9. **Event card** (see `../events/`), then **lose checks**.
+9. **Lose checks.**
 
 Round money to whole denarii and grain to one decimal.
 
