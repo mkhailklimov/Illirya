@@ -48,6 +48,39 @@ Deliverables:
 
 **Success signal:** 100+ channel subscribers, 30+ votes per poll, people commenting on decisions.
 
+### Phase 0 week by week
+
+Weeks start on Monday. Each task is a GitHub issue under the "Demo 0" milestone issue; a check-in every Monday lists the week's tasks and the progress so far.
+
+| Week | Dates | Tasks |
+|---|---|---|
+| 1 | 12–18 Oct | Set up VS Code and the repo ([getting started](getting-started.md)); 0.1 pick the font; 0.3 create the Facebook page |
+| 2 | 19–25 Oct | 0.2 register illyria30.com; 0.4 spreadsheet part 1: the 8 numbers and starting values |
+| 3 | 26 Oct – 1 Nov | 0.4 spreadsheet part 2: the 10 decrees and their costs |
+| 4 | 2–8 Nov | 0.5 formulas part 1: taxes, loyalty, tribute |
+| 5 | 9–15 Nov | 0.5 formulas part 2: army pay, grain; 0.8 three sample dispatches |
+| 6 | 16–22 Nov | 0.6 play turns 1–6 by hand and log them |
+| 7 | 23–29 Nov | 0.6 play turns 7–12 and tune the vicious cycle. **Midterm check: is the loop fun on paper?** |
+| 8 | 30 Nov – 6 Dec | 0.7 event cards 1–10 |
+| 9 | 7–13 Dec | 0.7 event cards 11–20; 0.9 plan the weekly channel rhythm |
+| 10 | 14–20 Dec | 0.10 launch "Community Governor": first dispatch and poll; 1.1 choose the bot stack |
+| 11 | 21–27 Dec | 0.11 poll game turn 2; 1.2 hello-world bot online |
+| 12 | 28 Dec – 3 Jan | 0.11 poll game turn 3; **Phase 0 review** against the decision point below |
+
+### Milestones to check progress
+
+| Milestone | Due | Check |
+|---|---|---|
+| Rules on paper | 29 Nov 2026 | 12 turns played in the spreadsheet |
+| Demo 0: Community Governor | 20 Dec 2026 | First poll live on Telegram and Facebook |
+| Phase 0 review | 3 Jan 2027 | Votes and comments per poll, go / no-go for the bot |
+| Demo 1a: first playable MVP | 31 Mar 2027 | One player plays a game year in the bot |
+| Demo 1: closed alpha | 30 Jun 2027 | 20–50 players, 16 turns |
+| Demo 2: public beta and investor pack | 30 Jun 2028 | Full game, video, deck, metrics |
+| Demo 3: Season One | 30 Jun 2029 | Multiplayer season with leaderboard |
+| Soft launch | 30 Nov 2029 | Payments, onboarding, website |
+| Official launch | Spring 2030 | Launch Season |
+
 ---
 
 ## Phase 1. Bot prototype (January – June 2027)
