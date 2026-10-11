@@ -23,6 +23,8 @@ import sys
 
 import yaml
 
+import scribe
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 RUNS = os.path.join(HERE, "playtest-runs")
 SAVE = os.path.join(RUNS, "save.json")
@@ -72,6 +74,7 @@ def num(v, default=0):
 
 RULES = {r["id"]: r for r in read_csv("numbers.csv")}
 DECREES = read_csv("decrees.csv")
+DECREE = {d["id"]: d for d in DECREES}
 SEASONS = sorted(read_csv("seasons.csv"), key=lambda r: int(r["order"]))
 ADVISORS = {r["id"]: r for r in read_csv("advisors.csv")}
 WINDS = {r["id"]: r for r in read_csv("winds.csv")}
@@ -272,49 +275,274 @@ def effects_of(d):
     return {n: num(d.get(n)) for n in NUMBERS if (d.get(n) or "").strip()}
 
 
-def choose_decrees(s):
+def order(did, direction="none", cargo="none", amount=0):
+    return {"id": did, "direction": direction, "cargo": cargo, "amount": int(amount or 0)}
+
+
+def grain_price(s, direction):
+    factor, _ = sailing(s, direction == "north")
+    return round(GRAIN_PRICE * (1 - factor))
+
+
+def describe(s, o):
+    """One line in plain words for an order."""
+    d = DECREE[o["id"]]
+    if o["id"] != "send_convoy":
+        return d["name"]
+    where = {"north": "north up the coast", "south": "south"}.get(o["direction"], "")
+    if o["cargo"] == "buy_grain":
+        what = f"to buy {o['amount']} months of grain" if o["amount"] else "to buy grain"
+    elif o["cargo"] == "sell_wine_oil":
+        what = f"to sell {o['amount']} amphorae of wine and oil" if o["amount"] else "to sell wine and oil"
+    elif o["cargo"] == "sell_goods":
+        what = f"to sell {o['amount']} goods" if o["amount"] else "to sell goods"
+    else:
+        what = ""
+    return " ".join(x for x in ("Send a convoy", where, what) if x)
+
+
+def validate(s, orders):
+    """Check orders against the rules, in order. Returns (accepted, problems)."""
     season, _ = season_of(s["turn"])
-    print("\n  Decrees (choose up to 3, e.g. '4 9', Enter for none, q to save and quit):")
+    treasury, goods, tax = s["treasury"], s["goods"], s["tax"]
+    accepted, problems, seen = [], [], set()
+    for o in orders[:3]:
+        d = DECREE.get(o["id"])
+        if not d:
+            problems.append(f"'{o['id']}' is not a decree of this province.")
+            continue
+        if o["id"] in seen and o["id"] in ("raise_taxes", "lower_taxes", "send_convoy", "hold_festival"):
+            problems.append(f"'{d['name']}' only once a season.")
+            continue
+        c, g = num(d["cost_treasury"]), num(d["cost_goods"])
+        if o["id"] == "send_convoy":
+            if season["sailing"] == "no":
+                problems.append("Epicadus refuses: no convoys in winter (mare clausum).")
+                continue
+            if o["cargo"] == "buy_grain" and o["amount"] and o["direction"] in ("north", "south"):
+                c += o["amount"] * grain_price(s, o["direction"])
+            if o["cargo"] == "sell_wine_oil" and s["wine_oil"] < 1 or o["cargo"] == "sell_goods" and goods < 1:
+                problems.append("Nikandros: there is nothing in the stores to sell.")
+                continue
+        if o["id"] == "raise_taxes":
+            if tax == "high":
+                problems.append("Taxes are already high.")
+                continue
+            tax = TAX_STEPS[TAX_STEPS.index(tax) + 1]
+        if o["id"] == "lower_taxes":
+            if tax == "low":
+                problems.append("Taxes are already low.")
+                continue
+            tax = TAX_STEPS[TAX_STEPS.index(tax) - 1]
+        if c > treasury or g > goods:
+            problems.append(f"Felix shakes his head: not enough for '{describe(s, o)}' "
+                            f"({int(c):,} denarii{f', {int(g)} goods' if g else ''}).")
+            continue
+        treasury -= c
+        goods -= g
+        accepted.append(o)
+        seen.add(o["id"])
+    return accepted, problems
+
+
+def preview(s, orders):
+    """Cost and the most visible effects of a set of orders, for the dialogue box."""
+    cost, goods, loyalty, favour, extra = 0, 0, 0, 0, []
+    for o in orders:
+        d = DECREE[o["id"]]
+        cost += num(d["cost_treasury"])
+        goods += num(d["cost_goods"])
+        eff = effects_of(d)
+        loyalty += eff.get("loyalty", 0)
+        favour += eff.get("favour", 0)
+        if o["id"] == "send_convoy" and o["cargo"] == "buy_grain":
+            cost += o["amount"] * grain_price(s, o["direction"])
+        if o["id"] == "raise_taxes" and TAX_STEPS.index(s["tax"]) == 1:
+            extra.append("then -4 loyalty every season at high taxes")
+        if o["id"] == "send_convoy" and o["direction"] in ("north", "south"):
+            factor, delay = sailing(s, o["direction"] == "north")
+            if factor:
+                extra.append(f"wind and current {factor:+.0%} on convoy prices")
+            if delay:
+                extra.append("dead calm: the convoy waits a season")
+        if o["id"] in BUILDINGS:
+            extra.append(f"{BUILDINGS[o['id']]} pay off in "
+                         f"{GROVE_MATURE if o['id'] == 'plant_vines_olives' else int(num(d['seasons_to_finish']))} seasons")
+    parts = [f"costs {int(cost):,} denarii" + (f", {int(goods)} goods" if goods else "")]
+    if loyalty:
+        parts.append(f"loyalty {loyalty:+g}")
+    if favour:
+        parts.append(f"Rome {favour:+g}")
+    return "; ".join(parts + extra)
+
+
+def suggest(s):
+    """Two suggestions from the real situation: (bold, prudent)."""
+    season, _ = season_of(s["turn"])
+    can_sail = season["sailing"] == "yes" and s["wind"] != "CALM"
+    north, _ = sailing(s, True)
+    south, _ = sailing(s, False)
+    best = "north" if north >= south else "south"
+    turns_to_tribute = next(i for i in range(4) if season_of(s["turn"] + i)[0]["tribute_due"] == "yes")
+    rate, _ = TAX_RATES[s["tax"]]
+    income = s["people"] * rate - s["army"] * ARMY_PAY
+    tribute_short = s["treasury"] + income * (turns_to_tribute + 1) < TRIBUTE + s["tribute_debt"]
+
+    def build(wishes):
+        chosen = []
+        for o in wishes:
+            if len(chosen) == 3:
+                break
+            if any(c["id"] == o["id"] for c in chosen):
+                continue  # one of each per suggestion
+            ok, _ = validate(s, chosen + [o])
+            if len(ok) == len(chosen) + 1:
+                chosen.append(o)
+        return chosen
+
+    # prudent: food first, then content people, then Rome; spend little before a hard tribute
+    prudent = []
+    if s["grain"] < 4.5:
+        if can_sail:
+            gp = grain_price(s, best)
+            months = max(1, min(3, int((s["treasury"] * .5) // gp)))
+            prudent.append(order("send_convoy", best, "buy_grain", months))
+        prudent.append(order("build_terraces"))
+    if s["loyalty"] < 45:
+        prudent.append(order("hold_festival") if s["last_festival"] != s["turn"] - 1 else order("lower_taxes"))
+    if s["favour"] < 45 and not tribute_short:
+        prudent.append(order("honour_rome"))
+    if not tribute_short:
+        prudent += [order("build_terraces"), order("build_workshop")]
+    prudent = build(prudent)[:2] if tribute_short else build(prudent)
+
+    # bold: squeeze harder and invest bigger; sell abroad even with pirates about
+    bold = []
+    if s["tax"] != "high" and s["loyalty"] >= 35:
+        bold.append(order("raise_taxes"))
+    elif s["loyalty"] < 35 and s["army"] < 250:
+        bold.append(order("recruit"))
+    if can_sail and s["wine_oil"] >= 6:
+        bold.append(order("send_convoy", best, "sell_wine_oil", int(s["wine_oil"])))
+    bold += [order("plant_vines_olives"), order("build_workshop"), order("recruit")]
+    bold = build(bold)
+    return bold, prudent
+
+
+def situation(s):
+    """The scribe's opening line: the most pressing matter."""
+    season, _ = season_of(s["turn"])
+    due = TRIBUTE + s["tribute_debt"]
+    if s["grain"] < 2:
+        return f"Governor, the granaries hold barely {s['grain']:.1f} months of grain. The people fear hunger."
+    if season["tribute_due"] == "yes" and s["treasury"] < due:
+        return f"Governor, Rome expects {int(due):,} denarii this season and the chest holds {int(s['treasury']):,}."
+    if s["loyalty"] < 35:
+        return "Governor, the townspeople mutter against you in the forum."
+    if s["favour"] < 35:
+        return "Governor, letters from Rome grow colder with every ship."
+    if s["grain"] < 4.5:
+        return f"Governor, our grain will last {s['grain']:.1f} months; the fields alone will not carry us."
+    return "Governor, the town is quiet and the accounts are in order."
+
+
+def world_state(s):
+    season, year = season_of(s["turn"])
+    w = WINDS[s["wind"]]
+    return {"season": season["season"], "year": f"AD {year}", "tax_rate": s["tax"],
+            "wind": f"{w['latin']} ({w['from']})", "current": CURRENT_TEXT[s["current"]],
+            "sailing_season": season["sailing"] == "yes",
+            **{RULES[n]["name"]: (round(s[n], 1) if n == "grain" else int(s[n])) for n in NUMBERS},
+            "buildings": {k: built(s, k) for k in ("terraces", "workshops", "groves")}}
+
+
+def show_orders(s, orders, indent="     "):
+    for i, o in enumerate(orders, 1):
+        print(f"{indent}{i}. {describe(s, o)}")
+
+
+def dialogue(s):
+    """The season's dialogue box. Returns a list of orders, or None to save and quit."""
+    bold, prudent = suggest(s)
+    while True:
+        print("\n  " + "-" * 70)
+        print(f'  The scribe: "{situation(s)} What are your orders?"')
+        print()
+        if bold:
+            print("   A) BOLD     " + "; ".join(describe(s, o) for o in bold))
+            print("               " + preview(s, bold))
+        if prudent:
+            print("   B) PRUDENT  " + "; ".join(describe(s, o) for o in prudent))
+            print("               " + preview(s, prudent))
+        print("   C) Give your own orders, in your own words")
+        print("   D) Choose decrees from the list")
+        print("   Enter) Do nothing this season        q) Save and quit")
+        print("  " + "-" * 70)
+        a = ask("  > ").lower()
+        if a == "q":
+            return None
+        if a == "":
+            return []
+        if a == "a" and bold:
+            return bold
+        if a == "b" and prudent:
+            return prudent
+        if a == "d":
+            picked = choose_decrees(s)
+            if picked is None:
+                return None
+            if picked:
+                return picked
+            continue
+        if a == "c" or len(a) > 3:
+            text = a if len(a) > 3 else ask("  Your orders, Governor > ")
+            if text in ("", "q"):
+                continue
+            result = scribe.read_orders(text, world_state(s), DECREES)
+            print(f'\n  The scribe ({result.get("source", "?")}): "{result.get("reply", "")}"')
+            accepted, problems = validate(s, result.get("orders", []))
+            for pr in problems:
+                print(f"   ! {pr}")
+            if not accepted:
+                continue
+            print("   I will write these decrees:")
+            show_orders(s, accepted)
+            print("     " + preview(s, accepted))
+            yes = ask("  Seal them? (y = yes, n = back) > ").lower()
+            if yes in ("y", "yes", ""):
+                return accepted
+            continue
+        print("    Please choose A, B, C, D, press Enter, or q.")
+
+
+def choose_decrees(s):
+    print("\n  Decrees (choose up to 3, e.g. '4 9', Enter to go back, q to save and quit):")
     for i, d in enumerate(DECREES, 1):
         cost = int(num(d["cost_treasury"]))
         goods = int(num(d["cost_goods"]))
         extra = f", {goods} goods" if goods else ""
         print(f"   {i:>2}. {d['name']:<34} {cost:>4} denarii{extra}")
     while True:
-        a = ask("  Your orders, Governor > ")
+        a = ask("  Decrees > ")
         if a == "q":
             return None
+        if a == "":
+            return []
         picks = a.replace(",", " ").split()
         if len(picks) > 3 or not all(p.isdigit() and 1 <= int(p) <= len(DECREES) for p in picks):
             print("    Up to 3 numbers from the list, separated by spaces.")
             continue
-        orders = []
-        treasury, goods = s["treasury"], s["goods"]
-        ok = True
-        for p in picks:
-            d = DECREES[int(p) - 1]
-            c, g = num(d["cost_treasury"]), num(d["cost_goods"])
-            if d["id"] == "send_convoy" and season["sailing"] == "no":
-                print("    Epicadus refuses: no convoys in winter (mare clausum).")
-                ok = False
-                break
-            if d["id"] == "raise_taxes" and s["tax"] == "high" or d["id"] == "lower_taxes" and s["tax"] == "low":
-                print(f"    Taxes are already {s['tax']}.")
-                ok = False
-                break
-            if c > treasury or g > goods:
-                print(f"    Felix shakes his head: not enough for '{d['name']}'.")
-                ok = False
-                break
-            treasury -= c
-            goods -= g
-            orders.append(d)
-        if ok:
-            return orders
+        orders = [order(DECREES[int(p) - 1]["id"]) for p in picks]
+        accepted, problems = validate(s, orders)
+        for pr in problems:
+            print(f"    {pr}")
+        if len(accepted) == len(orders):
+            return accepted
 
 
 def apply_decrees(s, orders, notes):
-    for d in orders:
+    for o in orders:
+        d = DECREE[o["id"]]
         s["treasury"] -= num(d["cost_treasury"])
         s["goods"] -= num(d["cost_goods"])
         eff = effects_of(d)
@@ -333,33 +561,43 @@ def apply_decrees(s, orders, notes):
             s["buildings"].append({"kind": kind, "done": s["turn"] + wait})
             notes.append(f"Work begins on {kind}; ready in turn {s['turn'] + wait}.")
         elif d["id"] == "send_convoy":
-            convoy(s, notes)
+            convoy(s, notes, o)
         for n, v in eff.items():
             s[n] += v
     return s
 
 
-def convoy(s, notes):
-    print("    Epicadus: which way?  1) north up the coast (Narona, Salona, Aquileia)  2) south (Dyrrachium, Brundisium)")
-    north = (ask_int("    > ", 1, 2) or 1) == 1
+def convoy(s, notes, o=None):
+    """Send a convoy. Direction, cargo and amount come from the order when given, else are asked."""
+    o = o or order("send_convoy")
+    if o["direction"] in ("north", "south"):
+        north = o["direction"] == "north"
+    else:
+        print("    Epicadus: which way?  1) north up the coast (Narona, Salona, Aquileia)  2) south (Dyrrachium, Brundisium)")
+        north = (ask_int("    > ", 1, 2) or 1) == 1
     factor, delay = sailing(s, north)
     if factor:
         print(f"    Wind and current {'help' if factor > 0 else 'hinder'} this voyage: {factor:+.0%} on prices.")
     if delay:
         print("    Dead calm: the convoy waits a season in harbour before it can sail.")
-    print("    Nikandros: what shall the convoy do?  1) buy grain  2) sell wine & oil  3) sell goods")
-    kind = ask_int("    > ", 1, 3) or 1
+    kinds = {"buy_grain": 1, "sell_wine_oil": 2, "sell_goods": 3}
+    if o["cargo"] in kinds:
+        kind = kinds[o["cargo"]]
+    else:
+        print("    Nikandros: what shall the convoy do?  1) buy grain  2) sell wine & oil  3) sell goods")
+        kind = ask_int("    > ", 1, 3) or 1
     c = {"arrive": s["turn"] + 1 + delay, "grain": 0, "treasury": 0}
-    grain_price = round(GRAIN_PRICE * (1 - factor))
+    gp = round(GRAIN_PRICE * (1 - factor))
     if kind == 1:
-        most = int(s["treasury"] // grain_price)
+        most = min(int(s["treasury"] // gp), 12)
         if most < 1:
             notes.append("The convoy sails empty: no money to buy grain.")
         else:
-            m = ask_int(f"    Months of grain to buy at {grain_price} denarii each (1-{min(most, 12)}): ", 1, min(most, 12)) or 1
-            s["treasury"] -= m * grain_price
+            m = min(o["amount"], most) if o["amount"] else \
+                (ask_int(f"    Months of grain to buy at {gp} denarii each (1-{most}): ", 1, most) or 1)
+            s["treasury"] -= m * gp
             c["grain"] = m
-            notes.append(f"A convoy sails to buy {m} months of grain.")
+            notes.append(f"A convoy sails {'north' if north else 'south'} to buy {m} months of grain at {gp} denarii each.")
     else:
         key, price = ("wine_oil", WINE_OIL_PRICE) if kind == 2 else ("goods", GOODS_PRICE)
         price = round(price * (1 + factor))
@@ -367,10 +605,11 @@ def convoy(s, notes):
         if have < 1:
             notes.append(f"The convoy sails empty: no {RULES[key]['name'].lower()} to sell.")
         else:
-            q = ask_int(f"    How many to sell at {price} denarii each (1-{have}): ", 1, have) or have
+            q = min(o["amount"], have) if o["amount"] else \
+                (ask_int(f"    How many to sell at {price} denarii each (1-{have}): ", 1, have) or have)
             s[key] -= q
             c["treasury"] = q * price
-            notes.append(f"A convoy sails with {q} {RULES[key]['unit']} to sell.")
+            notes.append(f"A convoy sails {'north' if north else 'south'} with {q} {RULES[key]['unit']} to sell at {price} each.")
     s["convoys"].append(c)
 
 
@@ -540,7 +779,7 @@ def reveal_cards(s, notes):
             print("\n  Which card do you deal with first?")
             for i, c in enumerate(open_cards, 1):
                 print(f"    {i}) [{dict(DECKS)[c['deck']]}] {c['title']}")
-            i = ask_int("  > ", 1, len(open_cards)) or 1
+            i = ask_int("  Which first? > ", 1, len(open_cards)) or 1
         else:
             i = 1
         answer_card(s, open_cards.pop(i - 1), notes)
@@ -574,7 +813,7 @@ def log_turn(s, orders, event, notes):
         w = csv.writer(f)
         if new:
             w.writerow(["turn", "season", "year", "wind", "current", "decrees", "event", *NUMBERS, "tax_rate", "notes"])
-        w.writerow([s["turn"], season["season"], f"AD {year}", s["wind"], s["current"], " + ".join(d["id"] for d in orders), event,
+        w.writerow([s["turn"], season["season"], f"AD {year}", s["wind"], s["current"], " + ".join(o["id"] for o in orders), event,
                     *[fmt(n, s[n]).replace(",", "") for n in NUMBERS], s["tax"], " | ".join(notes)])
 
 
@@ -612,7 +851,7 @@ def main():
             print(f"\n  This season's cards are already played: {s['events']}")
         before = s["before"]
         council(s)
-        orders = choose_decrees(s)
+        orders = dialogue(s)
         if orders is None:
             save(s)
             print(f"\nSaved. Run again to continue. Log: {os.path.relpath(s['log'])}")

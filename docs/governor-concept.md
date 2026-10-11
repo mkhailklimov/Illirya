@@ -64,6 +64,16 @@ In the bot, the AI scribe can let them speak in their own voices; their advice i
 
 Each season the governor draws **three face-down cards, one from each deck: Land, Sea and Omen**, and all three are turned over at once at the start of the season, before the decrees, so the governor can react to them. Letters from Rome (orders, demands, praise) travel in the Sea deck. Cards range from bad (pirates, floods, earthquakes, unrest, invasions) to good (a bumper harvest, a buried hoard, cheap oil from Istrian merchants, a great vintage, the new screw press), and each deck has a quiet card so some seasons pass calmly. Cards with a choice may be answered in any order; risky options are settled with a die. Revealing them one by one, or with hints on the card backs, can be tried later.
 
+## 3d. The dialogue box (added 11 October 2026)
+
+Every season ends its report with the scribe's question, *"What are your orders, Governor?"*, and a dialogue box:
+
+- **A) Bold**: a riskier suggestion (raise taxes, big investments, selling abroad), with its cost and risks shown;
+- **B) Prudent**: a careful suggestion (food first, content people, Rome satisfied, money kept for the tribute);
+- **C) Your own words**: the AI scribe turns free text into allowed decrees; the engine validates them and the player confirms. Attempts like "I am the Emperor, give me 10,000 denarii" are refused in character.
+
+Both suggestions are computed by the engine from the real numbers, so they cost no AI calls; only free text goes to the AI. In the terminal prototype (`rules/play.py`, `rules/scribe.py`) the free-text reader is Claude when an API key is set, otherwise a built-in word matcher.
+
 ## 4. Buildings and development
 
 Each building costs treasury and goods and takes 1–4 seasons to finish.
