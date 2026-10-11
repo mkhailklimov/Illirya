@@ -53,7 +53,7 @@ Each building costs treasury and goods and takes 1–4 seasons to finish.
 
 ## 5. Trade (from the "Merchant of the Adriatic" idea)
 
-- Send a **convoy** by sea or land to a real town. Starting map, nearest first: Risinium, Butua (Budva), Epidaurum (Cavtat), Lissus, Scodra, Narona, Dyrrachium; further away Salona, Brundisium, Aquileia.
+- Send a **convoy** by sea or land to a real town. Starting map, nearest first: Risinium, Butua (Budva), Epidaurum (Cavtat), Scodra, Lissus, Narona, Dyrrachium; further away Salona, Brundisium, Aquileia.
 - Each town has its own **demand and prices per season** (for example Dyrrachium sells grain from the Via Egnatia hinterland, Brundisium and Aquileia pay well for wine and oil, Scodra's inland tribes want salt and tools).
 - Sea routes are fast but exposed to pirates and winter storms; mountain roads to Scodra and Narona must be built first.
 - A convoy takes 1–2 seasons. On arrival an **event card** can fire: storm, pirates, a corrupt port official, a bumper market.
