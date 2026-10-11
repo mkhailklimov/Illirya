@@ -1,0 +1,5 @@
+season,order,harvest_grain,terrace_bonus,sailing,tribute_due,notes
+Spring,1,1,1,yes,no,DRAFT. Sailing season opens; sowing. Good time to send convoys.
+Summer,2,4,1,yes,yes,DRAFT. Main grain harvest. Tribute to Rome is due. Drought risk.
+Autumn,3,3,1,yes,no,"DRAFT. Grape and olive harvest (wine_oil from mature groves). Last safe sailing."
+Winter,4,0,0,no,no,"DRAFT. Mare clausum: sea convoys only at high storm risk. Hunger risk if stores are low."

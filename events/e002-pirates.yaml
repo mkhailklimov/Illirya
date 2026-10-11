@@ -1,0 +1,24 @@
+id: e002-pirates
+title: Sails off Risinium
+category: raiders
+seasons: [Spring, Summer, Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.10
+once: false
+effects: {}
+choice:
+  prompt: Pirate ships shelter in the coves near Risinium and prey on the bay's shipping.
+  options:
+    - label: Send soldiers along the shore to drive them out
+      effects: {treasury: -200, army: -10, favour: 3}   # DRAFT
+    - label: Pay them to sail elsewhere
+      effects: {treasury: -400, favour: -3}             # DRAFT: Rome frowns on paying pirates
+    - label: Do nothing and keep the ships in harbour
+      effects: {goods: -5, wine_oil: -3, loyalty: -2}   # DRAFT: trade stops for a season
+scribe_hint: Fishermen whisper of light, fast ships with no banner; the merchants refuse to sail.
+historical_note: >-
+  Illyrian sea-raiding was what first drew Rome across the Adriatic: piracy
+  under Queen Teuta, whose stronghold tradition places at Rhizon (Risinium,
+  today's Risan), led to the First Illyrian War in 229 BC.
+source: "Polybius, Histories II.8–12; Wilkes, The Illyrians (1992) — check before publishing"

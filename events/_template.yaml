@@ -1,0 +1,20 @@
+# Copy this file to e0NN-short-name.yaml and fill it in. See README.md for the fields.
+id: e0NN-short-name
+title: ""
+category: nature          # rome | locals | nature | raiders | trade
+seasons: any              # any, or a list: [Spring, Summer]
+years: [30, 42]
+trigger: random           # random, or e.g. "loyalty < 30", "grain < 2", "army < 100"
+chance: 0.10              # per season while the trigger holds
+once: false
+effects: {}               # e.g. {grain: -2, loyalty: -3}
+# choice:                 # optional
+#   prompt: ""
+#   options:
+#     - label: ""
+#       effects: {}
+#     - label: ""
+#       effects: {}
+scribe_hint: ""
+historical_note: ""
+source: ""

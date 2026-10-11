@@ -1,0 +1,9 @@
+id,name,unit,min,max,start,lose_if,shown_as,notes
+grain,Grain,months of supply,0,24,6,0 for 2 seasons in a row,"6 months",DRAFT. Food stores for People and Army. A season eats 3 months.
+treasury,Treasury,denarii,0,,3000,,"3,000 denarii",DRAFT. Cannot go below 0: a decree you cannot pay for is refused.
+goods,Goods,units,0,,40,,"40",DRAFT. Tools cloth weapons pottery. Needed for building and arming soldiers.
+wine_oil,Wine & Oil,amphorae,0,,10,,"10 amphorae",DRAFT. Main export. Vineyards and olive groves take 8-12 seasons to produce.
+people,People,inhabitants,0,,4000,,"4,000",DRAFT. Acruvium was a small town; a few thousand is plausible.
+loyalty,Loyalty,0-100,0,100,55,0 and Army below 100,"55 / 100",DRAFT. Locals' content.
+favour,Roman favour,0-100,0,100,60,0,"60 / 100",DRAFT. The Emperor's opinion of the governor.
+army,Army,soldiers,0,,150,,"150",DRAFT. Local auxiliaries paid from the town treasury.

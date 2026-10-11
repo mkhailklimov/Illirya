@@ -1,0 +1,11 @@
+id,name,cost_treasury,cost_goods,seasons_to_finish,grain,treasury,goods,wine_oil,people,loyalty,favour,army,repeatable,notes
+raise_taxes,Raise taxes,0,0,0,,,,,,-6,+2,,yes,"DRAFT. Tax rate up one step (low > normal > high). Loyalty hit is every season at high rate, see formulas."
+lower_taxes,Lower taxes,0,0,0,,,,,,+4,-2,,yes,DRAFT. Tax rate down one step.
+recruit,Recruit 50 soldiers,250,10,1,,,,,-50,-3,+1,+50,yes,DRAFT. Recruits come from the people. Each soldier needs pay every season.
+dismiss,Dismiss 50 soldiers,0,0,0,,,,,+50,+1,-1,-50,yes,DRAFT. Saves pay; Rome likes a strong garrison.
+build_terraces,Build hillside terraces,600,10,2,,,,,,,,,yes,DRAFT. When finished: +1 grain-month every season (see seasons.csv for harvest).
+build_workshop,Build a workshop,500,5,2,,,,,,+2,,,yes,DRAFT. When finished: +6 goods every season. Smithy or weaving.
+plant_vines_olives,Plant vineyards and olive groves,400,5,8,,,,,,,,,yes,DRAFT. Slow: produces +4 wine_oil every season from the 8th season on.
+send_convoy,Send a trade convoy,100,0,1,,,,,,,,,yes,"DRAFT. Sell wine_oil and goods, or buy grain, in a chosen town (prices in a later towns file). Pirates and storms via event cards."
+hold_festival,Hold a festival,300,0,0,,,,,,+8,,,yes,DRAFT. Games or a temple feast. Loyalty bonus halves if held twice in a row.
+honour_rome,Send gifts to Rome,400,0,0,,,,,,,+8,,yes,DRAFT. On top of the regular tribute. Wine_oil can be sent instead of denarii (1 amphora = 50 denarii).

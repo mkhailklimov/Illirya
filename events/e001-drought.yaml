@@ -1,0 +1,17 @@
+id: e001-drought
+title: The springs run dry
+category: nature
+seasons: [Summer]
+years: [30, 42]
+trigger: random
+chance: 0.15
+once: false
+effects:
+  grain: -2               # DRAFT: the summer harvest fails by half
+  loyalty: -3
+scribe_hint: Dust on the terraces, the spring above the town a trickle; people queue at the cisterns.
+historical_note: >-
+  Roman towns kept grain in public storehouses (horrea) against bad years; in
+  a famine a governor had to buy grain overseas, much as Rome itself relied on
+  shipments from Egypt and Sicily.
+source: "Rickman, The Corn Supply of Ancient Rome (1980) — general background; check before publishing"
