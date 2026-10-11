@@ -1,5 +1,7 @@
 # Illyria: AD 30 roadmap
 
+Development plan with phases, demos and backlog to the 2030 launch: [docs/development-plan.md](docs/development-plan.md).
+
 ## Priority 1: next development
 
 ### 1. Game concept: "The Governor"
@@ -25,7 +27,7 @@ Full concept: [docs/governor-concept.md](docs/governor-concept.md) (core loop, c
 ### More cities to build and develop
 The game starts in Acruvium. As it grows, players will be able to found or take over other cities:
 - **Salona** (near Split): capital of Roman Dalmatia, the biggest prize.
-- **Epidaurum** (Cavtat): the AD 30 city on the Dubrovnik coast.
+- **Epidaurum** (Cavtat): the AD 30 city on the Dubrovnik coast. Chosen over Dubrovnik for historical realism.
 - **Dubrovnik (Ragusa):** founded around the 7th century by refugees from Epidaurum, so it belongs to a later era. It can appear when the game jumps forward in time, or as Epidaurum's "future" upgrade.
 - Others to consider: Risinium (Risan), Butua (Budva), Narona, Scodra, Dyrrachium.
 
