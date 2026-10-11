@@ -21,6 +21,15 @@ Full concept: [docs/governor-concept.md](docs/governor-concept.md) (core loop, c
 - **Change the lettering** to a style reminiscent of an *Abecedarium* (ancient carved and painted Roman letters). Candidates: **Caesar Dressing** (recommended) and **Marcellus**. The final pick is pending. It will replace Cinzel for titles, names and dates in the style guide and image sources.
 
 ## Later
+
+### More cities to build and develop
+The game starts in Acruvium. As it grows, players will be able to found or take over other cities:
+- **Salona** (near Split): capital of Roman Dalmatia, the biggest prize.
+- **Epidaurum** (Cavtat): the AD 30 city on the Dubrovnik coast.
+- **Dubrovnik (Ragusa):** founded around the 7th century by refugees from Epidaurum, so it belongs to a later era. It can appear when the game jumps forward in time, or as Epidaurum's "future" upgrade.
+- Others to consider: Risinium (Risan), Butua (Budva), Narona, Scodra, Dyrrachium.
+
+### Other later work
 - Telegram bot prototype of the governor game (single player, AI narration).
 - Website map, other cities and multiplayer trade.
 - Cosmetics and supporter membership as monetization.
