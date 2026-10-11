@@ -1,0 +1,24 @@
+id: e005-economist-salt
+title: Nikandros offers a salt deal
+category: council
+advisor: economist
+seasons: [Spring, Summer, Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.10
+once: false
+effects: {}
+choice:
+  prompt: >-
+    Nikandros has found salt pans down the coast. Inland tribes pay well for
+    salt. Fund his caravan and he promises tools and cloth in return.
+  options:
+    - label: Fund the caravan
+      effects: {treasury: -300, goods: 12}             # DRAFT
+    - label: Too risky
+      effects: {}
+scribe_hint: Nikandros smiles too much when he talks about profit; Felix the treasurer does not smile at all.
+historical_note: >-
+  Salt was precious in the Illyrian interior: Strabo tells of the Ardiaei and
+  Autariatae fighting over a salt spring on their border.
+source: "Strabo, Geography VII.5.11 — check before publishing"

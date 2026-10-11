@@ -39,6 +39,20 @@ Keep it to eight numbers the player can read at a glance:
 Rome wants tribute → you raise taxes → loyalty falls → unrest → you need more soldiers → soldiers cost money → you raise taxes again.
 The player breaks the cycle through growth: farms, workshops, wine and oil, and above all trade.
 
+## 3a. The council (added 11 October 2026)
+
+The governor is not alone. Five advisors speak every season, each watching part of the town, and each brings their own event cards and dilemmas. Names and voices are drafts in [rules/advisors.csv](../rules/advisors.csv).
+
+| Advisor | Role | Watches |
+|---|---|---|
+| **Epicadus the Liburnian** | Master of the fleet | Convoys, sailing season, pirates |
+| **Marcus Antistius** | Prefect of the auxiliaries (general) | Army, order |
+| **Nikandros of Epidaurum** | Adviser on trade (economics) | Grain, goods, wine & oil, trade |
+| **Felix** | Keeper of the treasury | Treasury, taxes, tribute |
+| **Tertius Volusius** | Haruspex (religious advisor) | Loyalty, Roman favour, omens |
+
+In the bot, the AI scribe can let them speak in their own voices; their advice is still based only on the real numbers.
+
 ## 4. Buildings and development
 
 Each building costs treasury and goods and takes 1–4 seasons to finish.

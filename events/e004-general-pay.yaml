@@ -1,0 +1,24 @@
+id: e004-general-pay
+title: The garrison wants its pay raised
+category: council
+advisor: general
+seasons: any
+years: [30, 42]
+trigger: "army >= 100"
+chance: 0.10
+once: false
+effects: {}
+choice:
+  prompt: >-
+    Marcus Antistius reports grumbling in the barracks: the men say their pay
+    is too low for the price of bread.
+  options:
+    - label: Pay a bonus
+      effects: {treasury: -300, loyalty: 1}            # DRAFT
+    - label: Remind them of their oath
+      effects: {army: -15, loyalty: -2}                # DRAFT: some desert, some take what they want
+scribe_hint: Antistius speaks quietly; he remembers the mutinies after Augustus died.
+historical_note: >-
+  When Augustus died in AD 14, the legions in Pannonia mutinied over pay and
+  service; the soldiers complained they were valued at ten asses a day.
+source: "Tacitus, Annals I.16–17 — check before publishing"

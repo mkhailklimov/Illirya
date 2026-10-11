@@ -1,0 +1,24 @@
+id: e003-fleet-liburna
+title: Epicadus wants a galley
+category: council
+advisor: fleet
+seasons: [Spring, Summer]
+years: [30, 42]
+trigger: random
+chance: 0.12
+once: true
+effects: {}
+choice:
+  prompt: >-
+    Epicadus, master of the fleet, asks for a liburna of our own: a fast
+    galley to escort convoys and chase pirates out of the bay.
+  options:
+    - label: Build the galley
+      effects: {treasury: -500, goods: -10, favour: 2, loyalty: 1}   # DRAFT
+    - label: Not this year
+      effects: {loyalty: -1}                                          # DRAFT: the sailors grumble
+scribe_hint: Epicadus draws the hull in the sand with his staff; the shipwrights are already measuring timber.
+historical_note: >-
+  The liburna, a light, fast galley, was a Liburnian design that Rome adopted;
+  Octavian's liburnae helped win the battle of Actium in 31 BC.
+source: "Appian, Illyrian Wars 3; Vegetius IV.33 — check before publishing"

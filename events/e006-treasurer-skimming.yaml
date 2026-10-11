@@ -1,0 +1,24 @@
+id: e006-treasurer-skimming
+title: Felix finds missing denarii
+category: council
+advisor: treasurer
+seasons: any
+years: [30, 42]
+trigger: "treasury >= 1000"
+chance: 0.10
+once: false
+effects: {}
+choice:
+  prompt: >-
+    Felix has checked the harbour accounts twice: the customs collector has
+    been keeping part of the dues for himself.
+  options:
+    - label: Punish him publicly and recover the money
+      effects: {treasury: 400, loyalty: -2, favour: 2}  # DRAFT: his family is well liked
+    - label: Quietly take the money back
+      effects: {treasury: 250}                          # DRAFT
+scribe_hint: Felix lays two wax tablets side by side; the numbers do not agree.
+historical_note: >-
+  Customs dues (portoria) at Roman harbours and frontiers were usually farmed
+  out to private contractors, the publicani, whose greed was notorious.
+source: "General background on portoria and publicani — check before publishing"

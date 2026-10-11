@@ -1,0 +1,25 @@
+id: e007-priest-omens
+title: The haruspex reads a dark omen
+category: council
+advisor: priest
+seasons: any
+years: [30, 42]
+trigger: "loyalty < 50"
+chance: 0.15
+once: false
+effects: {}
+choice:
+  prompt: >-
+    Tertius Volusius found the sacrificed liver malformed. The people whisper
+    that the gods are angry with the governor.
+  options:
+    - label: Order a public sacrifice and feast
+      effects: {treasury: -150, loyalty: 4}            # DRAFT
+    - label: Dismiss it as superstition
+      effects: {loyalty: -3, favour: -1}               # DRAFT
+scribe_hint: Smoke hangs over the altar; a crowd watches the haruspex in silence.
+historical_note: >-
+  Haruspices read the will of the gods in the livers of sacrificed animals, a
+  craft Rome learned from the Etruscans; a bronze model liver from Piacenza
+  shows how the organ was mapped to the gods.
+source: "The Liver of Piacenza (Museo Civico, Piacenza) — check before publishing"
