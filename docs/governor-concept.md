@@ -6,12 +6,14 @@ Status: draft concept, 11 October 2026. **Priority 1** for the next development 
 
 ## 1. Pitch
 
-**AD 30. Tiberius sends you from Rome to govern Salona, capital of Dalmatia.** Feed the people, build workshops, roads and ships, trade across the Adriatic and keep both Rome and the locals content. Every season the AI game master reports what happened and you issue decrees. Over twelve years your aim is to make Illyria so prosperous and well run that it earns real self-government.
+**AD 30. Tiberius sends you from Rome to govern Acruvium (today's Kotor), a small harbour town deep in the Bay of Kotor, in the province of Dalmatia.** Feed the people, build workshops, roads and ships, trade across the Adriatic and keep both Rome and the locals content. Every season the AI game master reports what happened and you issue decrees. Over twelve years your aim is to turn this modest town into the heart of a prosperous, self-governing Illyria.
+
+**Why Acruvium:** a sheltered bay ringed by mountains makes a great starting puzzle. Farmland is scarce, so grain must be won from the hillsides or imported. The sea is your road, and pirates know these waters: nearby Risinium (Risan) was once the stronghold of the Illyrian queen Teuta. Overland roads through the mountains are costly but open the interior. More cities can be added later.
 
 ## 2. Core loop (one turn = one season)
 
 1. **The report.** The AI, playing your scribe, sends a short dispatch: harvest, treasury, rumours, letters from Rome, a new event.
-2. **The decrees.** You choose up to **3 decrees**, either from buttons or in your own words ("raise the wine tax and send 200 soldiers to guard the road to Narona").
+2. **The decrees.** You choose up to **3 decrees**, either from buttons or in your own words ("raise the wine tax and send 200 soldiers to guard the road to Scodra").
 3. **Resolution.** The game engine applies the decrees with simple formulas, then rolls for events.
 4. **The story.** The AI narrates the outcome in 4–6 sentences, adds a one-line historical note, and the next season begins.
 
@@ -24,7 +26,7 @@ Keep it to eight numbers the player can read at a glance:
 
 | Number | What it means | Main ways it rises / falls |
 |---|---|---|
-| **Grain** | Food stores, in months of supply | Farmland, imports / population, drought, army |
+| **Grain** | Food stores, in months of supply | Terraced farmland, fishing, imports / population, drought, army |
 | **Treasury** (denarii) | Money | Taxes, trade / tribute, army pay, building |
 | **Goods** | Tools, cloth, weapons, pottery | Workshops, weaving / building, army, export |
 | **Wine & Oil** | Prime trade goods | Vineyards, olive groves (slow to grow) / trade |
@@ -41,7 +43,7 @@ The player breaks the cycle through growth: farms, workshops, wine and oil, and 
 
 Each building costs treasury and goods and takes 1–4 seasons to finish.
 
-- **Farmland and estates:** more grain; drought-sensitive.
+- **Terraces, farmland and fisheries:** more food; terraces are slow to build on the steep bay shores, drought hits them hard.
 - **Smithy and armourer:** tools (they boost every other building) and weapons (cheaper army).
 - **Spinning and weaving workshops:** cloth for the people (loyalty) and for export.
 - **Vineyards and olive groves:** take 2–3 game years to mature, then become the most profitable exports.
@@ -51,11 +53,12 @@ Each building costs treasury and goods and takes 1–4 seasons to finish.
 
 ## 5. Trade (from the "Merchant of the Adriatic" idea)
 
-- Send a **convoy** by sea or land to a real town: Aquileia, Ravenna, Brundisium, Narona, Dyrrachium, Siscia, Sirmium.
-- Each town has its own **demand and prices per season** (for example Aquileia pays well for wine, the Danube legions buy grain and weapons).
+- Send a **convoy** by sea or land to a real town. Starting map, nearest first: Risinium, Butua (Budva), Epidaurum (Cavtat), Lissus, Scodra, Narona, Dyrrachium; further away Salona, Brundisium, Aquileia.
+- Each town has its own **demand and prices per season** (for example Dyrrachium sells grain from the Via Egnatia hinterland, Brundisium and Aquileia pay well for wine and oil, Scodra's inland tribes want salt and tools).
+- Sea routes are fast but exposed to pirates and winter storms; mountain roads to Scodra and Narona must be built first.
 - A convoy takes 1–2 seasons. On arrival an **event card** can fire: storm, pirates, a corrupt port official, a bumper market.
 - Unlocking new towns and routes gradually fills the map, so the player learns real geography.
-- Later multiplayer layer: other players govern other cities (Narona, Siscia, Dyrrachium) and can trade, ally or compete; a shared leaderboard shows the most prosperous province.
+- Later multiplayer layer: other players govern other cities (Risinium, Epidaurum, Scodra, Narona, Dyrrachium) and can trade, ally or compete; a shared leaderboard shows the most prosperous province.
 
 ## 6. Events
 
@@ -74,7 +77,7 @@ Each building costs treasury and goods and takes 1–4 seasons to finish.
 
 > **A gentle history note:** Bulgars (around the 7th century) and Huns (late 4th century) arrive centuries after AD 30, so a history-loving audience would notice. I suggest using them later, in an expansion that jumps forward in time, and the groups above for the main game.
 
-**Signature historical event, AD 42:** Furius Camillus Scribonianus, the real governor of Dalmatia, rose against Emperor Claudius; his legions abandoned him within days. In the game this is the **climax**: the player is invited to join the revolt. With high loyalty, army and treasury the player can attempt independence; otherwise it is a trap.
+**Signature historical event, AD 42:** Furius Camillus Scribonianus, the real governor of the whole province of Dalmatia, rose against Emperor Claudius from his seat at Salona; his legions abandoned him within days. In the game this is the **climax**: his envoys sail into the Bay of Kotor and invite the player to join the revolt. With high loyalty, army and treasury the player can attempt independence; otherwise it is a trap.
 
 ## 7. Winning and losing
 
@@ -85,7 +88,7 @@ Each building costs treasury and goods and takes 1–4 seasons to finish.
 
 **Endings in AD 42 (players can replay for a different one):**
 - **Free Illyria:** you back the uprising with strong loyalty, army and treasury and win autonomy. This is an "alternative history" ending, clearly labelled as such.
-- **Pride of the Empire:** Salona becomes a model province. You get a triumph in Rome and Roman citizenship for your people (closest to real history).
+- **Pride of the Empire:** Acruvium becomes a model town of the Empire. You get a triumph in Rome and Roman citizenship for your people (closest to real history).
 - **The quiet governor:** you survive, but nothing special happens.
 - **Recalled / overthrown.**
 
@@ -110,8 +113,9 @@ Why this suits a solo hobbyist:
 ## 9. Draft system prompt for the AI game master
 
 ```text
-You are the Scribe of the Governor of Salona, Roman province of Dalmatia,
-in the reign of Emperor Tiberius, AD 30. You serve the player, who is
+You are the Scribe of the Governor of Acruvium, a harbour town in the
+Bay of Kotor, Roman province of Dalmatia, in the reign of Emperor
+Tiberius, AD 30. You serve the player, who is
 the Governor sent from Rome.
 
 YOUR ROLE

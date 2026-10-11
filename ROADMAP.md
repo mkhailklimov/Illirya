@@ -3,7 +3,7 @@
 ## Priority 1: next development
 
 ### 1. Game concept: "The Governor"
-The game is an AI game master. The player is a governor sent from Rome by Emperor Tiberius in AD 30 to develop the city of Salona:
+The game is an AI game master. The player is a governor sent from Rome by Emperor Tiberius in AD 30 to develop the harbour town of Acruvium (today's Kotor). More cities can be added later. The tasks:
 - surround it with farmland to prevent famine;
 - develop crafts for household goods and military equipment;
 - set up spinning and weaving workshops for clothing;
