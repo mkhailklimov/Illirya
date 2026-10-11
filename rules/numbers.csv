@@ -7,3 +7,4 @@ people,People,inhabitants,0,,4000,,"4,000",DRAFT. Acruvium was a small town; a f
 loyalty,Loyalty,0-100,0,100,55,0 and Army below 100,"55 / 100",DRAFT. Locals' content.
 favour,Roman favour,0-100,0,100,60,0,"60 / 100",DRAFT. The Emperor's opinion of the governor.
 army,Army,soldiers,0,,150,,"150",DRAFT. Local auxiliaries paid from the town treasury.
+ships,Ships,ships,0,,2,,"2 ships",DRAFT. Merchant ships. A convoy needs a free ship; a harbour has berths for 3. Pirates and storms can sink them.

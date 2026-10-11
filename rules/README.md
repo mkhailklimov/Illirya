@@ -13,6 +13,7 @@ The game's numbers live here, not in code. The bot (Phase 1) will read these fil
 | [playtest-log.md](playtest-log.md) | 0.6 | 12 turns played by hand, with the numbers after each turn |
 | [advisors.csv](advisors.csv) | 0.7 | The governor's council: five advisors with names, roles and voices |
 | [winds.csv](winds.csv) | 0.5 | The six winds: effect on harvest and on sailing, and how often each blows per season |
+| [buildings.csv](buildings.csv) | 0.4 | Every building: town or field plot, cost, build time, limit and what it gives each season |
 | [play.py](play.py) | 0.6 | Plays the game in the terminal using all of the above |
 | [scribe.py](scribe.py) | 1.7 (early) | Reads the governor's own words: Claude when available, otherwise a built-in word matcher |
 

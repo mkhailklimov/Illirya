@@ -40,9 +40,9 @@ TRIBUTE_MISSED_FAVOUR = -20
 TRIBUTE_DEBT_PENALTY = 1.5   # unpaid tribute carries over with 50% added
 GRAIN_EATEN = 3              # months of supply eaten per season
 GRAIN_BASE_EATERS = 4000     # harvest_grain in seasons.csv is for this many eaters
-WORKSHOP_GOODS = 6
-GROVE_WINE_OIL = 4           # per season once mature, x2 in Autumn
-GROVE_MATURE = 8             # seasons after planting
+# City and fields (buildings.csv; formulas.md "The city and its fields")
+TOWN_PLOTS, FIELD_PLOTS = 12, 12   # plots inside the walls (incl. harbour and walls) and around the bay
+BASE_WHEAT = 4               # seasons.csv harvest_grain is what these 4 starting wheat terraces give
 ARMY_GOODS_PER = 50          # 1 goods per 50 soldiers per season
 GRAIN_PRICE = 500            # denarii per month of supply bought by convoy
 WINE_OIL_PRICE = 60          # denarii per amphora sold by convoy
@@ -57,8 +57,7 @@ CURRENT_DIE = 6              # d6 each season: 1 slack, 2-5 running, 6 strong
 SAIL_STEP, SAIL_CAP = 0.10, 0.30   # convoy price change per point of sailing advantage, and its limit
 ROLL_BONUS_CAP = 5           # most a number can add to a die roll
 
-NUMBERS = ["grain", "treasury", "goods", "wine_oil", "people", "loyalty", "favour", "army"]
-BUILDINGS = {"build_terraces": "terraces", "build_workshop": "workshops", "plant_vines_olives": "groves"}
+NUMBERS = ["grain", "treasury", "goods", "wine_oil", "people", "loyalty", "favour", "army", "ships"]
 
 
 # --- Loading the rules -------------------------------------------------------
@@ -78,6 +77,9 @@ DECREE = {d["id"]: d for d in DECREES}
 SEASONS = sorted(read_csv("seasons.csv"), key=lambda r: int(r["order"]))
 ADVISORS = {r["id"]: r for r in read_csv("advisors.csv")}
 WINDS = {r["id"]: r for r in read_csv("winds.csv")}
+BUILDING_LIST = read_csv("buildings.csv")
+BLD = {b["id"]: b for b in BUILDING_LIST}
+OLD_KINDS = {"terraces": "wheat", "workshops": "workshop", "groves": "vineyard"}  # saves from before 11 Oct
 CARDS = []
 for path in sorted(glob.glob(os.path.join(EVENTS, "*.yaml"))):
     if os.path.basename(path).startswith("_"):
@@ -87,11 +89,34 @@ for path in sorted(glob.glob(os.path.join(EVENTS, "*.yaml"))):
 
 
 # --- Game state ----------------------------------------------------------------
+def start_buildings():
+    return [{"kind": b["id"], "done": 0} for b in BUILDING_LIST for _ in range(int(num(b["start"])))]
+
+
 def new_game():
     s = {n: num(RULES[n]["start"]) for n in NUMBERS}
-    s.update(turn=1, tax="normal", buildings=[], convoys=[], tribute_debt=0, wind="E", current=1, weather_turn=0,
+    s.update(turn=1, tax="normal", buildings=start_buildings(), shipyard=[], convoys=[], tribute_debt=0,
+             wind="E", current=1, weather_turn=0,
              hunger_streak=0, last_festival=-9, once_fired=[], over=None,
              log=os.path.join(RUNS, datetime.datetime.now().strftime("run-%Y-%m-%d_%H%M.csv")))
+    return s
+
+
+def upgrade_save(s):
+    """Bring a save from before the city plots (11 Oct 2026) up to date."""
+    for b in s.get("buildings", []):
+        b["kind"] = OLD_KINDS.get(b["kind"], b["kind"])
+    if not any(b["kind"] == "forum" for b in s["buildings"]):
+        have = {k: sum(1 for b in s["buildings"] if b["kind"] == k) for k in BLD}
+        for b in start_buildings():
+            if have.get(b["kind"], 0) > 0:
+                have[b["kind"]] -= 1
+            else:
+                s["buildings"].append(b)
+    s.setdefault("ships", num(RULES["ships"]["start"]))
+    s.setdefault("shipyard", [])
+    for c in s.get("convoys", []):
+        c.setdefault("ship", 1)
     return s
 
 
@@ -104,8 +129,35 @@ def fmt(n, v):
 
 
 def built(s, kind, turn=None):
+    """Finished buildings of one kind."""
     turn = s["turn"] if turn is None else turn
     return sum(1 for b in s["buildings"] if b["kind"] == kind and turn >= b["done"])
+
+
+def stat(s, field):
+    """Sum of one column of buildings.csv over all finished buildings."""
+    return sum(num(BLD[b["kind"]][field]) for b in s["buildings"] if s["turn"] >= b["done"])
+
+
+def plots_used(s, zone):
+    """Plots taken in a zone, counting buildings still under construction."""
+    return sum(1 for b in s["buildings"] if BLD[b["kind"]]["zone"] == zone)
+
+
+def zone_plots(zone):
+    return TOWN_PLOTS if zone == "town" else FIELD_PLOTS
+
+
+def ships_at_sea(s):
+    return sum(c.get("ship", 1) for c in s["convoys"])
+
+
+def berths(s):
+    return int(stat(s, "ships_cap"))
+
+
+def housing(s):
+    return int(stat(s, "housing"))
 
 
 # --- Dice and weather -----------------------------------------------------------
@@ -130,11 +182,26 @@ def roll(die, bonus=0, target=None, why=""):
 
 
 def roll_bonus(s, expr):
-    """'army / 50' -> army // 50, '2' -> 2. Capped at ROLL_BONUS_CAP."""
-    expr = str(expr or "0").replace(" ", "")
-    m = re.fullmatch(r"(\w+)/(\d+)", expr)
-    b = int(s.get(m.group(1), 0) // int(m.group(2))) if m else int(float(expr or 0))
-    return max(-ROLL_BONUS_CAP, min(ROLL_BONUS_CAP, b))
+    """Bonus to a die roll, e.g. 'army / 50 + battle_bonus' or '2'. A name is a number of
+    the town (army, loyalty...) or a column of buildings.csv summed over finished
+    buildings (battle_bonus). Capped at ROLL_BONUS_CAP."""
+    total = 0
+    for term in str(expr or "0").replace(" ", "").split("+"):
+        m = re.fullmatch(r"(\w+)(?:([/*])(\d+))?", term)
+        if not m:
+            continue
+        name, op, k = m.group(1), m.group(2), m.group(3)
+        if re.fullmatch(r"-?\d+", name):
+            v = int(name)
+        elif name in s and isinstance(s[name], (int, float)):
+            v = s[name]
+        elif BUILDING_LIST and name in BUILDING_LIST[0]:
+            v = stat(s, name)
+        else:
+            v = 0
+        v = v // int(k) if op == "/" else v * int(k) if op == "*" else v
+        total += int(v)
+    return max(-ROLL_BONUS_CAP, min(ROLL_BONUS_CAP, total))
 
 
 def roll_weather(s):
@@ -178,6 +245,29 @@ def sailing(s, north):
 
 
 # --- Screens -------------------------------------------------------------------
+def city_cells(s, zone):
+    cells = []
+    for b in sorted((b for b in s["buildings"] if BLD[b["kind"]]["zone"] == zone),
+                    key=lambda b: (b["done"] > s["turn"], list(BLD).index(b["kind"]))):
+        name = BLD[b["kind"]]["short"]
+        if b["done"] > s["turn"]:
+            name = f"{name[:4]}({b['done'] - s['turn']})"   # under construction: seasons left
+        cells.append(f"[{name:^7}]")
+    return cells + ["[   .   ]"] * (zone_plots(zone) - len(cells))
+
+
+def show_city(s):
+    town, fields = city_cells(s, "town"), city_cells(s, "field")
+    print(f"\n  {'ACRVVIVM, inside the walls':<30}   FIELDS AROUND THE BAY")
+    town_used = f"{plots_used(s, 'town')}/{TOWN_PLOTS} plots"
+    print(f"  {town_used:<30}   {plots_used(s, 'field')}/{FIELD_PLOTS} plots")
+    for r in range(4):
+        print(f"  {''.join(town[r * 3:r * 3 + 3]):<30}   {''.join(fields[r * 3:r * 3 + 3])}")
+    free = max(0, int(s["ships"]) - ships_at_sea(s))
+    print(f"  Houses for {housing(s):,} people; {int(s['ships'])} ships ({free} in harbour, "
+          f"berths for {berths(s)}). (n) = seasons until finished")
+
+
 def show_status(s):
     season, year = season_of(s["turn"])
     print("\n" + "=" * 64)
@@ -185,15 +275,11 @@ def show_status(s):
     print("=" * 64)
     for n in NUMBERS:
         print(f"  {RULES[n]['name']:<13} {fmt(n, s[n]):>9}   {RULES[n]['unit']}")
-    in_progress = [b for b in s["buildings"] if b["done"] > s["turn"]]
-    done = {k: built(s, k) for k in ("terraces", "workshops")}
-    groves = [b for b in s["buildings"] if b["kind"] == "groves"]
-    print(f"  Built: {done['terraces']} terraces, {done['workshops']} workshops, "
-          f"{len(groves)} groves ({sum(1 for g in groves if s['turn'] >= g['done'])} mature)")
-    for b in in_progress:
-        print(f"  ... {b['kind']} ready in turn {b['done']}")
+    show_city(s)
     for c in s["convoys"]:
-        print(f"  ... convoy returns in turn {c['arrive']}")
+        print(f"  ... a ship is at sea with a convoy, back in turn {c['arrive']}")
+    for t in s["shipyard"]:
+        print(f"  ... a new ship is on the slipway, ready in turn {t}")
     if s["tribute_debt"]:
         print(f"  Unpaid tribute owed to Rome: {int(s['tribute_debt']):,} denarii")
     show_compass(s)
@@ -215,7 +301,7 @@ def council(s):
     if s["grain"] < 3:
         say["economist"] = f"Only {s['grain']:.1f} months of grain left. Buy grain by convoy or the people will starve."
     elif s["grain"] < 6:
-        say["economist"] = "Our fields feed us only 8 months a year. Terraces or bought grain, Governor, or we go short."
+        say["economist"] = "Our fields feed us only 8 months a year. More wheat terraces, a fishery or bought grain, Governor, or we go short."
     elif s["wine_oil"] >= 10 and season["sailing"] == "yes":
         say["economist"] = f"{int(s['wine_oil'])} amphorae wait in the stores. Brundisium pays well for wine and oil."
     elif mult != 1 and num(season["harvest_grain"]) > 0:
@@ -275,23 +361,36 @@ def effects_of(d):
     return {n: num(d.get(n)) for n in NUMBERS if (d.get(n) or "").strip()}
 
 
-def order(did, direction="none", cargo="none", amount=0):
-    return {"id": did, "direction": direction, "cargo": cargo, "amount": int(amount or 0)}
+def order(did, direction="none", cargo="none", amount=0, building="none"):
+    return {"id": did, "direction": direction, "cargo": cargo, "amount": int(amount or 0), "building": building}
+
+
+def cost_of(o):
+    """Denarii and goods an order costs when it is sealed (grain bought by convoy not included)."""
+    if o["id"] == "build" and o.get("building") in BLD:
+        b = BLD[o["building"]]
+        return num(b["cost_treasury"]), num(b["cost_goods"])
+    d = DECREE[o["id"]]
+    return num(d["cost_treasury"]), num(d["cost_goods"])
 
 
 def grain_price(s, direction):
     factor, _ = sailing(s, direction == "north")
-    return round(GRAIN_PRICE * (1 - factor))
+    return round(GRAIN_PRICE * (1 - factor - stat(s, "trade_bonus")))
 
 
 def describe(s, o):
     """One line in plain words for an order."""
     d = DECREE[o["id"]]
+    if o["id"] == "build":
+        b = BLD.get(o.get("building"))
+        return f"Build {b['name'].lower()}" if b else "Build (what?)"
     if o["id"] != "send_convoy":
         return d["name"]
     where = {"north": "north up the coast", "south": "south"}.get(o["direction"], "")
     if o["cargo"] == "buy_grain":
-        what = f"to buy {o['amount']} months of grain" if o["amount"] else "to buy grain"
+        what = (f"to buy {o['amount']} month{'s' if o['amount'] != 1 else ''} of grain" if o["amount"]
+                else "to buy grain")
     elif o["cargo"] == "sell_wine_oil":
         what = f"to sell {o['amount']} amphorae of wine and oil" if o["amount"] else "to sell wine and oil"
     elif o["cargo"] == "sell_goods":
@@ -306,7 +405,10 @@ def validate(s, orders):
     season, _ = season_of(s["turn"])
     treasury, goods, tax = s["treasury"], s["goods"], s["tax"]
     accepted, problems, seen = [], [], set()
+    new_plots = {"town": 0, "field": 0}
+    new_kinds, new_ships, convoys = {}, 0, 0
     for o in orders[:3]:
+        o.setdefault("building", "none")
         d = DECREE.get(o["id"])
         if not d:
             problems.append(f"'{o['id']}' is not a decree of this province.")
@@ -314,10 +416,30 @@ def validate(s, orders):
         if o["id"] in seen and o["id"] in ("raise_taxes", "lower_taxes", "send_convoy", "hold_festival"):
             problems.append(f"'{d['name']}' only once a season.")
             continue
-        c, g = num(d["cost_treasury"]), num(d["cost_goods"])
+        c, g = cost_of(o)
+        if o["id"] == "build":
+            b = BLD.get(o["building"])
+            if not b:
+                problems.append("The architect asks: build what? (see the list of buildings)")
+                continue
+            zone = b["zone"]
+            if plots_used(s, zone) + new_plots[zone] >= zone_plots(zone):
+                problems.append(f"No free plot {'inside the walls' if zone == 'town' else 'in the fields'} for {b['name'].lower()}.")
+                continue
+            have = sum(1 for x in s["buildings"] if x["kind"] == b["id"]) + new_kinds.get(b["id"], 0)
+            if have >= int(num(b["max"], 99)):
+                problems.append(f"Acruvium already has as many {b['name'].lower()} as it can hold ({int(num(b['max']))}).")
+                continue
+        if o["id"] == "build_ship":
+            if int(s["ships"]) + len(s["shipyard"]) + new_ships >= berths(s):
+                problems.append(f"Epicadus: no free berth for another ship (berths for {berths(s)}); build a second harbour first.")
+                continue
         if o["id"] == "send_convoy":
             if season["sailing"] == "no":
                 problems.append("Epicadus refuses: no convoys in winter (mare clausum).")
+                continue
+            if int(s["ships"]) - ships_at_sea(s) - convoys < 1:
+                problems.append("Epicadus: every ship is at sea or lost; there is none to send.")
                 continue
             if o["cargo"] == "buy_grain" and o["amount"] and o["direction"] in ("north", "south"):
                 c += o["amount"] * grain_price(s, o["direction"])
@@ -340,6 +462,11 @@ def validate(s, orders):
             continue
         treasury -= c
         goods -= g
+        if o["id"] == "build":
+            new_plots[BLD[o["building"]]["zone"]] += 1
+            new_kinds[o["building"]] = new_kinds.get(o["building"], 0) + 1
+        new_ships += o["id"] == "build_ship"
+        convoys += o["id"] == "send_convoy"
         accepted.append(o)
         seen.add(o["id"])
     return accepted, problems
@@ -350,8 +477,9 @@ def preview(s, orders):
     cost, goods, loyalty, favour, extra = 0, 0, 0, 0, []
     for o in orders:
         d = DECREE[o["id"]]
-        cost += num(d["cost_treasury"])
-        goods += num(d["cost_goods"])
+        c, g = cost_of(o)
+        cost += c
+        goods += g
         eff = effects_of(d)
         loyalty += eff.get("loyalty", 0)
         favour += eff.get("favour", 0)
@@ -365,9 +493,11 @@ def preview(s, orders):
                 extra.append(f"wind and current {factor:+.0%} on convoy prices")
             if delay:
                 extra.append("dead calm: the convoy waits a season")
-        if o["id"] in BUILDINGS:
-            extra.append(f"{BUILDINGS[o['id']]} pay off in "
-                         f"{GROVE_MATURE if o['id'] == 'plant_vines_olives' else int(num(d['seasons_to_finish']))} seasons")
+        if o["id"] == "build" and o["building"] in BLD:
+            b = BLD[o["building"]]
+            extra.append(f"{b['short'].lower()} ready in {int(num(b['seasons_to_build']))} seasons")
+        if o["id"] == "build_ship":
+            extra.append("ship ready next season")
     parts = [f"costs {int(cost):,} denarii" + (f", {int(goods)} goods" if goods else "")]
     if loyalty:
         parts.append(f"loyalty {loyalty:+g}")
@@ -400,6 +530,9 @@ def suggest(s):
                 chosen.append(o)
         return chosen
 
+    def b(kind):
+        return order("build", building=kind)
+
     # prudent: food first, then content people, then Rome; spend little before a hard tribute
     prudent = []
     if s["grain"] < 4.5:
@@ -407,13 +540,15 @@ def suggest(s):
             gp = grain_price(s, best)
             months = max(1, min(3, int((s["treasury"] * .5) // gp)))
             prudent.append(order("send_convoy", best, "buy_grain", months))
-        prudent.append(order("build_terraces"))
+        prudent += [b("fishery"), b("wheat")]
+    if s["people"] > housing(s) * 0.95:
+        prudent.append(b("houses"))
     if s["loyalty"] < 45:
         prudent.append(order("hold_festival") if s["last_festival"] != s["turn"] - 1 else order("lower_taxes"))
     if s["favour"] < 45 and not tribute_short:
         prudent.append(order("honour_rome"))
     if not tribute_short:
-        prudent += [order("build_terraces"), order("build_workshop")]
+        prudent += [b("wheat"), b("workshop"), b("temple")]
     prudent = build(prudent)[:2] if tribute_short else build(prudent)
 
     # bold: squeeze harder and invest bigger; sell abroad even with pirates about
@@ -424,7 +559,9 @@ def suggest(s):
         bold.append(order("recruit"))
     if can_sail and s["wine_oil"] >= 6:
         bold.append(order("send_convoy", best, "sell_wine_oil", int(s["wine_oil"])))
-    bold += [order("plant_vines_olives"), order("build_workshop"), order("recruit")]
+    if int(s["ships"]) - ships_at_sea(s) < 1:
+        bold.append(order("build_ship"))
+    bold += [b("vineyard"), b("market"), b("workshop"), order("recruit")]
     bold = build(bold)
     return bold, prudent
 
@@ -453,7 +590,9 @@ def world_state(s):
             "wind": f"{w['latin']} ({w['from']})", "current": CURRENT_TEXT[s["current"]],
             "sailing_season": season["sailing"] == "yes",
             **{RULES[n]["name"]: (round(s[n], 1) if n == "grain" else int(s[n])) for n in NUMBERS},
-            "buildings": {k: built(s, k) for k in ("terraces", "workshops", "groves")}}
+            "buildings": {BLD[k]["name"]: built(s, k) for k in BLD if built(s, k)},
+            "free_plots": {"town": TOWN_PLOTS - plots_used(s, "town"), "fields": FIELD_PLOTS - plots_used(s, "field")},
+            "ships_in_harbour": int(s["ships"]) - ships_at_sea(s)}
 
 
 def show_orders(s, orders, indent="     "):
@@ -533,6 +672,9 @@ def choose_decrees(s):
             print("    Up to 3 numbers from the list, separated by spaces.")
             continue
         orders = [order(DECREES[int(p) - 1]["id"]) for p in picks]
+        for o in orders:
+            if o["id"] == "build":
+                o["building"] = choose_building(s)
         accepted, problems = validate(s, orders)
         for pr in problems:
             print(f"    {pr}")
@@ -540,11 +682,26 @@ def choose_decrees(s):
             return accepted
 
 
+def choose_building(s):
+    print("    The architect: what shall we build?")
+    for i, b in enumerate(BUILDING_LIST, 1):
+        if b["id"] == "forum":
+            continue
+        where = "town" if b["zone"] == "town" else "field"
+        goods = int(num(b["cost_goods"]))
+        cost = f"{int(num(b['cost_treasury'])):>5} den" + (f", {goods} goods" if goods else "")
+        about = b["notes"].replace("DRAFT. ", "")[:60]
+        print(f"     {i:>2}. {b['name']:<28} {where:<5} {cost}, {int(num(b['seasons_to_build']))} seasons. {about}")
+    i = ask_int("    > ", 1, len(BUILDING_LIST))
+    return BUILDING_LIST[i - 1]["id"] if i else "none"
+
+
 def apply_decrees(s, orders, notes):
     for o in orders:
         d = DECREE[o["id"]]
-        s["treasury"] -= num(d["cost_treasury"])
-        s["goods"] -= num(d["cost_goods"])
+        c, g = cost_of(o)
+        s["treasury"] -= c
+        s["goods"] -= g
         eff = effects_of(d)
         if d["id"] == "raise_taxes":
             s["tax"] = TAX_STEPS[TAX_STEPS.index(s["tax"]) + 1]
@@ -555,11 +712,14 @@ def apply_decrees(s, orders, notes):
                 eff["loyalty"] = eff.get("loyalty", 0) / 2
                 notes.append("A second festival in a row pleases the people less.")
             s["last_festival"] = s["turn"]
-        elif d["id"] in BUILDINGS:
-            kind = BUILDINGS[d["id"]]
-            wait = GROVE_MATURE if kind == "groves" else int(num(d["seasons_to_finish"]))
-            s["buildings"].append({"kind": kind, "done": s["turn"] + wait})
-            notes.append(f"Work begins on {kind}; ready in turn {s['turn'] + wait}.")
+        elif d["id"] == "build":
+            b = BLD[o["building"]]
+            wait = int(num(b["seasons_to_build"]))
+            s["buildings"].append({"kind": b["id"], "done": s["turn"] + wait})
+            notes.append(f"Work begins on {b['name'].lower()}; ready in turn {s['turn'] + wait}.")
+        elif d["id"] == "build_ship":
+            s["shipyard"].append(s["turn"] + int(num(d["seasons_to_finish"], 1)))
+            notes.append("A new ship is laid down on the slipway.")
         elif d["id"] == "send_convoy":
             convoy(s, notes, o)
         for n, v in eff.items():
@@ -576,8 +736,9 @@ def convoy(s, notes, o=None):
         print("    Epicadus: which way?  1) north up the coast (Narona, Salona, Aquileia)  2) south (Dyrrachium, Brundisium)")
         north = (ask_int("    > ", 1, 2) or 1) == 1
     factor, delay = sailing(s, north)
+    factor += stat(s, "trade_bonus")
     if factor:
-        print(f"    Wind and current {'help' if factor > 0 else 'hinder'} this voyage: {factor:+.0%} on prices.")
+        print(f"    Wind, current and market {'help' if factor > 0 else 'hinder'} this voyage: {factor:+.0%} on prices.")
     if delay:
         print("    Dead calm: the convoy waits a season in harbour before it can sail.")
     kinds = {"buy_grain": 1, "sell_wine_oil": 2, "sell_goods": 3}
@@ -586,7 +747,7 @@ def convoy(s, notes, o=None):
     else:
         print("    Nikandros: what shall the convoy do?  1) buy grain  2) sell wine & oil  3) sell goods")
         kind = ask_int("    > ", 1, 3) or 1
-    c = {"arrive": s["turn"] + 1 + delay, "grain": 0, "treasury": 0}
+    c = {"arrive": s["turn"] + 1 + delay, "grain": 0, "treasury": 0, "ship": 1}
     gp = round(GRAIN_PRICE * (1 - factor))
     if kind == 1:
         most = min(int(s["treasury"] // gp), 12)
@@ -618,15 +779,27 @@ def resolve(s, notes):
     season, _ = season_of(s["turn"])
     arrived = [c for c in s["convoys"] if c["arrive"] <= s["turn"]]
     s["convoys"] = [c for c in s["convoys"] if c["arrive"] > s["turn"]]
+    # buildings and ships finished this season
+    for b in s["buildings"]:
+        if b["done"] == s["turn"] and b["done"] > 0:
+            notes.append(f"{BLD[b['kind']]['name']} finished.")
+    ready = [t for t in s["shipyard"] if t <= s["turn"]]
+    if ready:
+        s["ships"] += len(ready)
+        s["shipyard"] = [t for t in s["shipyard"] if t > s["turn"]]
+        notes.append(f"{len(ready)} new ship{'s' if len(ready) > 1 else ''} slide{'' if len(ready) > 1 else 's'} into the harbour.")
     # income
     rate, rate_loyalty = TAX_RATES[s["tax"]]
     s["treasury"] += round(s["people"] * rate)
+    fees = stat(s, "treasury")
+    if fees:
+        s["treasury"] += fees
     for c in arrived:
         if c["treasury"]:
             s["treasury"] += c["treasury"]
             notes.append(f"The convoy returns with {c['treasury']:,} denarii.")
     # army pay
-    pay = s["army"] * ARMY_PAY
+    pay = s["army"] * max(1, ARMY_PAY - stat(s, "army_pay_discount"))
     if s["treasury"] >= pay:
         s["treasury"] -= pay
     else:
@@ -654,9 +827,10 @@ def resolve(s, notes):
     # grain
     eaters = s["people"] + s["army"]
     mult = num(WINDS[s["wind"]]["harvest_mult"], 1)
-    harvest = (num(season["harvest_grain"]) * GRAIN_BASE_EATERS / eaters + built(s, "terraces") * num(season["terrace_bonus"])) * mult
+    harvest = num(season["harvest_grain"]) * built(s, "wheat") / BASE_WHEAT * GRAIN_BASE_EATERS / eaters * mult
     if harvest and mult != 1:
         notes.append(f"The wind made the harvest {'richer' if mult > 1 else 'poorer'} ({mult - 1:+.0%}).")
+    harvest += stat(s, "grain")   # fisheries: every season, whatever the wind
     bought = sum(c["grain"] for c in arrived)
     if bought:
         notes.append(f"The convoy unloads {bought} months of grain.")
@@ -667,18 +841,24 @@ def resolve(s, notes):
     if hunger:
         notes.append("The granaries are empty. People go hungry.")
     # goods, wine & oil
-    s["goods"] += WORKSHOP_GOODS * built(s, "workshops") - s["army"] // ARMY_GOODS_PER
-    groves = built(s, "groves") * GROVE_WINE_OIL * (2 if season["season"] == "Autumn" else 1)
+    s["goods"] += stat(s, "goods") - s["army"] // ARMY_GOODS_PER
+    groves = stat(s, "wine_oil") * (2 if season["season"] == "Autumn" else 1)
     s["wine_oil"] += groves
     if groves:
-        notes.append(f"The groves yield {groves} amphorae.")
+        notes.append(f"The vineyards and olive groves yield {int(groves)} amphorae.")
     # people
     if hunger:
         s["people"] = round(s["people"] * 0.95)
     elif s["grain"] >= 3 and s["loyalty"] >= 50:
-        s["people"] = round(s["people"] * 1.01)
+        room = housing(s)
+        if s["people"] < room:
+            s["people"] = min(room, round(s["people"] * 1.01))
+        else:
+            notes.append("The town is full: newcomers have nowhere to live. Build a residential district.")
     # loyalty and favour
     s["loyalty"] += rate_loyalty + (LOYALTY_HUNGER if hunger else LOYALTY_LOW_FOOD if s["grain"] < 3 else 0)
+    s["loyalty"] += stat(s, "loyalty")   # temple, baths
+    s["favour"] += stat(s, "favour")     # temple, walls
     if s["loyalty"] < UNREST_BELOW:
         s["favour"] += UNREST_FAVOUR
         notes.append("Unrest in the streets; Rome hears of it.")
@@ -830,7 +1010,7 @@ def main():
         print("Each turn is one season. Keep Rome and the people content, and the granaries full.")
     else:
         with open(SAVE, encoding="utf-8") as f:
-            s = json.load(f)
+            s = upgrade_save(json.load(f))
         print(f"\nContinuing your governorship (turn {s['turn']}). Use --new to start again.")
     while not s.get("over"):
         roll_weather(s)

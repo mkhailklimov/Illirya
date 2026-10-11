@@ -90,6 +90,22 @@ favour_new = favour + tribute_effect + decree_effects + unrest_effect + event_ef
 ```
 Favour also drifts by −1 each season while the army is below 100 ("Rome expects order").
 
+## The city and its fields
+
+Acruvium has **12 plots inside the walls** (the harbour and the walls take two of them) and **12 plots in the fields** around the bay. Every building takes one plot, including while it is being built. What each building costs and gives is in [buildings.csv](buildings.csv); the decree is **Build** (one building per decree, up to 3 decrees a season).
+
+| Start | Town (6 of 12 plots) | Fields (4 of 12 plots) |
+|---|---|---|
+| Built | Forum, 3 residential districts, harbour, walls | 4 wheat terraces |
+| Can add | Houses (max 8), 2nd harbour, towers, workshops (4), market, temple, barracks, baths | Wheat terraces, vineyards & olive groves (6), fisheries (3, shore only), sheep pastures (4) |
+
+- **Harvest:** `season.harvest_grain × wheat_terraces / 4 × 4,000 / eaters × wind`, plus **0.5 months per fishery** every season (fisheries ignore the wind). The 4 starting terraces give the same harvest as before.
+- **Housing:** each residential district houses 1,500 people. Population does not grow past the houses.
+- **Per season:** workshops +6 goods, pastures +2 goods, vineyards +4 wine & oil once mature (×2 in Autumn), market +100 denarii, temple +1 loyalty and +1 favour, baths +2 loyalty.
+- **Army:** barracks make each soldier cost 1 denarius less. Walls (+2 each) and barracks (+1) add to battle rolls via `battle_bonus`.
+- **Ships:** start with 2. A convoy needs a free ship (one not at sea); it returns with the convoy. **Build a ship** (300 denarii, 15 goods) is ready next season; each harbour has berths for 3 ships. Storms and pirates can sink ships.
+- **Market:** convoys trade 10% better on top of wind and current.
+
 ## Weather and the sea (rolled at the start of every season)
 
 **Wind:** drawn from [winds.csv](winds.csv), weighted by season (more cold Aquilo in winter, more hot Auster and calm in summer). The wind multiplies the season's harvest:

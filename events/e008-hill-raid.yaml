@@ -15,9 +15,9 @@ choice:
   options:
     - label: Meet them in battle
       effects: {}
-      roll:                                   # d20 + 1 per 50 soldiers; need 13
+      roll:                                   # d20 + 1 per 50 soldiers + walls (2 each) + barracks (1); need 13
         die: 20
-        bonus: army / 50
+        bonus: army / 50 + battle_bonus
         target: 13
         success: {favour: 4, loyalty: 3, goods: 5}        # DRAFT: spoils and glory
         failure: {army: -30, people: -100, loyalty: -4}   # DRAFT: a costly defeat

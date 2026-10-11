@@ -76,6 +76,8 @@ Both suggestions are computed by the engine from the real numbers, so they cost 
 
 ## 4. Buildings and development
 
+> **Built in the prototype (11 October 2026):** the bay has **12 plots in town** (including the harbour and the walls) and **12 in the fields**; every building takes a plot, so the governor must choose. Houses cap the population, ships are a resource that convoys need, and the town map shows every plot and what is under construction. Details in [rules/formulas.md](../rules/formulas.md#the-city-and-its-fields) and [rules/buildings.csv](../rules/buildings.csv).
+
 Each building costs treasury and goods and takes 1–4 seasons to finish.
 
 - **Terraces, farmland and fisheries:** more food; terraces are slow to build on the steep bay shores, drought hits them hard.

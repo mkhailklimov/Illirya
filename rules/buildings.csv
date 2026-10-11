@@ -1,0 +1,14 @@
+id,name,short,zone,start,max,cost_treasury,cost_goods,seasons_to_build,grain,goods,wine_oil,treasury,loyalty,favour,housing,ships_cap,battle_bonus,army_pay_discount,trade_bonus,notes
+forum,Forum,Forum,town,1,1,0,0,0,,,,,,,,,,,,Seat of the governor and the town council. Already there at the start; cannot be built twice.
+houses,Residential district,Houses,town,3,8,400,10,2,,,,,,,1500,,,,,"DRAFT. Each district houses 1,500 people; the town cannot grow beyond its houses."
+harbour,Harbour,Harbour,town,1,2,900,20,3,,,,,,,,3,,,,DRAFT. Each harbour has berths for 3 ships. Convoys need a ship; the shipyard builds them.
+walls,Walls and towers,Walls,town,1,2,800,20,3,,,,,,,,,2,,,DRAFT. The town walls; a second ring of towers can be added. +2 to defence rolls each.
+workshop,Workshop,Wkshop,town,0,4,500,5,2,,6,,,,,,,,,,"DRAFT. Smithy, potters or weavers: +6 goods every season."
+market,Market,Market,town,0,1,700,10,2,,,,100,,,,,,,0.1,"DRAFT. Stall fees +100 denarii a season, and convoys trade 10% better."
+temple,Temple,Temple,town,0,1,800,10,3,,,,,1,1,,,,,,DRAFT. +1 loyalty and +1 Roman favour every season; the haruspex has a proper home.
+barracks,Barracks,Barrcks,town,0,1,600,15,2,,,,,,,,,1,1,,"DRAFT. Soldiers cost 1 denarius less each season, and +1 to battle rolls."
+baths,Baths,Baths,town,0,1,1000,10,3,,,,,2,,,,,,,DRAFT. Roman comfort: +2 loyalty every season.
+wheat,Wheat terraces,Wheat,field,4,12,600,10,2,,,,,,,,,,,,DRAFT. Each terrace gives a quarter of the base harvest (the 4 at the start give the 8 months a year in seasons.csv). Wind changes the yield.
+vineyard,Vineyards and olive groves,Vines,field,0,6,400,5,8,,,4,,,,,,,,,"DRAFT. +4 amphorae of wine and oil every season once mature (8 seasons), twice that in Autumn."
+fishery,Fishery,Fish,field,0,3,350,5,1,0.5,,,,,,,,,,,"DRAFT. +0.5 months of grain every season, winter too; wind does not matter. Only 3 places on the shore."
+pasture,Sheep pasture,Sheep,field,0,4,300,0,1,,2,,,,,,,,,,DRAFT. Wool: +2 goods every season.

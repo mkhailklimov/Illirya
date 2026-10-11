@@ -1,0 +1,30 @@
+id: e021-storm
+deck: sea
+title: A storm scatters the shipping
+category: nature
+seasons: [Autumn, Winter, Spring]
+years: [30, 42]
+trigger: "ships >= 1"
+chance: 0.10
+once: false
+effects: {}
+choice:
+  prompt: >-
+    A storm out of the south-east is driving the sea into the bay. Epicadus asks
+    whether to risk the crews to save the ships at their moorings.
+  options:
+    - label: Send the crews out to double the moorings
+      effects: {}
+      roll:                                   # d20 + 1 per harbour; need 11
+        die: 20
+        bonus: ships_cap / 3
+        target: 11
+        success: {loyalty: 1}                 # DRAFT: every ship saved
+        failure: {ships: -1, people: -10}     # DRAFT: a ship and some sailors lost
+    - label: Keep the crews ashore and pray
+      effects: {ships: -1}                    # DRAFT: one ship breaks up on the rocks
+scribe_hint: Waves break over the quay; the masts in the harbour sway like reeds.
+historical_note: >-
+  Ancient sailors feared the Adriatic's sudden storms; the Romans largely kept
+  off the open sea from November to March, the "closed sea" (mare clausum).
+source: "Vegetius, De re militari IV.39 on the sailing season - check before publishing"
