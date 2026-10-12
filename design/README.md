@@ -5,7 +5,7 @@ This folder is the reference for all Illyria artwork, in the flat "antique" silh
 | Folder | What's in it |
 |---|---|
 | `images/` | Approved reference images: profile pictures, Facebook cover, Tiberius, Jesus of Nazareth, Pola–Acruvium map |
-| `pieces/` | Reusable parts: ship icon and compass rose (SVG and PNG), the wind compass for each wind (`winds/`), and the d20 with every face 1–20 on a transparent background (`dice/`) |
+| `pieces/` | Reusable parts: ship icon and compass rose (SVG and PNG), the wind compass for each wind (`winds/`), the d20 with every face 1–20 on a transparent background (`dice/`), and the five advisors' character cards (`advisors/`, from `source/advisors.py` and `rules/advisors.csv`) |
 | `source/` | The Python code that draws every image, the render script and the fonts (SIL Open Font License) |
 
 ## Making a new image
@@ -20,6 +20,7 @@ Every image is drawn as SVG code and then rendered to PNG with headless Chromium
    - `map.py`: coastline projection, dotted route (`route_svg()`), ship icon (`ship_icon()`), compass (`compass()`), city labels
    - `winds.py`: the wind compass, one image per wind in `rules/winds.csv` (names and effect lines are read from the game rules)
    - `dice.py`: the d20, one image per face (render with `transparent` as the 6th argument of `render.js`)
+   - `advisors.py`: the advisors' character cards, 750×1050 (render at scale 1.5); portraits are the Tiberius coin bust with each advisor's headgear and beard
 3. Run the script. It writes an HTML file to `build/`.
    ```
    cd design/source

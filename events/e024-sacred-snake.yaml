@@ -1,0 +1,16 @@
+id: e024-sacred-snake
+deck: omen
+title: A serpent in the temple
+category: omen
+seasons: [Spring, Summer, Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.08
+once: false
+effects: {loyalty: 3}                                    # DRAFT: the Illyrian townspeople take it as a blessing
+scribe_hint: A great harmless snake lies coiled on the temple steps in the morning sun; old women bring it milk.
+historical_note: >-
+  The serpent was a sacred sign for the Illyrians. Greek myth told that Cadmus
+  and Harmonia, the founders of Thebes, ended their days among the Illyrians
+  and were turned into serpents.
+source: "Ovid, Metamorphoses 4.563-603; Apollodorus, Library 3.5.4 - check before publishing"

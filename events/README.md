@@ -1,6 +1,6 @@
 # Event cards (task 0.7)
 
-One card per YAML file, named `e<number>-<short-name>.yaml` (e.g. `e001-drought.yaml`). Phase 0 needs 20 cards (done: e001–e020), the bot prototype 40, the full game about 150 (three cards a season over 48 turns).
+One card per YAML file, named `e<number>-<short-name>.yaml` (e.g. `e001-drought.yaml`). Phase 0 needs 20 cards (done: e001–e026; e022–e026 are draft Omen cards to choose from), the bot prototype 40, the full game about 150 (three cards a season over 48 turns).
 
 ## Three decks, three cards a season
 

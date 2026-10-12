@@ -1,0 +1,32 @@
+id: e025-governors-dream
+deck: omen
+title: The governor's dream
+category: omen
+seasons: [Spring, Summer, Autumn]
+years: [30, 42]
+trigger: random
+chance: 0.07
+once: false
+effects: {}
+choice:
+  prompt: >-
+    You dream of one of your ships going down in the mouth of the bay, in
+    calm water and full sunlight. Tertius Volusius says such a dream is sent,
+    not dreamed.
+  options:
+    - label: Sacrifice to Neptune before any ship sails
+      effects: {treasury: -100}                          # DRAFT
+    - label: It was only a dream
+      effects: {}
+      roll:
+        die: 20
+        bonus: "0"
+        target: 6
+        success: {}                                      # nothing happens
+        failure: {ships: -1, goods: -10}                 # DRAFT: a ship is lost with her cargo
+scribe_hint: The dream is told plainly, without explanation; the governor wakes before the ship is gone.
+historical_note: >-
+  Romans took dreams seriously. Before the battle of Philippi in 42 BC
+  Octavian, the future Augustus, left his camp because of a friend's dream;
+  the camp was overrun that day.
+source: "Suetonius, Augustus 91 - check before publishing"

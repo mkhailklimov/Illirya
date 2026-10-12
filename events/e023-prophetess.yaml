@@ -1,0 +1,33 @@
+id: e023-prophetess
+deck: omen
+title: A prophetess in the market
+category: omen
+seasons: any
+years: [30, 42]
+trigger: random
+chance: 0.08
+once: false
+effects: {}
+choice:
+  prompt: >-
+    A wandering woman from the hills prophesies in the market, and a crowd
+    gathers every morning to hear her. She has not yet said anything against
+    Rome, but Tertius Volusius does not like rivals.
+  options:
+    - label: Let her speak
+      effects: {loyalty: 2, favour: -2}                  # DRAFT: the people love her, Rome frowns
+    - label: Drive her out of the town
+      effects: {loyalty: -2, favour: 1}                  # DRAFT
+    - label: Ask Tertius to test her with a sacrifice
+      effects: {treasury: -50}                           # DRAFT
+      roll:
+        die: 20
+        bonus: "0"
+        target: 11
+        success: {loyalty: 3}                            # DRAFT: the gods side with the haruspex
+        failure: {loyalty: -3}                           # DRAFT: the omens favour her; Tertius looks a fool
+scribe_hint: She speaks in the old Illyrian tongue; the townspeople translate for the Roman soldiers, not always faithfully.
+historical_note: >-
+  Rome distrusted prophecy outside its own priesthoods: in AD 16 the Senate
+  expelled astrologers and magicians from Italy and put two of them to death.
+source: "Tacitus, Annals 2.32 - check before publishing"

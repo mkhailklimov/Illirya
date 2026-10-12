@@ -129,6 +129,22 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## The council (advisors as characters)
+
+Each of the five advisors in `advisors.csv` has a **mood** from 0 to 5 (start 3) and **one ability**.
+
+- **Mood.** Every season each advisor gives advice. When the advice asks for something (buy grain, recruit, hold a festival…) and one of your decrees does it, his mood rises by 1 (at most 5). If you ignore what he asks for **2 seasons in a row**, his mood falls by 1. Advice that asks for nothing ("the omens are calm") leaves him as he is.
+- **Sulking.** At mood 1 or below an advisor sulks: he still advises, but will not use his ability until you heed him again.
+- **Abilities.** Each is offered at the moment it can help, and you say yes or no. Some can be used once a year, others once per governorship:
+
+| Advisor | Ability | How often | Effect |
+|---|---|---|---|
+| Felix (treasury) | A season's grace | once per governorship | When the chest is short at tribute time, the tribute moves to next season with no loss of favour and no debt |
+| Nikandros (trade) | Knows a man | once a year | One convoy trades at +20% on its price |
+| Marcus Antistius (army) | Leads the charge | once a year | After a failed battle roll (one whose bonus counts the army) that +2 would turn, adds +2 (not on a natural 1) |
+| Epicadus (fleet) | Winter run | once per governorship | One convoy may sail in winter, when the sea is closed |
+| Tertius Volusius (haruspex) | Reads the entrails | once a year | Sees a dark omen (a decision, or any number going down) before it is turned over; may sacrifice again to draw another omen |
+
 ## Lose checks (end of season)
 
 - **Recalled:** Roman favour 0.

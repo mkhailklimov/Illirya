@@ -1,0 +1,35 @@
+id: e022-comet
+deck: omen
+title: A comet over the bay
+category: omen
+seasons: any
+years: [30, 42]
+trigger: random
+chance: 0.06
+once: true
+effects: {}
+choice:
+  prompt: >-
+    A star with a burning tail hangs over the mountains for seven nights. In
+    the market they say a comet foretells the death of a ruler, and some say
+    which one. Tertius Volusius waits to hear what the governor wants said.
+  options:
+    - label: Forbid all talk of the comet
+      effects: {loyalty: -3, favour: 1}                  # DRAFT
+    - label: Let the people read it as they like
+      effects: {}
+      roll:                                              # an informer may write to Rome
+        die: 20
+        bonus: "0"
+        target: 9
+        success: {loyalty: 2}                            # DRAFT: the talk dies down
+        failure: {favour: -6}                            # DRAFT: a letter reaches Rome
+    - label: Declare it a sign of the Emperor's glory, with a sacrifice
+      effects: {treasury: -150, favour: 2}               # DRAFT
+scribe_hint: Night after night the crowd on the harbour wall points at the sky and lowers its voice when a soldier passes.
+historical_note: >-
+  Romans read a comet as a sign that a ruler would die: the one seen in 44 BC
+  was hailed as the soul of the murdered Julius Caesar (the sidus Iulium).
+  Under Tiberius a careless word about the Emperor could bring a charge of
+  treason (maiestas).
+source: "Suetonius, Julius 88; Pliny, Natural History 2.93-94; Tacitus, Annals 1.72-74 - check before publishing"

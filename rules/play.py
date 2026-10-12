@@ -56,6 +56,13 @@ DECKS = [("land", "LAND"), ("sea", "SEA"), ("omen", "OMEN")]  # one card from ea
 CURRENT_DIE = 6              # d6 each season: 1 slack, 2-5 running, 6 strong
 SAIL_STEP, SAIL_CAP = 0.10, 0.30   # convoy price change per point of sailing advantage, and its limit
 ROLL_BONUS_CAP = 5           # most a number can add to a die roll
+# The council as characters (advisors.csv; formulas.md "The council")
+MOOD_START, MOOD_MAX = 3, 5  # each advisor's mood, 0-5
+MOOD_SULK = 1                # at or below this an advisor sulks and will not use his ability
+IGNORED_LIMIT = 2            # seasons in a row his advice is ignored before his mood drops
+LEAD_CHARGE_BONUS = 2        # Antistius: added to a battle roll after it is rolled
+GOOD_DEAL_BONUS = 0.20       # Nikandros: better convoy price
+COUNCIL_ORDER = ("treasurer", "economist", "general", "fleet", "priest")
 
 NUMBERS = ["grain", "treasury", "goods", "wine_oil", "people", "loyalty", "favour", "army", "ships"]
 
@@ -93,11 +100,15 @@ def start_buildings():
     return [{"kind": b["id"], "done": 0} for b in BUILDING_LIST for _ in range(int(num(b["start"])))]
 
 
+def new_council():
+    return {aid: {"mood": MOOD_START, "ignored": 0, "used": None} for aid in ADVISORS}
+
+
 def new_game():
     s = {n: num(RULES[n]["start"]) for n in NUMBERS}
     s.update(turn=1, tax="normal", buildings=start_buildings(), shipyard=[], convoys=[], tribute_debt=0,
              wind="E", current=1, weather_turn=0,
-             hunger_streak=0, last_festival=-9, once_fired=[], over=None,
+             hunger_streak=0, last_festival=-9, once_fired=[], over=None, council=new_council(),
              log=os.path.join(RUNS, datetime.datetime.now().strftime("run-%Y-%m-%d_%H%M.csv")))
     return s
 
@@ -117,6 +128,7 @@ def upgrade_save(s):
     s.setdefault("shipyard", [])
     for c in s.get("convoys", []):
         c.setdefault("ship", 1)
+    s.setdefault("council", new_council())
     return s
 
 
@@ -285,33 +297,124 @@ def show_status(s):
     show_compass(s)
 
 
+def ability_ready(s, aid):
+    """An advisor can use his ability if he is not sulking and has not used it
+    this year (or, for once-a-governorship abilities, ever)."""
+    st = s["council"][aid]
+    if st["mood"] <= MOOD_SULK:
+        return False
+    if ADVISORS[aid]["ability_uses"] == "game":
+        return st["used"] is None
+    return st["used"] != season_of(s["turn"])[1]
+
+
+def use_ability(s, aid):
+    s["council"][aid]["used"] = season_of(s["turn"])[1]
+
+
+def offer_ability(s, aid, question):
+    """Ask whether to use an advisor's ability now. Uses it on yes."""
+    if not ability_ready(s, aid):
+        return False
+    a = ADVISORS[aid]
+    once = "once per governorship" if a["ability_uses"] == "game" else "once a year"
+    yes = ask(f"  ** {a['name']}: {question} [{a['ability_name']}, {once}] (y/n) > ").lower()
+    if yes in ("y", "yes"):
+        use_ability(s, aid)
+        return True
+    return False
+
+
+def mood_text(st):
+    return "[" + "*" * int(st["mood"]) + "." * (MOOD_MAX - int(st["mood"])) + "]"
+
+
+def ability_status(s, aid):
+    a, st = ADVISORS[aid], s["council"][aid]
+    if st["mood"] <= MOOD_SULK:
+        state = "sulking, will not help"
+    elif ability_ready(s, aid):
+        state = "ready"
+    else:
+        state = "used" + ("" if a["ability_uses"] == "game" else " this year")
+    return f"{a['ability_name']}: {state}"
+
+
+def update_moods(s, wants, orders, notes):
+    """Heeded advice cheers an advisor up; advice ignored for IGNORED_LIMIT seasons
+    in a row sours him. Seasons with nothing to ask leave him as he is."""
+    for aid, want in wants.items():
+        if not want:
+            continue
+        st, name = s["council"][aid], ADVISORS[aid]["name"]
+        if any(want(o) for o in orders):
+            st["ignored"] = 0
+            if st["mood"] < MOOD_MAX:
+                st["mood"] += 1
+                notes.append(f"{name} is pleased you took his advice (mood {st['mood']}/{MOOD_MAX}).")
+            continue
+        st["ignored"] += 1
+        if st["ignored"] >= IGNORED_LIMIT and st["mood"] > 0:
+            st["mood"] -= 1
+            st["ignored"] = 0
+            sulk = " He sulks and will not use his gifts for you." if st["mood"] == MOOD_SULK else ""
+            notes.append(f"{name} feels ignored (mood {st['mood']}/{MOOD_MAX}).{sulk}")
+
+
+def convoy_for(cargo=None, direction=None):
+    """A want: any convoy with this cargo and/or direction."""
+    return lambda o: (o["id"] == "send_convoy" and (cargo is None or o.get("cargo") == cargo)
+                      and (direction is None or o.get("direction") == direction))
+
+
+def decree_is(*ids):
+    return lambda o: o["id"] in ids
+
+
+def build_of(*kinds):
+    return lambda o: o["id"] == "build" and o.get("building") in kinds
+
+
 def council(s):
+    """Each advisor speaks. Returns what each one wants this season (a test on an
+    order), or None when he asks for nothing in particular."""
+    wants = {}
     season, _ = season_of(s["turn"])
     turns_to_tribute = next(i for i in range(4) if season_of(s["turn"] + i)[0]["tribute_due"] == "yes")
     rate, _ = TAX_RATES[s["tax"]]
     income = s["people"] * rate - s["army"] * ARMY_PAY
     due = TRIBUTE + s["tribute_debt"]
     say = {}
-    if s["treasury"] + income * (turns_to_tribute + 1) < due:
+    if s.get("tribute_grace") == s["turn"]:
+        say["treasurer"] = f"Rome's season of grace ends now: {int(due):,} denarii are due this season."
+        wants["treasurer"] = lambda o: decree_is("raise_taxes")(o) or convoy_for("sell_wine_oil")(o) or convoy_for("sell_goods")(o)
+    elif s["treasury"] + income * (turns_to_tribute + 1) < due:
         say["treasurer"] = f"At this rate we cannot pay Rome's {int(due):,} denarii when the tribute falls due."
+        wants["treasurer"] = lambda o: decree_is("raise_taxes")(o) or convoy_for("sell_wine_oil")(o) or convoy_for("sell_goods")(o)
     else:
         when = "this season" if turns_to_tribute == 0 else f"in {turns_to_tribute} season(s)"
         say["treasurer"] = f"The chest holds {int(s['treasury']):,} denarii. Tribute of {int(due):,} is due {when}."
     mult = num(WINDS[s["wind"]]["harvest_mult"], 1)
     if s["grain"] < 3:
         say["economist"] = f"Only {s['grain']:.1f} months of grain left. Buy grain by convoy or the people will starve."
+        wants["economist"] = convoy_for("buy_grain")
     elif s["grain"] < 6:
         say["economist"] = "Our fields feed us only 8 months a year. More wheat terraces, a fishery or bought grain, Governor, or we go short."
+        wants["economist"] = lambda o: convoy_for("buy_grain")(o) or build_of("wheat", "fishery")(o)
     elif s["wine_oil"] >= 10 and season["sailing"] == "yes":
         say["economist"] = f"{int(s['wine_oil'])} amphorae wait in the stores. Brundisium pays well for wine and oil."
+        wants["economist"] = convoy_for("sell_wine_oil")
     elif mult != 1 and num(season["harvest_grain"]) > 0:
         say["economist"] = f"With this wind the harvest will be {'better' if mult > 1 else 'worse'} than usual ({mult - 1:+.0%})."
     else:
         say["economist"] = "The markets are steady. A workshop would give us goods to sell."
+        wants["economist"] = build_of("workshop")
     if s["army"] < ORDER_ARMY:
         say["general"] = f"Only {int(s['army'])} men. Rome expects order, and so do the hill tribes."
+        wants["general"] = decree_is("recruit")
     elif s["loyalty"] < 40:
-        say["general"] = "The mood in the streets is sour. My men can keep order, but not forever."
+        say["general"] = "The mood in the streets is sour. My men can keep order, but not forever. Pay them well and recruit."
+        wants["general"] = decree_is("recruit")
     else:
         say["general"] = f"The garrison of {int(s['army'])} stands ready. Its pay is {int(s['army'] * ARMY_PAY):,} denarii a season."
     north, _ = sailing(s, True)
@@ -322,20 +425,27 @@ def council(s):
         say["fleet"] = "Not a breath of wind. Any convoy we send will sit a season in harbour."
     elif north > south:
         say["fleet"] = f"Wind and current favour a voyage north up the coast ({north:+.0%} on prices)."
+        wants["fleet"] = convoy_for(direction="north")
     elif south > north:
         say["fleet"] = f"The wind is with us for a voyage south ({south:+.0%} on prices)."
+        wants["fleet"] = convoy_for(direction="south")
     else:
         say["fleet"] = "The sea is open; wind and current favour neither course."
     if s["loyalty"] < 40:
         say["priest"] = "The people murmur against you. A festival would please the gods and men alike."
+        wants["priest"] = decree_is("hold_festival")
     elif s["favour"] < 40:
         say["priest"] = "The omens from Rome are cold. Gifts to the Emperor would warm them."
+        wants["priest"] = decree_is("honour_rome")
     else:
         say["priest"] = "The omens are calm."
-    print("\n  Your council:")
-    for aid in ("treasurer", "economist", "general", "fleet", "priest"):
-        a = ADVISORS[aid]
-        print(f"  * {a['name']} ({a['title'].lower()}): {say[aid]}")
+    print("\n  Your council:                                        mood   ability")
+    for aid in COUNCIL_ORDER:
+        a, st = ADVISORS[aid], s["council"][aid]
+        head = f"{a['name']} ({a['title'].lower()})"
+        print(f"  * {head:<52} {mood_text(st)}  {ability_status(s, aid)}")
+        print(f"      \"{say[aid]}\"")
+    return wants
 
 
 # --- Input ---------------------------------------------------------------------
@@ -435,7 +545,7 @@ def validate(s, orders):
                 problems.append(f"Epicadus: no free berth for another ship (berths for {berths(s)}); build a second harbour first.")
                 continue
         if o["id"] == "send_convoy":
-            if season["sailing"] == "no":
+            if season["sailing"] == "no" and not ability_ready(s, "fleet"):
                 problems.append("Epicadus refuses: no convoys in winter (mare clausum).")
                 continue
             if int(s["ships"]) - ships_at_sea(s) - convoys < 1:
@@ -498,6 +608,8 @@ def preview(s, orders):
             extra.append(f"{b['short'].lower()} ready in {int(num(b['seasons_to_build']))} seasons")
         if o["id"] == "build_ship":
             extra.append("ship ready next season")
+        if o["id"] == "send_convoy" and season_of(s["turn"])[0]["sailing"] == "no":
+            extra.append("Epicadus's winter run (once per governorship)")
     parts = [f"costs {int(cost):,} denarii" + (f", {int(goods)} goods" if goods else "")]
     if loyalty:
         parts.append(f"loyalty {loyalty:+g}")
@@ -721,6 +833,9 @@ def apply_decrees(s, orders, notes):
             s["shipyard"].append(s["turn"] + int(num(d["seasons_to_finish"], 1)))
             notes.append("A new ship is laid down on the slipway.")
         elif d["id"] == "send_convoy":
+            if season_of(s["turn"])[0]["sailing"] == "no":
+                use_ability(s, "fleet")
+                notes.append("Epicadus takes a ship out in winter, when no one else dares: his winter run is spent.")
             convoy(s, notes, o)
         for n, v in eff.items():
             s[n] += v
@@ -737,6 +852,9 @@ def convoy(s, notes, o=None):
         north = (ask_int("    > ", 1, 2) or 1) == 1
     factor, delay = sailing(s, north)
     factor += stat(s, "trade_bonus")
+    if offer_ability(s, "economist", "I know a man in the port who will give us a better price (+20%)."):
+        factor += GOOD_DEAL_BONUS
+        notes.append("Nikandros strikes a deal: the convoy trades at a better price.")
     if factor:
         print(f"    Wind, current and market {'help' if factor > 0 else 'hinder'} this voyage: {factor:+.0%} on prices.")
     if delay:
@@ -811,9 +929,15 @@ def resolve(s, notes):
         s["loyalty"] -= 3 * tens
         notes.append(f"The soldiers were not fully paid: {lost} desert and some take what they are owed.")
     # tribute
-    if season["tribute_due"] == "yes":
+    grace_ends = s.get("tribute_grace") == s["turn"]
+    if season["tribute_due"] == "yes" or grace_ends:
+        s.pop("tribute_grace", None)
         due = TRIBUTE + s["tribute_debt"]
-        if s["treasury"] >= due:
+        if s["treasury"] < due and not grace_ends and offer_ability(
+                s, "treasurer", f"The chest holds {int(s['treasury']):,} of {int(due):,}. Shall I beg Rome for one more season?"):
+            s["tribute_grace"] = s["turn"] + 1
+            notes.append(f"Felix wins a season's grace from Rome: the tribute of {int(due):,} denarii is due next season.")
+        elif s["treasury"] >= due:
             s["treasury"] -= due
             s["tribute_debt"] = 0
             s["favour"] += TRIBUTE_PAID_FAVOUR
@@ -926,7 +1050,15 @@ def answer_card(s, c, notes):
     eff = dict(opt.get("effects") or {})
     r = opt.get("roll")
     if r:
-        _, ok = roll(int(r.get("die", 20)), roll_bonus(s, r.get("bonus")), int(r["target"]), opt["label"])
+        bonus, target = roll_bonus(s, r.get("bonus")), int(r["target"])
+        total, ok = roll(int(r.get("die", 20)), bonus, target, opt["label"])
+        natural_one = total - bonus == 1
+        battle = "army" in str(r.get("bonus", ""))   # a roll the soldiers fight, not a test of the gods
+        if battle and not ok and not natural_one and total + LEAD_CHARGE_BONUS >= target and \
+                offer_ability(s, "general", f"Let me lead the men myself: +{LEAD_CHARGE_BONUS} turns this into a success."):
+            ok = True
+            print(f"  Antistius leads the charge: {total} + {LEAD_CHARGE_BONUS} = {total + LEAD_CHARGE_BONUS} -> SUCCESS")
+            notes.append("Marcus Antistius led the charge himself and turned the day.")
         for n, v in (r.get("success" if ok else "failure") or {}).items():
             eff[n] = eff.get(n, 0) + v
         notes.append(f"{c['title']}: you chose '{opt['label']}' and the die says {'success' if ok else 'failure'} ({effects_text(eff)}).")
@@ -935,9 +1067,24 @@ def answer_card(s, c, notes):
     apply_effects(s, eff)
 
 
+def dark_omen(c):
+    """An omen worth sacrificing again for: a decision, or any number going down."""
+    return bool(c.get("choice")) or any(v < 0 for v in (c.get("effects") or {}).values())
+
+
 def reveal_cards(s, notes):
     """Draw the season's three cards and turn them all over at once."""
     cards = draw_season_cards(s)
+    omen = next((c for c in cards if c["deck"] == "omen"), None)
+    if omen and dark_omen(omen) and ability_ready(s, "priest"):
+        print(f"\n  Tertius Volusius reads the entrails before the cards are turned: a dark omen is coming,")
+        print(f"  '{omen['title']}' ({'your decision' if omen.get('choice') else effects_text(omen.get('effects') or {})}).")
+        if offer_ability(s, "priest", "Shall I sacrifice again and ask the gods for another sign?"):
+            pool = [c for c in CARDS if c.get("deck") == "omen" and c["id"] != omen["id"] and card_fits(s, c)]
+            if pool:
+                new = random.choices(pool, weights=[float(c.get("chance", 0.1)) for c in pool])[0]
+                cards[cards.index(omen)] = new
+                notes.append(f"Tertius Volusius sacrificed again: '{omen['title']}' gave way to '{new['title']}'.")
     print("\n  The season's cards are turned over:")
     for c in cards:
         label = dict(DECKS)[c["deck"]]
@@ -1030,13 +1177,14 @@ def main():
             show_status(s)
             print(f"\n  This season's cards are already played: {s['events']}")
         before = s["before"]
-        council(s)
+        wants = council(s)
         orders = dialogue(s)
         if orders is None:
             save(s)
             print(f"\nSaved. Run again to continue. Log: {os.path.relpath(s['log'])}")
             return
         notes = list(s["season_notes"])
+        update_moods(s, wants, orders, notes)
         apply_decrees(s, orders, notes)
         resolve(s, notes)
         event = s["events"]

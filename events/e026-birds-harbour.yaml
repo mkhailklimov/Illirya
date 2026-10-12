@@ -1,0 +1,32 @@
+id: e026-birds-harbour
+deck: omen
+title: Seabirds fly inland
+category: omen
+seasons: any
+years: [30, 42]
+trigger: "wind == S"
+chance: 0.15
+once: false
+effects: {}
+choice:
+  prompt: >-
+    With the south wind rising, flocks of gulls and cormorants leave the sea
+    and fly screaming over the town towards the mountains. Epicadus and
+    Tertius agree for once: a storm is coming.
+  options:
+    - label: Call the fishing boats home
+      effects: {grain: -0.5}                             # DRAFT: a lost day's catch
+    - label: Let the fishermen take their chances
+      effects: {}
+      roll:
+        die: 20
+        bonus: "0"
+        target: 8
+        success: {}                                      # the storm passes out at sea
+        failure: {people: -20, loyalty: -3}              # DRAFT: boats lost in the storm
+scribe_hint: The sky to the south is the colour of a bruise; the birds are louder than the wind.
+historical_note: >-
+  Ancient sailors and farmers read the weather in birds: Virgil writes of
+  seabirds flying back to shore with loud cries and herons leaving the
+  marshes before a storm.
+source: "Virgil, Georgics 1.360-364 - check before publishing"

@@ -11,7 +11,7 @@ The game's numbers live here, not in code. The bot (Phase 1) will read these fil
 | [formulas.md](formulas.md) | 0.5 | How a season is resolved: taxes, tribute, army pay, grain, loyalty, favour |
 | [seasons.csv](seasons.csv) | 0.5 | What changes by season (harvest, sailing, tribute due) |
 | [playtest-log.md](playtest-log.md) | 0.6 | 12 turns played by hand, with the numbers after each turn |
-| [advisors.csv](advisors.csv) | 0.7 | The governor's council: five advisors with names, roles and voices |
+| [advisors.csv](advisors.csv) | 0.7 | The governor's council: five advisors with names, roles, voices and one ability each (mood and abilities: formulas.md, "The council") |
 | [winds.csv](winds.csv) | 0.5 | The six winds: effect on harvest and on sailing, and how often each blows per season |
 | [buildings.csv](buildings.csv) | 0.4 | Every building: town or field plot, cost, build time, limit and what it gives each season |
 | [play.py](play.py) | 0.6 | Plays the game in the terminal using all of the above |
@@ -34,7 +34,7 @@ Each turn shows the town's numbers, the wind compass, the season's three cards a
 - **C) your own words**, e.g. *build terraces and send a convoy south to sell 8 amphorae of wine*. The scribe reads them, the rules check them (cost, season, tax limits), and you confirm before they are sealed. You can also type the orders straight away instead of C;
 - **D)** the numbered list of decrees, or **Enter** to do nothing.
 
-The game applies the formulas, may draw an event card (some ask you to choose), and shows what changed. Type `q` to save and stop; run it again to continue, or `python rules/play.py --new` to start over.
+The game applies the formulas, may draw an event card (some ask you to choose), and shows what changed. Type `q` to save and stop; run it again to continue, or `python rules/play.py --new` to start over. On Windows you can double-click `play.bat` (continue) or `play-new.bat` (new game) in the repo folder instead.
 
 **Claude as the scribe (optional).** Without setup the scribe is a built-in word matcher that understands plain orders. For the real AI game master, `pip install anthropic` and set an API key (`ANTHROPIC_API_KEY`); the scribe then understands anything you write and answers in character. The rules still check every decree, so no wording can create money or soldiers.
 
