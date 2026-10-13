@@ -453,13 +453,13 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const [ax, ay] = P(...ACRV);
     const routes = E.TOWNS.map((t) => { const pts = routePts(t), mid = along(pts, .55);
       return `<path d="${routePath(pts)}" fill="none" stroke="#f6e3a1" stroke-width="2.2" stroke-dasharray="1 7" stroke-linecap="round" opacity="${selectedTown === t.id ? 1 : .5}"/>
-        <text x="${(mid[0] - 8).toFixed(1)}" y="${(mid[1] + 16).toFixed(1)}" text-anchor="end" font-family="Marcellus" font-size="12.5" fill="#b9a98f">${t.days} day${t.days > 1 ? "s" : ""}</text>`; }).join("");
-    const towns = E.TOWNS.map((t) => { const [x, y] = P(+t.lon, +t.lat), left = ["dyrrachium", "epidaurum", "brundisium"].includes(t.id);
+        ${selectedTown === t.id ? `<text x="${(mid[0] + 10).toFixed(1)}" y="${(mid[1] + 4).toFixed(1)}" font-family="Marcellus" font-size="14" fill="#f6e3a1">${t.days} day${t.days > 1 ? "s" : ""}' sailing</text>` : ""}`; }).join("");
+    const towns = E.TOWNS.map((t) => { const [x, y] = P(+t.lon, +t.lat), left = ["dyrrachium", "epidaurum", "brundisium", "ancon", "pola"].includes(t.id);
       return `<g class="town-hit" tabindex="0" role="button" aria-label="${esc(t.name)}: what it sells and buys" data-town="${t.id}">
         <circle cx="${x}" cy="${y}" r="16" fill="transparent"/>
         <circle class="dot" cx="${x}" cy="${y}" r="7" fill="${selectedTown === t.id ? "#f6e3a1" : "#2c0819"}" stroke="#e2bd66" stroke-width="2.5"/>
-        <text x="${x + (left ? -12 : 12)}" y="${y - 2}" text-anchor="${left ? "end" : "start"}" font-family="Marcellus" font-size="18" fill="#f6e3a1">${esc(t.name)}</text>
-        <text x="${x + (left ? -12 : 12)}" y="${y + 14}" text-anchor="${left ? "end" : "start"}" font-family="Marcellus" font-size="12" fill="#b9a98f">${t.modern !== t.name ? esc(t.modern) : ""}</text></g>`; }).join("");
+        <text x="${x + (left ? -12 : 12)}" y="${y + 6}" text-anchor="${left ? "end" : "start"}" font-family="Marcellus" font-size="18" fill="#f6e3a1">${esc(t.name)}</text>
+</g>`; }).join("");
     const convoys = s.convoys.map((c) => { const t = E.TOWN[c.town], span = Math.max(1, c.arrive - c.out), f = Math.min(.95, Math.max(.05, (s.turn - c.out + .5) / span));
       const [x, y] = along(routePts(t), f <= .5 ? f * 2 * .92 : (1 - f) * 2 * .92); return shipSVG(x, y - 4, .5); }).join("");
     const lbl = (lon, lat, text, size, rot = 0, op = .35, fam = "Marcellus") => { const [x, y] = P(lon, lat); return `<text x="${x}" y="${y}" font-family="${fam}" font-size="${size}" letter-spacing="${size / 3}" fill="rgba(246,227,161,${op})" ${rot ? `transform="rotate(${rot} ${x} ${y})"` : ""}>${text}</text>`; };
@@ -485,7 +485,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   function townInfo(id) {
     const t = E.TOWN[id];
     const rows = (side) => Object.keys(side === "buy" ? t.sellsTo : t.buysFrom).map((g) => `<tr><td>${esc(E.nameOf(g))}</td><td>${E.intc(E.priceAt(s, id, g, side))}</td><td>${g === "grain" ? "a month's supply" : "each"}</td></tr>`).join("");
-    return `<h2 style="margin:0">${esc(t.name)}</h2><p class="sum" style="margin:0">${esc(clean(t.notes))} ${t.seasons > 1 ? "" : "Back next season."}</p>
+    return `<h2 style="margin:0">${esc(t.name)}</h2><p class="sum" style="margin:0">${esc(clean(t.notes))} ${t.days} day${t.days > 1 ? "s" : ""}' sailing; ${t.seasons > 1 ? "there and back takes two seasons" : "back next season"}.</p>
       <div class="twocol"><div><p class="eyebrow">Sells to you</p><table class="prices"><tbody>${rows("buy")}</tbody></table></div>
       <div><p class="eyebrow">Buys from you</p><table class="prices"><tbody>${rows("sell")}</tbody></table></div></div>
       ${phase === "orders" ? `<div class="row"><button class="btn small" type="button" id="sendhere">Send a convoy to ${esc(t.name)}</button></div>` : ""}`;
@@ -851,7 +851,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   function intro() {
     phase = "intro"; say = {}; book = [];
     refresh();
-    $("stage").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, in the Bay of Kotor</p><h2>Tiberius sends you to govern Acruvium</h2>
+    $("stage").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, on the Gulf of Rhizon</p><h2>Tiberius sends you to govern Acruvium</h2>
       <p class="voice">Each turn is one season. Three cards are turned over: the land, the sea and the gods. Your council speaks, and you give up to ${E.MAX_ORDERS} orders: build and plant, trade by sea with the towns of the Adriatic, keep order, honour the gods and the Emperor.</p>
       <p class="sum">Things take time. A harbour takes two years to build and a temple three; vines give their first wine a year after planting. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
       <div class="row"><button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;

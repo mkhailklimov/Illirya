@@ -1,7 +1,10 @@
-id,name,modern,lon,lat,direction,seasons,days,sells,buys,route,notes
-epidaurum,Epidaurum,Cavtat,18.22,42.58,north,1,1,fish 1.0; wine 1.1; salt 1.0,cloth 1.2; iron 1.2; oil 1.1,18.55 42.40; 18.35 42.48,DRAFT. The nearest Roman town up the coast.
-narona,Narona,Vid,17.62,43.08,north,1,2,grain 0.95; fleece 0.9,salt 1.3; fish 1.2; oil 1.1,18.55 42.40; 17.9 42.75; 17.45 43.0,"DRAFT. River port on the Neretva, the grain of the valley."
-salona,Salona,Solin,16.48,43.54,north,1,3,timber 0.9; marble 1.0; iron 1.05,wine 1.2; oil 1.2; cloth 1.2,18.55 42.40; 17.9 42.7; 17.0 42.95; 16.5 43.3,DRAFT. Capital of the province; the governor of Dalmatia sits here.
-aquileia,Aquileia,Aquileia,13.37,45.77,north,2,8,iron 0.8; amber 1.0; glass 1.0; tin 1.0,wine 1.4; oil 1.4; fish 1.3,18.55 42.40; 17.9 42.7; 16.3 43.1; 15.2 43.8; 14.3 44.5; 13.6 45.2,DRAFT. Two seasons there and back. End of the Amber Road; Noric iron.
-dyrrachium,Dyrrachium,Durrës,19.45,41.31,south,1,2,grain 0.9; bronze 1.0; tin 1.1,timber 1.3; fleece 1.2; wine 1.1,18.6 42.30; 19.0 41.9; 19.35 41.45,DRAFT. Start of the Via Egnatia to the east.
-brundisium,Brundisium,Brindisi,17.94,40.64,south,1,3,marble 1.1; bronze 1.0; papyrus 1.0; pepper 1.0; purple 1.0,wine 1.3; oil 1.3; fish 1.3; cloth 1.2,18.6 42.30; 18.6 41.6; 18.1 40.8,DRAFT. The gate to Italy and the East.
+id,name,lon,lat,direction,seasons,days,sells,buys,route,notes
+epidaurum,Epidaurum,18.22,42.58,north,1,1,fish 1.0; wine 1.1; salt 1.0,cloth 1.2; iron 1.2; oil 1.1,18.55 42.40; 18.35 42.48,DRAFT. The nearest Roman town up the coast.
+narona,Narona,17.62,43.08,north,1,2,grain 0.95; fleece 0.9,salt 1.3; fish 1.2; oil 1.1,18.55 42.40; 17.9 42.75; 17.45 43.0,"DRAFT. River port on the Naro, the grain of the valley."
+salona,Salona,16.48,43.54,north,1,3,timber 0.9; marble 1.0; iron 1.05,wine 1.2; oil 1.2; cloth 1.2,18.55 42.40; 17.9 42.7; 17.0 42.95; 16.5 43.3,DRAFT. Capital of the province; the governor of Dalmatia sits here.
+iader,Iader,15.23,44.12,north,1,4,fish 0.95; salt 0.85; fleece 0.9,wine 1.2; oil 1.2; iron 1.15,18.55 42.40; 17.9 42.7; 17.0 42.95; 16.1 43.4; 15.6 43.8,"DRAFT. Roman colony among the Liburnian islands: salt from the island pans, fish and island fleece."
+pola,Pola,13.85,44.87,north,1,6,oil 0.85; marble 1.05; wine 1.0,iron 1.2; cloth 1.2; salt 1.2,18.55 42.40; 17.9 42.7; 16.3 43.1; 15.2 43.8; 14.4 44.4; 14.0 44.7,"DRAFT. Colonia Pietas Iulia Pola in Istria: famous olive oil, and Istrian stone."
+aquileia,Aquileia,13.37,45.77,north,2,8,iron 0.8; amber 1.0; glass 1.0; tin 1.0,wine 1.4; oil 1.4; fish 1.3,18.55 42.40; 17.9 42.7; 16.3 43.1; 15.2 43.8; 14.3 44.5; 13.6 45.2,DRAFT. End of the Amber Road from the Baltic; Noric iron from the Alps.
+ancon,Ancon,13.51,43.62,north,1,4,purple 0.9; grain 1.0; wine 1.0,fish 1.2; timber 1.2; fleece 1.15; iron 1.2,18.55 42.40; 17.9 42.65; 16.2 43.0; 14.8 43.4,"DRAFT. Greek city on the Italian shore, across the open sea: Picene grain, and a purple dye said to rival Tyre's."
+dyrrachium,Dyrrachium,19.45,41.31,south,1,2,grain 0.9; bronze 1.0; tin 1.1,timber 1.3; fleece 1.2; wine 1.1,18.6 42.30; 19.0 41.9; 19.35 41.45,DRAFT. Start of the Via Egnatia to the east.
+brundisium,Brundisium,17.94,40.64,south,1,3,marble 1.1; bronze 1.0; papyrus 1.0; pepper 1.0; purple 1.0,wine 1.3; oil 1.3; fish 1.3; cloth 1.2,18.6 42.30; 18.6 41.6; 18.1 40.8,DRAFT. The gate to Italy and the East.
