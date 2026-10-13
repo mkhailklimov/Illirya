@@ -3,22 +3,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caesar+Dressing&family=Cormorant+Garamond:ital,wght@1,500&family=Marcellus&display=swap">
 <style>
-/* Layout: a governor's desk at night. Ledger of the nine numbers across the top, the season's
-   stage (cards, then orders, then the report) in the middle, the council and the city beside it. */
+/* Layout: the table of a board game. The board (city sheet or Adriatic map, in tabs) beside the council;
+   below it the season's stage: cards, then the order book, then the report. Compass and die sit in the corners. */
 :root {
   color-scheme: dark;
-  --night: #0f1430;      /* page ground, the night sky of the kit */
-  --dusk: #261b42;       /* raised panels */
-  --wine: #2c0819;       /* inset wells: ability box, card faces */
-  --gold: #e2bd66;       /* the accent: lettering, rules, coins */
+  --night: #0f1430;      /* page ground */
+  --dusk: #261b42;       /* panels */
+  --wine: #2c0819;       /* inset wells */
+  --gold: #e2bd66;       /* accent: lettering, rules, coins */
   --gold-pale: #f6e3a1;
-  --ink: #f3e8d2;        /* running text */
-  --mute: #b9a98f;       /* secondary text */
+  --ink: #f3e8d2;
+  --mute: #b9a98f;
   --crimson: #b8324f;
+  --sea-deep: #0b2440;
   --line: rgba(226, 189, 102, .35);
-  --good: #9fdcae;
-  --bad: #ff9b9b;
-  --land: #6d5a1e; --sea: #11485a; --omen: #5a1640;
+  --faint: rgba(226, 189, 102, .16);
+  --good: #9fdcae; --bad: #ff9b9b;
+  --land: #6d5a1e; --seacard: #11485a; --omen: #5a1640;
   --f-display: "Caesar Dressing", "Marcellus", Georgia, serif;
   --f-label: "Marcellus", Georgia, "Times New Roman", serif;
   --f-voice: "Cormorant Garamond", Georgia, serif;
@@ -27,147 +28,212 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { min-height: 100%; }
-body {
-  margin: 0; background: radial-gradient(1200px 700px at 30% -10%, #2a1d4a 0%, var(--night) 60%) fixed, var(--night);
-  color: var(--ink); font: 17px/1.5 var(--f-label); padding: 0 var(--gutter); padding-block: 18px 40px;
-}
+body { margin: 0; background: radial-gradient(1200px 700px at 30% -10%, #2a1d4a 0%, var(--night) 60%) fixed, var(--night);
+  color: var(--ink); font: 17px/1.5 var(--f-label); padding: 0 var(--gutter); padding-block: 16px 120px; }
 button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--gold-pale); outline-offset: 2px; }
-.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 18px; }
+button:disabled { cursor: default; opacity: .55; }
+:focus-visible { outline: 2px solid var(--gold-pale); outline-offset: 2px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 16px; }
+h2 { font: 400 clamp(23px, 2.8vw, 29px)/1.15 var(--f-display); color: var(--gold); margin: 0 0 8px; letter-spacing: .03em; text-wrap: balance; }
+h3 { font: 400 17px/1.3 var(--f-label); color: var(--gold-pale); margin: 0; letter-spacing: .04em; }
+.eyebrow { font-size: 12.5px; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); margin: 0 0 8px; }
+.voice { font: italic 500 21px/1.4 var(--f-voice); color: var(--ink); max-width: 62ch; margin: 0; }
+.sum { color: var(--mute); font-size: 15px; font-variant-numeric: tabular-nums; }
+.panel { background: rgba(38, 27, 66, .72); border: 1px solid var(--line); border-radius: 16px; padding: 16px clamp(14px, 2.2vw, 22px); min-width: 0; }
 
-/* header */
-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
-.brand { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-.brand h1 { margin: 0; font: 400 clamp(34px, 5vw, 48px)/1 var(--f-display); color: var(--gold); letter-spacing: .04em; }
-.brand span { font-size: 14px; letter-spacing: .32em; text-transform: uppercase; color: var(--gold-pale); }
-.when { font-size: 15px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+/* header and tabs */
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand h1 { margin: 0; font: 400 clamp(32px, 4.6vw, 46px)/1 var(--f-display); color: var(--gold); letter-spacing: .04em; }
+.brand span { font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold-pale); }
+.when { font-size: 14px; letter-spacing: .16em; text-transform: uppercase; color: var(--mute); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .when b { color: var(--gold-pale); font-weight: 400; }
-.ghost { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+.ghost { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
 .ghost:hover { color: var(--gold-pale); border-color: var(--gold); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { background: none; border: 1px solid transparent; border-bottom: 0; border-radius: 12px 12px 0 0; padding: 8px 16px 7px; color: var(--mute); letter-spacing: .12em; text-transform: uppercase; font-size: 14px; display: flex; gap: 8px; align-items: baseline; }
+.tab b { font: 400 19px var(--f-display); letter-spacing: .04em; text-transform: none; }
+.tab[aria-selected="true"] { color: var(--gold-pale); border-color: var(--line); background: rgba(38, 27, 66, .9); margin-bottom: -1px; }
 
 /* ledger */
-.ledger { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); border: 1px solid var(--line); border-radius: 14px; background: rgba(38, 27, 66, .6); overflow: hidden; }
-.num { padding: 10px 14px 12px; border-right: 1px solid rgba(226, 189, 102, .15); display: grid; gap: 1px; min-width: 0; }
-.num .k { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); }
-.num .v { font-size: 26px; color: var(--gold-pale); font-variant-numeric: tabular-nums; line-height: 1.15; }
-.num .u { font-size: 12.5px; color: var(--mute); display: flex; gap: 8px; align-items: baseline; }
-.num .d { font-variant-numeric: tabular-nums; }
-.num .d.up { color: var(--good); } .num .d.down { color: var(--bad); }
+.ledger { display: grid; grid-template-columns: repeat(auto-fit, minmax(122px, 1fr)); border: 1px solid var(--line); border-radius: 14px; background: rgba(38, 27, 66, .6); overflow: hidden; }
+.num { padding: 9px 14px 10px; border-right: 1px solid var(--faint); display: grid; min-width: 0; }
+.num .k { font-size: 11.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); }
+.num .v { font-size: 25px; color: var(--gold-pale); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.num .u { font-size: 12.5px; color: var(--mute); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.up { color: var(--good) !important; } .down { color: var(--bad) !important; }
 .num.warn .v { color: var(--bad); }
 
-/* main grid */
-.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
-@media (max-width: 920px) { .main { grid-template-columns: minmax(0, 1fr); } }
-.panel { background: rgba(38, 27, 66, .72); border: 1px solid var(--line); border-radius: 16px; padding: 18px clamp(14px, 2.4vw, 24px); min-width: 0; }
-.eyebrow { font-size: 12.5px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); margin: 0 0 10px; }
-h2 { font: 400 clamp(24px, 3vw, 30px)/1.15 var(--f-display); color: var(--gold); margin: 0 0 8px; letter-spacing: .03em; text-wrap: balance; }
-.voice { font: italic 500 21px/1.4 var(--f-voice); color: var(--ink); max-width: 62ch; }
-.stage { display: grid; gap: 18px; }
-
-/* season cards */
-.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; perspective: 1200px; }
-@media (max-width: 560px) { .cards { grid-template-columns: minmax(0, 1fr); } }
-.card { position: relative; min-height: 250px; max-width: 100%; transform-style: preserve-3d; transition: transform .9s cubic-bezier(.2, .7, .2, 1); }
-@media (max-width: 560px) { .card { min-height: 200px; } }
-.card.flip { transform: rotateY(180deg); }
-.card > div { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 14px; border: 2px solid var(--gold); overflow: hidden; }
-.card .back { background: repeating-linear-gradient(45deg, rgba(226,189,102,.08) 0 10px, transparent 10px 20px), var(--wine); display: grid; place-items: center; }
-.card .back span { font: 400 28px var(--f-display); color: var(--gold); letter-spacing: .08em; }
-.card .face { transform: rotateY(180deg); background: var(--wine); display: grid; grid-template-rows: auto 1fr auto; }
-.card .band { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; letter-spacing: .26em; text-transform: uppercase; color: var(--gold-pale); }
-.card[data-deck="land"] .band { background: var(--land); } .card[data-deck="sea"] .band { background: var(--sea); } .card[data-deck="omen"] .band { background: var(--omen); }
-.card .band svg { width: 22px; height: 22px; }
-.card .body { padding: 12px 14px; display: grid; align-content: start; gap: 8px; min-width: 0; }
-.card .title { font-size: 19px; line-height: 1.25; color: var(--gold-pale); text-wrap: balance; }
-.card .hint { font: italic 500 16.5px/1.35 var(--f-voice); color: var(--mute); }
-.card .eff { padding: 9px 14px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink); }
-.card .eff.decide { color: var(--gold); letter-spacing: .14em; text-transform: uppercase; font-size: 12.5px; }
-.card.quiet .face { opacity: .78; }
-.card.active > div { box-shadow: 0 0 0 3px var(--gold-pale), 0 0 30px rgba(246, 227, 161, .35); }
-
-/* choices and orders */
-.choice { display: grid; gap: 10px; }
-.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: start; text-align: left; width: 100%; background: rgba(44, 8, 25, .7); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; transition: border-color .2s, background .2s; }
-.opt:hover { border-color: var(--gold); background: rgba(70, 18, 44, .85); }
-.opt .key { grid-row: span 2; font: 400 26px/1 var(--f-display); color: var(--gold); min-width: 1.4em; }
-.opt .what { color: var(--gold-pale); }
-.opt .sub { font-size: 14px; color: var(--mute); }
-.opt.die .sub::before { content: "⬡ "; color: var(--gold); }
-.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.btn { background: linear-gradient(180deg, #f0d184, #c9993d); color: #2c0819; border: 0; border-radius: 999px; padding: 9px 22px; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
-.btn:hover { filter: brightness(1.08); }
-.btn.quiet { background: none; color: var(--gold-pale); border: 1px solid var(--line); }
-.problems { margin: 0; padding-left: 20px; color: var(--bad); font-size: 15px; }
-textarea, input[type=number], select { background: var(--wine); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font: 16px var(--f-label); }
-textarea { width: 100%; min-height: 76px; resize: vertical; }
-.decrees { display: grid; gap: 6px; }
-.decree { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; border: 1px solid rgba(226,189,102,.18); border-radius: 10px; }
-.decree.on { border-color: var(--gold); background: rgba(70, 18, 44, .6); }
-.decree .cost { font-size: 14px; color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.decree .extra { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
-.decree .extra:empty { display: none; }
-input[type=checkbox] { accent-color: #d9ac4f; width: 18px; height: 18px; }
-
-/* report */
-.notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-.notes li { padding-left: 18px; position: relative; max-width: 72ch; }
-.notes li::before { content: "◆"; position: absolute; left: 0; top: .1em; font-size: 10px; color: var(--gold); }
-.notes li.history { font: italic 500 18px/1.4 var(--f-voice); color: var(--mute); }
-.changes { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 15px; }
-.changes td { padding: 5px 8px; border-bottom: 1px solid rgba(226,189,102,.14); }
-.changes td:nth-child(n+2) { text-align: right; }
-.changes .up { color: var(--good); } .changes .down { color: var(--bad); }
+/* board + council */
+.table { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 980px) { .table { grid-template-columns: minmax(0, 1fr); } }
+.board { display: grid; min-width: 0; }
+.sheet { border: 1px solid var(--line); border-top: 0; border-radius: 0 0 16px 16px; background: rgba(38, 27, 66, .72); padding: 14px; display: grid; gap: 14px; min-width: 0; }
+.mapwrap { overflow: hidden; border-radius: 12px; border: 1px solid var(--faint); background: var(--sea-deep); }
+.mapwrap svg { display: block; width: 100%; height: auto; }
+.plot-hit, .town-hit { cursor: pointer; }
+.plot-hit:hover .plot-frame, .plot-hit:focus-visible .plot-frame { stroke: var(--gold-pale); stroke-width: 3; }
+.plot-hit:focus, .town-hit:focus { outline: none; }
+.town-hit:hover .dot, .town-hit:focus-visible .dot { stroke: var(--gold-pale); stroke-width: 4; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--mute); }
+.legend i { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.stores { display: grid; gap: 10px; }
+.stores-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+.good { border: 1px solid var(--faint); border-radius: 10px; padding: 6px 10px; display: grid; min-width: 0; }
+.good .n { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.good .q { font-size: 19px; color: var(--gold-pale); font-variant-numeric: tabular-nums; display: flex; gap: 6px; align-items: baseline; }
+.good .q small { font-size: 12.5px; }
+.good.zero .q { color: rgba(185,169,143,.55); }
+.towninfo { display: grid; gap: 8px; }
+.twocol { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.prices { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.prices td { padding: 4px 6px; border-top: 1px solid var(--faint); }
+.prices td:nth-child(2) { text-align: right; }
+.prices td:nth-child(3) { color: var(--mute); font-size: 13px; }
 
 /* council */
-.council { display: grid; gap: 12px; }
-.adv { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 4px 14px; align-items: start; background: none; border: 0; padding: 6px 0; text-align: left; width: 100%; }
-.adv + .adv { border-top: 1px solid rgba(226,189,102,.14); padding-top: 12px; }
-.coin { --d: 74px; width: var(--d); height: var(--d); border-radius: 50%; overflow: hidden; position: relative; grid-row: span 3; box-shadow: 0 0 0 2px var(--gold), 0 6px 16px rgba(0,0,0,.5); }
+.council { display: grid; gap: 10px; }
+.adv { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 2px 12px; align-items: start; background: none; border: 0; padding: 4px 0; text-align: left; width: 100%; }
+.adv + .adv { border-top: 1px solid var(--faint); padding-top: 10px; }
+.coin { --d: 64px; width: var(--d); height: var(--d); border-radius: 50%; overflow: hidden; position: relative; grid-row: span 3; box-shadow: 0 0 0 2px var(--gold), 0 6px 16px rgba(0,0,0,.5); flex: none; display: block; }
 .coin img { position: absolute; width: calc(var(--d) * 1.911); max-width: none; left: calc(var(--d) * -0.4555); top: calc(var(--d) * -0.2643); }
 .adv .who { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; align-items: baseline; }
-.adv .name { color: var(--gold-pale); font-size: 16.5px; }
-.adv .role { font-size: 11.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); }
+.adv .name { color: var(--gold-pale); font-size: 16px; }
 .leaves { display: inline-flex; gap: 3px; }
 .leaves i { width: 13px; height: 7px; border-radius: 50%; border: 1.5px solid var(--gold); opacity: .55; }
 .leaves i.on { background: var(--gold); opacity: 1; }
 .ab { font-size: 12.5px; color: var(--mute); }
 .ab b { font-weight: 400; color: var(--gold); } .ab .sulk { color: var(--bad); }
-.say { font: italic 500 17.5px/1.35 var(--f-voice); color: var(--ink); }
-.adv.speaks .say::before { content: "“"; } .adv.speaks .say::after { content: "”"; }
+.say { font: italic 500 17px/1.32 var(--f-voice); color: var(--ink); }
 
-/* aside */
-aside { display: grid; gap: 18px; min-width: 0; }
-.wind img { width: 100%; border-radius: 12px; display: block; }
-.wind p { margin: 8px 0 0; font-size: 14.5px; color: var(--mute); }
-.city { display: grid; gap: 12px; }
-.plots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
-.plot { border: 1px solid rgba(226,189,102,.3); border-radius: 7px; padding: 5px 4px; text-align: center; font-size: 12.5px; color: var(--gold-pale); background: rgba(44, 8, 25, .6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.plot.empty { color: rgba(185,169,143,.45); border-style: dashed; background: none; }
-.plot.wip { color: var(--mute); border-style: dashed; }
-.zone-h { display: flex; justify-content: space-between; font-size: 12.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); margin-bottom: 6px; }
-.fleet { font-size: 14.5px; color: var(--mute); margin: 0; }
+/* stage */
+.stage { display: grid; gap: 16px; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; perspective: 1200px; }
+@media (max-width: 600px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+.card { position: relative; min-height: 240px; max-width: 100%; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.2, .7, .2, 1); border: 0; padding: 0; background: none; text-align: left; width: 100%; }
+@media (max-width: 600px) { .card { min-height: 200px; } }
+.card.flip { transform: rotateY(180deg); cursor: default; }
+.card > div { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 14px; border: 2px solid var(--gold); overflow: hidden; }
+.card .back { background: repeating-linear-gradient(45deg, rgba(226,189,102,.08) 0 10px, transparent 10px 20px), var(--wine); display: grid; place-items: center; align-content: center; gap: 8px; }
+.card .back span { font: 400 30px var(--f-display); color: var(--gold); letter-spacing: .1em; }
+.card .back em { font: italic 500 17px var(--f-voice); color: var(--mute); }
+.card:not(.flip):hover .back { box-shadow: inset 0 0 0 2px var(--gold-pale), 0 0 26px rgba(246,227,161,.25); }
+.card .face { transform: rotateY(180deg); background: var(--wine); display: grid; grid-template-rows: auto 1fr auto; }
+.card .band { padding: 7px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--gold-pale); }
+.card[data-deck="land"] .band { background: var(--land); } .card[data-deck="sea"] .band { background: var(--seacard); } .card[data-deck="omen"] .band { background: var(--omen); }
+.card .band svg { width: 22px; height: 22px; }
+.card .body { padding: 10px 14px; display: grid; align-content: start; gap: 6px; min-width: 0; }
+.card .title { font-size: 19px; line-height: 1.25; color: var(--gold-pale); text-wrap: balance; }
+.card .hint { font: italic 500 16.5px/1.35 var(--f-voice); color: var(--mute); }
+.card .eff { padding: 8px 14px; border-top: 1px solid var(--line); font-size: 14px; }
+.card .eff.decide { color: var(--gold); letter-spacing: .14em; text-transform: uppercase; font-size: 12.5px; }
+.card.quiet .face { opacity: .8; }
+.card.active > div { box-shadow: 0 0 0 3px var(--gold-pale), 0 0 30px rgba(246, 227, 161, .35); }
+.choice { display: grid; gap: 8px; }
+.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 14px; align-items: start; text-align: left; width: 100%; background: rgba(44, 8, 25, .7); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.opt:hover:not(:disabled) { border-color: var(--gold); background: rgba(70, 18, 44, .85); }
+.opt .key { grid-row: span 2; font: 400 24px/1 var(--f-display); color: var(--gold); min-width: 1.3em; }
+.opt .what { color: var(--gold-pale); }
+.opt .sub { font-size: 14px; color: var(--mute); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { background: linear-gradient(180deg, #f0d184, #c9993d); color: #2c0819; border: 0; border-radius: 999px; padding: 9px 22px; font-size: 14.5px; letter-spacing: .14em; text-transform: uppercase; }
+.btn:hover:not(:disabled) { filter: brightness(1.08); }
+.btn.quiet { background: none; color: var(--gold-pale); border: 1px solid var(--line); }
+.btn.small { padding: 5px 14px; font-size: 12.5px; }
+.problems { margin: 0; padding-left: 20px; color: var(--bad); font-size: 14.5px; }
 
-/* overlay: dice, advisor offers, questions, card viewer */
-.veil { position: fixed; inset: 0; background: rgba(6, 5, 16, .78); display: grid; place-items: center; padding: 20px; z-index: 10; backdrop-filter: blur(3px); }
-.dialog { width: min(560px, 100%); max-height: calc(100% - 20px); overflow: auto; background: linear-gradient(180deg, #1b1a3e, #2c1c48); border: 2px solid var(--gold); border-radius: 18px; padding: 22px; display: grid; gap: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+/* order desk */
+.desk { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 14px; }
+@media (max-width: 1100px) { .desk { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .desk .book { grid-column: 1 / -1; } }
+@media (max-width: 680px) { .desk { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 10px; min-width: 0; align-content: start; }
+.plan { border: 1px solid var(--faint); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; background: rgba(44, 8, 25, .45); }
+.plan .ph { display: flex; align-items: center; gap: 10px; }
+.plan .ph .coin { --d: 34px; box-shadow: 0 0 0 1.5px var(--gold); }
+.plan .ph .mark { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--gold); display: grid; place-items: center; font: 400 17px var(--f-display); color: var(--gold); flex: none; }
+.plan .ph div { min-width: 0; flex: 1; }
+.plan .ph small { display: block; font-size: 12px; color: var(--mute); letter-spacing: .1em; text-transform: uppercase; }
+.plan ul { margin: 0; padding-left: 18px; font-size: 14.5px; }
+.groups { display: grid; gap: 10px; }
+.group h4 { margin: 0 0 6px; font: 400 12px var(--f-label); letter-spacing: .22em; text-transform: uppercase; color: var(--mute); }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.act { background: rgba(44, 8, 25, .6); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 14px; color: var(--gold-pale); text-align: left; }
+.act:hover { border-color: var(--gold); background: rgba(70, 18, 44, .85); }
+.act small { color: var(--mute); margin-left: 6px; font-size: 12px; }
+textarea, input[type=number], select { background: var(--wine); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: 15.5px var(--f-label); max-width: 100%; }
+textarea { width: 100%; min-height: 64px; resize: vertical; }
+.book ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; counter-reset: o; }
+.book li { counter-increment: o; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 7px 10px; border: 1px solid var(--faint); border-radius: 10px; font-size: 14.5px; }
+.book li::before { content: counter(o, upper-roman); font: 400 15px var(--f-display); color: var(--gold); min-width: 2.1em; }
+.book li.bad { border-color: var(--bad); }
+.book li em { color: var(--bad); font-style: normal; display: block; font-size: 13px; }
+.book li button { background: none; border: 0; color: var(--mute); font-size: 18px; line-height: 1; padding: 0 4px; }
+.book li button:hover { color: var(--bad); }
+.slots { display: flex; gap: 3px; flex-wrap: wrap; }
+.slots i { width: 14px; height: 6px; border-radius: 3px; background: var(--faint); }
+.slots i.on { background: var(--gold); }
+.cost { font-size: 14px; color: var(--mute); font-variant-numeric: tabular-nums; }
+.cost b { color: var(--gold-pale); font-weight: 400; }
+.short { color: var(--bad) !important; }
+
+/* report */
+.notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.notes li { padding-left: 18px; position: relative; max-width: 78ch; }
+.notes li::before { content: "◆"; position: absolute; left: 0; top: .1em; font-size: 10px; color: var(--gold); }
+.notes li.history { font: italic 500 18px/1.4 var(--f-voice); color: var(--mute); }
+.changes { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 15px; }
+.changes td { padding: 4px 8px; border-bottom: 1px solid var(--faint); }
+.changes td:nth-child(n+2) { text-align: right; }
+
+/* overlay */
+.veil { position: fixed; inset: 0; background: rgba(6, 5, 16, .78); display: grid; place-items: center; padding: 20px; z-index: 20; backdrop-filter: blur(3px); }
+.dialog { width: min(600px, 100%); max-height: calc(100% - 20px); overflow: auto; background: linear-gradient(180deg, #1b1a3e, #2c1c48); border: 2px solid var(--gold); border-radius: 18px; padding: 20px; display: grid; gap: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.dialog.wide { width: min(780px, 100%); }
 .dialog .head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
-.dialog .head .coin { --d: 84px; grid-row: auto; }
+.dialog .head .coin { --d: 80px; }
 .dialog .ability { font: 400 24px/1.1 var(--f-display); color: var(--gold); }
 .dialog .uses { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--mute); }
-.die-stage { display: grid; justify-items: center; gap: 10px; text-align: center; }
-.die-stage .die { width: min(240px, 60vw); }
+.die-stage { justify-items: center; text-align: center; }
+.die-stage .die { width: min(230px, 58vw); }
 .die-stage .die svg { width: 100%; height: auto; display: block; }
-.die-stage.spin .die { animation: tumble .12s linear infinite; }
+.spin .die svg, .corner.die.spin svg { animation: tumble .12s linear infinite; }
 @keyframes tumble { 0% { transform: rotate(-14deg) scale(.94); } 50% { transform: rotate(10deg) scale(1.03); } 100% { transform: rotate(-14deg) scale(.94); } }
 .verdict { font: 400 30px var(--f-display); color: var(--gold); min-height: 1.2em; }
 .verdict.bad { color: var(--bad); }
-.sum { font-variant-numeric: tabular-nums; color: var(--mute); }
-.fullcard { width: min(420px, 100%); border-radius: 18px; display: block; }
+.fullcard { width: min(400px, 100%); border-radius: 18px; display: block; margin: 0 auto; }
+.picklist { display: grid; gap: 6px; }
+.pick { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; width: 100%; background: rgba(44, 8, 25, .6); border: 1px solid var(--faint); border-radius: 12px; padding: 8px 12px; }
+.pick:hover:not(:disabled) { border-color: var(--gold); }
+.pick .t { color: var(--gold-pale); }
+.pick .d { font-size: 13.5px; color: var(--mute); }
+.pick .c { font-size: 13.5px; color: var(--mute); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .pick { grid-template-columns: 38px minmax(0, 1fr); } .pick .c { grid-column: 2; text-align: left; } }
+.trade { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.trade th { font-weight: 400; color: var(--mute); text-align: left; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; padding: 4px 6px; }
+.trade td { padding: 4px 6px; border-top: 1px solid var(--faint); }
+.trade input { width: 74px; }
+.meter { height: 8px; border-radius: 4px; background: var(--faint); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--gold); }
+.meter.over i { background: var(--bad); }
+.townpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.townpick button { background: rgba(44, 8, 25, .6); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 14px; color: var(--gold-pale); }
+.townpick button[aria-pressed="true"] { background: var(--gold); color: var(--wine); }
+
+/* corners: compass and die */
+.corner { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 15; background: rgba(15, 20, 48, .94); border: 1.5px solid var(--gold); border-radius: 50%; width: 92px; height: 92px; padding: 0; display: grid; place-items: center; box-shadow: 0 8px 26px rgba(0,0,0,.55); }
+.corner.compass { left: calc(14px + env(safe-area-inset-left, 0px)); }
+.corner.die { right: calc(14px + env(safe-area-inset-right, 0px)); border-radius: 18px; }
+.corner svg { width: 80px; height: 80px; display: block; }
+.corner .cap { position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); background: var(--night); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-pale); white-space: nowrap; }
+@media (max-width: 600px) { .corner { width: 70px; height: 70px; } .corner svg { width: 60px; height: 60px; } }
+.toasts { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 16; display: grid; gap: 6px; width: min(520px, calc(100% - 230px)); pointer-events: none; }
+@media (max-width: 600px) { .toasts { width: calc(100% - 180px); } }
+.toast { background: rgba(27, 26, 62, .96); border: 1px solid var(--gold); border-radius: 12px; padding: 8px 12px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 footer { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; color: var(--mute); font-size: 13.5px; }
-footer .stones { display: flex; gap: 6px; align-items: center; }
-footer .stones button { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; color: var(--mute); }
-footer .stones button[aria-pressed="true"] { color: var(--gold-pale); border-color: var(--gold); }
-@media (prefers-reduced-motion: reduce) { .card { transition: none; } .die-stage.spin .die { animation: none; } }
+footer .opts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+footer .opts button { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; color: var(--mute); }
+footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color: var(--gold); }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .spin .die svg, .corner.die.spin svg { animation: none; } }
 </style>
 
 <div class="wrap">
@@ -176,19 +242,26 @@ footer .stones button[aria-pressed="true"] { color: var(--gold-pale); border-col
     <div class="when"><span id="when"></span><button class="ghost" id="newgame" type="button">New game</button></div>
   </header>
   <section class="ledger" id="ledger" aria-label="The town's numbers"></section>
-  <div class="main">
-    <div class="stage" id="stage"></div>
-    <aside>
-      <section class="panel"><p class="eyebrow">Your council</p><div class="council" id="council"></div></section>
-      <section class="panel wind" id="wind"></section>
-      <section class="panel city" id="city"></section>
-    </aside>
+  <div class="table">
+    <div class="board">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-city" aria-selected="true" aria-controls="sheet-city" type="button"><b>Acruvium</b> city sheet</button>
+        <button class="tab" role="tab" id="tab-sea" aria-selected="false" aria-controls="sheet-sea" type="button"><b>Adriatic</b> map</button>
+      </div>
+      <section class="sheet" id="sheet-city" role="tabpanel" aria-labelledby="tab-city"></section>
+      <section class="sheet" id="sheet-sea" role="tabpanel" aria-labelledby="tab-sea" hidden></section>
+    </div>
+    <section class="panel"><p class="eyebrow">Your council</p><div class="council" id="council"></div></section>
   </div>
+  <div class="stage" id="stage"></div>
   <footer>
-    <span>Phase 0 playtest · the same rules as <code>rules/play.py</code> · DRAFT numbers</span>
-    <span class="stones" id="stones">Die: </span>
+    <span>Phase 0 playtest · rules v2 · all numbers DRAFT</span>
+    <span class="opts" id="opts"></span>
   </footer>
 </div>
+<button class="corner compass" id="compass" type="button" aria-label="Wind and current"></button>
+<button class="corner die" id="cornerdie" type="button" aria-label="The last roll of the die"></button>
+<div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="veil" id="veil" hidden></div>
 
 <script src="data.js"></script>
@@ -198,99 +271,322 @@ footer .stones button[aria-pressed="true"] { color: var(--gold-pale); border-col
   const E = window.Engine, D = window.GAME_DATA;
   const $ = (id) => document.getElementById(id);
   const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const KEY = "illyria-web-save", STONE_KEY = "illyria-die";
+  const KEY = "illyria-web-save-v2", STONE_KEY = "illyria-die", SOUND_KEY = "illyria-sound";
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
-  let s = null, wants = {}, say = {}, stone = store.get(STONE_KEY) || "obsidian";
+  let s = null, wants = {}, say = {}, book = [], phase = "intro", stone = store.get(STONE_KEY) || "obsidian", sound = store.get(SOUND_KEY) !== "off";
   if (!D.dice[stone]) stone = "obsidian";
+  const reduce = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const clean = (t) => String(t || "").replace("DRAFT. ", "").replace("DRAFT.", "");
 
-  // ---------- ledger, council, wind, city ----------
+  // ---------- sound, made on the spot with Web Audio (no files) ----------
+  let ac = null;
+  function audio() { if (!sound) return null; try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); return ac; } catch (e) { return null; } }
+  function noise(a, dur) { const b = a.createBuffer(1, Math.ceil(a.sampleRate * dur), a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const n = a.createBufferSource(); n.buffer = b; return n; }
+  function rustle() {   // parchment turned over
+    const a = audio(); if (!a) return;
+    [0, .09, .2].forEach((t0, k) => {
+      const n = noise(a, .32), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + t0;
+      f.type = "bandpass"; f.frequency.value = 1800 + k * 900; f.Q.value = .8;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.16 - k * .03, t + .02); g.gain.exponentialRampToValueAtTime(.001, t + .3);
+      n.connect(f).connect(g).connect(a.destination); n.start(t); n.stop(t + .33);
+    });
+  }
+  function gong() {     // a bronze gong for the omens
+    const a = audio(); if (!a) return;
+    const t = a.currentTime, out = a.createGain(); out.gain.value = .22; out.connect(a.destination);
+    [[1, .9], [2.32, .5], [2.76, .45], [3.71, .3], [4.5, .2], [5.9, .12]].forEach(([r, v], i) => {
+      const o = a.createOscillator(), g = a.createGain();
+      o.frequency.value = 98 * r * (1 + (i % 2 ? .003 : -.002));
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .015); g.gain.exponentialRampToValueAtTime(.0008, t + 4.2 - i * .4);
+      o.connect(g).connect(out); o.start(t); o.stop(t + 4.4);
+    });
+    const n = noise(a, .08), f = a.createBiquadFilter(), g = a.createGain();
+    f.type = "lowpass"; f.frequency.value = 400; g.gain.setValueAtTime(.5, t); g.gain.exponentialRampToValueAtTime(.001, t + .08);
+    n.connect(f).connect(g).connect(out); n.start(t);
+  }
+  function clatter() {  // the die on the table
+    const a = audio(); if (!a) return;
+    [0, .07, .16, .29, .45].forEach((t0, k) => {
+      const n = noise(a, .03), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + t0;
+      f.type = "highpass"; f.frequency.value = 2500; g.gain.setValueAtTime(.22 - k * .035, t); g.gain.exponentialRampToValueAtTime(.001, t + .03);
+      n.connect(f).connect(g).connect(a.destination); n.start(t);
+    });
+  }
+
+  // ---------- building icons (40x40 box around 0,0) ----------
+  const I = {
+    forum: '<path d="M-16,14h32M-14,10h28M-12,10V-4M12,10V-4M-4,10V0a4,4 0 0 1 8,0v10M-14,-4h28L0,-14Z"/>',
+    houses: '<path d="M-17,14V0l9,-8 9,8v14M1,14V-3l8,-7 8,7v17M-11,14V7h5v7M6,6h5"/>',
+    harbour: '<path d="M0,-12v26M-8,-6h16M-14,4c2,8 8,11 14,11s12,-3 14,-11M-14,4l-3,4M14,4l3,4"/><circle cx="0" cy="-15" r="3"/>',
+    walls: '<path d="M-12,15V-8h-3v-6h6v3h4v-3h6v3h4v-3h6v6h-3v23ZM-3,15V7a3,3 0 0 1 6,0v8"/>',
+    weavers: '<path d="M-14,-14v28M14,-14v28M-14,-11h28M-14,11h28M-8,-11v22M-2,-11v22M4,-11v22M10,-11v22M-14,0h28"/>',
+    market: '<path d="M-16,-4l4,-10h24l4,10ZM-16,-4c0,4 8,4 8,0c0,4 8,4 8,0c0,4 8,4 8,0c0,4 8,4 8,0M-13,0v14M13,0v14M-17,14h34M-6,8h12"/>',
+    temple: '<path d="M-17,-6L0,-16 17,-6ZM-15,-6h30M-12,-3v14M-4,-3v14M4,-3v14M12,-3v14M-16,12h32M-18,15h36"/>',
+    barracks: '<path d="M-12,15L12,-15M12,15L-12,-15M-14,-15l3,6M14,-15l-3,6"/><path d="M0,-6c6,2 9,6 9,10c0,6 -5,10 -9,11c-4,-1 -9,-5 -9,-11c0,-4 3,-8 9,-10Z"/>',
+    baths: '<path d="M-16,14h32M-14,14V2a14,12 0 0 1 28,0v12M-6,14V6M0,14V4M6,14V6M-6,-14c-3,3 3,5 0,8M0,-16c-3,3 3,5 0,8M6,-14c-3,3 3,5 0,8"/>',
+    wheat: '<path d="M0,16V-12M0,-12c-4,-2 -4,-6 0,-6c4,0 4,4 0,6M0,-4c-6,-1 -8,-6 -6,-8c3,0 6,3 6,8M0,-4c6,-1 8,-6 6,-8c-3,0 -6,3 -6,8M0,4c-6,-1 -8,-6 -6,-8c3,0 6,3 6,8M0,4c6,-1 8,-6 6,-8c-3,0 -6,3 -6,8"/>',
+    vineyard: '<path d="M0,-16c2,-2 6,-2 8,0M0,-16v5"/><circle cx="-5" cy="-6" r="4"/><circle cx="4" cy="-6" r="4"/><circle cx="-1" cy="1" r="4"/><circle cx="7" cy="1" r="4"/><circle cx="-7" cy="2" r="4"/><circle cx="3" cy="8" r="4"/><circle cx="-3" cy="14" r="3.5"/>',
+    olives: '<path d="M0,16V0M0,6c-6,-2 -12,-8 -12,-14M0,2c6,-2 12,-8 12,-14M-12,-8c-5,-1 -6,-6 -2,-8c3,2 4,5 2,8M12,-12c5,-1 6,-6 2,-8c-3,2 -4,5 -2,8M0,0c-2,-6 -1,-12 2,-16c2,5 1,10 -2,16"/><circle cx="-6" cy="-2" r="2"/><circle cx="7" cy="-5" r="2"/>',
+    pasture: '<path d="M-12,4c-6,0 -6,-8 0,-8c0,-6 8,-6 9,-2c2,-4 10,-3 9,2c6,0 6,8 0,8c-1,4 -8,4 -9,1c-3,3 -9,2 -9,-1ZM-8,6v8M6,6v8M12,-2c3,-1 6,0 6,3c0,3 -3,4 -6,3"/>',
+    fishery: '<path d="M-16,0c6,-9 18,-9 24,0c-6,9 -18,9 -24,0ZM8,0l9,-7v14ZM-9,-2v.1M-14,14h28M-10,10h20"/>',
+    saltpans: '<path d="M-16,-12h14v10h-14ZM2,-12h14v10h-14ZM-16,2h14v10h-14ZM2,2h14v10h-14Z"/><path d="M-10,-7h2M8,7h2M-10,7h2"/>',
+    woodcutters: '<path d="M-16,12h20l4,-6h-20ZM-12,6l4,-6h20l-4,6M4,-16l12,12M14,-12l-6,-6l4,-2l4,4Z"/>',
+    mine: '<path d="M-14,14L8,-8M-4,-16c10,0 18,6 20,14c-6,-6 -12,-8 -20,-8ZM-16,14h32"/>',
+  };
+  const icon = (k, size = 40) => `<svg viewBox="-20 -20 40 40" width="${size}" height="${size}" fill="none" stroke="#e2bd66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k] || ""}</svg>`;
+
+  // ---------- ledger and stores ----------
   function ledger(before) {
-    $("ledger").innerHTML = E.NUMBERS.map((n) => {
+    $("ledger").innerHTML = E.CORE.map((n) => {
       const r = E.RULES[n], v = s[n], d = before ? v - before[n] : 0;
       const warn = (n === "grain" && v < 3) || ((n === "loyalty" || n === "favour") && v < 30);
-      const delta = Math.abs(d) >= 0.05 ? `<span class="d ${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${E.fmt(n, Math.abs(d))}</span>` : "";
-      const unit = n === "loyalty" || n === "favour" ? "of 100" : r.unit;
+      const delta = Math.abs(d) >= 0.05 ? `<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${E.fmt(n, Math.abs(d))}</span>` : "";
+      const unit = n === "loyalty" || n === "favour" ? "of 100" : n === "grain" ? "months of food" : r.unit;
       return `<div class="num${warn ? " warn" : ""}"><span class="k">${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></div>`;
     }).join("");
     const [season, year] = E.seasonOf(s.turn);
     $("when").innerHTML = `Turn <b>${s.turn}</b> · <b>${season.season}, AD ${year}</b> · taxes <b>${s.tax}</b>`;
   }
+  function storesHTML(before) {
+    const groups = [["local", "Made in Acruvium"], ["import", "Only by sea"], ["luxury", "Rare goods"]];
+    return `<div class="stores">${groups.map(([o, label]) => {
+      const goods = D.goods.filter((g) => g.origin === o && (o !== "luxury" || s[g.id] > 0));
+      if (!goods.length) return `<p class="sum" style="margin:0">Rare goods (amber, glassware, papyrus, pepper, purple cloth) are sold in Aquileia and Brundisium.</p>`;
+      return `<div><p class="eyebrow">${label}</p><div class="stores-row">${goods.map((g) => {
+        const d = before ? s[g.id] - (before[g.id] || 0) : 0;
+        return `<div class="good${s[g.id] <= 0 ? " zero" : ""}" title="${esc(clean(g.notes))}"><span class="n">${esc(g.name)}</span><span class="q">${Math.trunc(s[g.id])} <small style="color:var(--mute)">${esc(g.unit)}</small>${Math.abs(d) >= 1 ? `<small class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${Math.abs(Math.round(d))}</small>` : ""}</span></div>`;
+      }).join("")}</div></div>`;
+    }).join("")}</div>`;
+  }
+
+  // ---------- the city sheet ----------
+  const TOWN_SLOTS = [], FIELD_SLOTS = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) TOWN_SLOTS.push([150 + c * 92, 214 + r * 78]);
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) FIELD_SLOTS.push([586 + c * 92 + r * 14, 196 + r * 82]);
+  const sortedPlots = (zone) => s.buildings.filter((b) => E.BLD[b.kind].zone === zone).sort((a, b) => E.BLD_IDS.indexOf(a.kind) - E.BLD_IDS.indexOf(b.kind) || a.done - b.done);
+  function plotSVG(b, x, y, zone, i) {
+    const w = 80, h = 66;
+    if (!b) return `<g class="plot-hit" tabindex="0" role="button" aria-label="Free plot ${zone === "town" ? "inside the walls" : "in the fields"}: build here" data-zone="${zone}" transform="translate(${x},${y})">
+      <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="rgba(15,20,48,.35)" stroke="rgba(226,189,102,.4)" stroke-dasharray="5 5"/>
+      <text x="${w / 2}" y="${h / 2 + 8}" text-anchor="middle" font-family="Marcellus" font-size="24" fill="rgba(226,189,102,.55)">+</text></g>`;
+    const st = E.buildingState(s, b), B = E.BLD[b.kind];
+    const dim = st.phase === "building" ? .45 : st.phase === "growing" ? .7 : 1;
+    const badge = st.phase === "building" ? `<g transform="translate(${w - 13},13)"><circle r="10" fill="#2c0819" stroke="#e2bd66"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#f6e3a1">${st.left}</text></g>`
+      : st.phase === "growing" ? `<g transform="translate(${w - 13},13)"><circle r="10" fill="#1f3a22" stroke="#9fdcae"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#9fdcae">${st.left}</text></g>`
+      : st.phase === "young" ? `<g transform="translate(${w - 13},13)"><circle r="9" fill="none" stroke="rgba(159,220,174,.3)" stroke-width="3"/><circle r="9" fill="none" stroke="#9fdcae" stroke-width="3" stroke-dasharray="${(st.f * 56.5).toFixed(1)} 56.5" transform="rotate(-90)"/></g>` : "";
+    return `<g class="plot-hit" tabindex="0" role="button" aria-label="${esc(B.name)}, ${esc(st.text)}" data-plot="${zone}-${i}" transform="translate(${x},${y})">
+      <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="${zone === "town" ? "rgba(44,8,25,.88)" : "rgba(38,52,30,.82)"}" stroke="#e2bd66" stroke-width="1.5" ${st.phase === "building" ? 'stroke-dasharray="6 4"' : ""}/>
+      <g transform="translate(${w / 2},27) scale(.85)" opacity="${dim}" fill="none" stroke="#e2bd66" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${I[b.kind] || ""}</g>
+      <text x="${w / 2}" y="${h - 7}" text-anchor="middle" font-family="Marcellus" font-size="12.5" fill="#f6e3a1" opacity="${dim}">${esc(B.short)}</text>${badge}</g>`;
+  }
+  function shipSVG(x, y, scale = 1, ghost = false) {
+    return `<g transform="translate(${x},${y}) scale(${scale})" ${ghost ? 'opacity=".6"' : ""}>
+      <path d="M-30,0h60l-10,12h-40Z" fill="${ghost ? "none" : "#5a3a1a"}" stroke="#e2bd66" stroke-width="1.6" ${ghost ? 'stroke-dasharray="4 3"' : ""}/>
+      ${ghost ? "" : `<path d="M0,0V-34" stroke="#e2bd66" stroke-width="2"/><path d="M-1,-32c14,4 18,12 18,22c-8,-2 -14,-2 -18,0Z" fill="#9b2240" stroke="#e2bd66" stroke-width="1.2"/>`}
+      ${Array.from({ length: 5 }, (_, k) => `<path d="M${-20 + k * 9},12l-3,7" stroke="#e2bd66" stroke-width="1.2"/>`).join("")}</g>`;
+  }
+  function citySVG() {
+    const town = sortedPlots("town"), fields = sortedPlots("field");
+    const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
+    const ships = Array.from({ length: Math.min(free, 6) }, (_, k) => shipSVG(220 + k * 72, 520 + (k % 2) * 16, .9)).join("");
+    const keels = s.shipyard.map((t, k) => shipSVG(640 + k * 76, 500, .8, true) + `<text x="${640 + k * 76}" y="534" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#b9a98f">keel · ${t - s.turn}</text>`).join("");
+    return `<svg viewBox="0 0 1000 600" role="img" aria-label="Map of Acruvium: the walled town, its harbour and the fields round the bay">
+      <defs><linearGradient id="bay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a4a6e"/><stop offset="1" stop-color="#0b2440"/></linearGradient>
+      <linearGradient id="mount" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2f5c"/><stop offset="1" stop-color="#241a3f"/></linearGradient></defs>
+      <rect width="1000" height="600" fill="#1a1436"/>
+      <path d="M0,170 L60,120 L130,140 L210,60 L300,95 L370,30 L450,80 L520,40 L620,100 L700,70 L790,120 L880,85 L1000,130 V470 H0Z" fill="url(#mount)"/>
+      <path d="M210,60 L250,110 M370,30 L400,90 M520,40 L560,95 M700,70 L730,120" stroke="rgba(246,227,161,.12)" stroke-width="2"/>
+      <path d="M520,190 L470,150 L440,120 L405,96 L380,72" fill="none" stroke="#e2bd66" stroke-width="3" stroke-dasharray="2 5" opacity=".8"/>
+      <g transform="translate(380,64)"><path d="M-10,8V-6h4v-4h4v4h4v-4h4v4h4V8Z" fill="#2c0819" stroke="#e2bd66" stroke-width="1.5"/></g>
+      <text x="398" y="44" font-family="Marcellus" font-size="13" letter-spacing="2" fill="#b9a98f">FORTRESS</text>
+      <path d="M0,470 C120,452 260,488 400,470 C540,452 700,486 840,468 C900,460 960,466 1000,470 V600 H0Z" fill="url(#bay)"/>
+      ${[0, 1, 2, 3].map((k) => `<path d="M${40 + k * 240},${560 + (k % 2) * 18} q20,-8 40,0 t40,0" fill="none" stroke="rgba(246,227,161,.18)" stroke-width="1.5"/>`).join("")}
+      <text x="980" y="588" text-anchor="end" font-family="Caesar Dressing, Marcellus" font-size="22" letter-spacing="3" fill="rgba(246,227,161,.35)">SINVS RHIZONICVS</text>
+      <path d="M128,196 L520,190 L534,450 L114,458Z" fill="rgba(15,20,48,.55)" stroke="#e2bd66" stroke-width="5" stroke-linejoin="round"/>
+      ${[[128, 196], [520, 190], [534, 450], [114, 458]].map(([x, y]) => `<rect x="${x - 11}" y="${y - 11}" width="22" height="22" fill="#2c0819" stroke="#e2bd66" stroke-width="2.5"/>`).join("")}
+      <path d="M190,462 h300 v12 h-300Z" fill="#3a2f5c" stroke="#e2bd66" stroke-width="1.5"/>
+      <text x="340" y="472" text-anchor="middle" font-family="Marcellus" font-size="10.5" letter-spacing="3" fill="#b9a98f">QUAY</text>
+      <text x="324" y="184" text-anchor="middle" font-family="Caesar Dressing, Marcellus" font-size="24" letter-spacing="3" fill="#e2bd66">ACRVVIVM</text>
+      <text x="770" y="182" text-anchor="middle" font-family="Marcellus" font-size="14" letter-spacing="4" fill="#b9a98f">FIELDS ROUND THE BAY</text>
+      ${TOWN_SLOTS.map(([x, y], i) => plotSVG(town[i], x, y, "town", i)).join("")}
+      ${FIELD_SLOTS.map(([x, y], i) => plotSVG(fields[i], x, y, "field", i)).join("")}
+      ${ships}${keels}
+    </svg>`;
+  }
+  function cityView(before) {
+    const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
+    $("sheet-city").innerHTML = `<div class="mapwrap" id="citymap">${citySVG()}</div>
+      <div class="legend"><span>${E.plotsUsed(s, "town")}/${E.TOWN_PLOTS} plots in town, ${E.plotsUsed(s, "field")}/${E.FIELD_PLOTS} in the fields</span>
+      <span>Houses for ${E.intc(E.housing(s))} people</span><span>${Math.trunc(s.ships)} ships: ${free} in harbour${E.shipsAtSea(s) ? `, ${E.shipsAtSea(s)} at sea` : ""}; berths for ${E.berths(s)}</span>
+      <span><i style="background:#2c0819;border:1px dashed #e2bd66"></i>being built</span><span><i style="background:#1f3a22;border:1px solid #9fdcae"></i>growing</span></div>
+      ${storesHTML(before)}`;
+    $("citymap").querySelectorAll(".plot-hit").forEach((g) => {
+      const go = () => (g.dataset.zone ? buildPicker(g.dataset.zone) : plotInfo(g.dataset.plot));
+      g.addEventListener("click", go);
+      g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    });
+  }
+  function plotInfo(id) {
+    const [zone, i] = id.split("-"); const b = sortedPlots(zone)[+i]; if (!b) return;
+    const B = E.BLD[b.kind], st = E.buildingState(s, b);
+    const yields = B.produces ? `Yields ${E.listText(E.parseList(B.produces))}${B.uses ? `, using ${E.listText(E.parseList(B.uses))}` : ""}, ${B.yields_in && B.yields_in !== "any" ? `each ${B.yields_in}` : "every season"}.` : "";
+    openVeil(`<div class="dialog" role="dialog" aria-label="${esc(B.name)}"><div class="head"><span>${icon(b.kind, 56)}</span><div><h2 style="margin:0">${esc(B.name)}</h2><span class="sum">${esc(st.text)}</span></div></div>
+      <p style="margin:0">${esc(clean(B.notes))}</p>${yields ? `<p class="sum" style="margin:0">${esc(yields)}</p>` : ""}
+      <div class="row"><button class="btn" type="button" data-close>Close</button></div></div>`);
+  }
+
+  // ---------- the Adriatic map ----------
+  const M = D.map;
+  const P = (lon, lat) => [(lon - M.lon0) * M.kx, (M.lat1 - lat) * M.ky];
+  const ACRV = [18.77, 42.43];
+  const routePts = (t) => [ACRV].concat(String(t.route).split(";").map((p) => p.trim().split(/\s+/).map(Number)).filter((p) => p.length === 2), [[+t.lon, +t.lat]]).map(([a, b]) => P(a, b));
+  const routePath = (pts) => "M" + pts.map((p) => p.map((v) => v.toFixed(1)).join(",")).join(" L");
+  function along(pts, f) {
+    const seg = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]));
+    let d = seg.reduce((a, b) => a + b, 0) * f;
+    for (let i = 0; i < seg.length; i++) { if (d <= seg[i]) { const k = d / seg[i]; return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * k, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * k]; } d -= seg[i]; }
+    return pts[pts.length - 1];
+  }
+  let selectedTown = null;
+  function seaView() {
+    const [ax, ay] = P(...ACRV);
+    const routes = E.TOWNS.map((t) => { const pts = routePts(t), mid = along(pts, .55);
+      return `<path d="${routePath(pts)}" fill="none" stroke="#f6e3a1" stroke-width="2.2" stroke-dasharray="1 7" stroke-linecap="round" opacity="${selectedTown === t.id ? 1 : .5}"/>
+        <text x="${(mid[0] - 8).toFixed(1)}" y="${(mid[1] + 16).toFixed(1)}" text-anchor="end" font-family="Marcellus" font-size="12.5" fill="#b9a98f">${t.days} day${t.days > 1 ? "s" : ""}</text>`; }).join("");
+    const towns = E.TOWNS.map((t) => { const [x, y] = P(+t.lon, +t.lat), left = ["dyrrachium", "epidaurum", "brundisium"].includes(t.id);
+      return `<g class="town-hit" tabindex="0" role="button" aria-label="${esc(t.name)}: what it sells and buys" data-town="${t.id}">
+        <circle cx="${x}" cy="${y}" r="16" fill="transparent"/>
+        <circle class="dot" cx="${x}" cy="${y}" r="7" fill="${selectedTown === t.id ? "#f6e3a1" : "#2c0819"}" stroke="#e2bd66" stroke-width="2.5"/>
+        <text x="${x + (left ? -12 : 12)}" y="${y - 2}" text-anchor="${left ? "end" : "start"}" font-family="Marcellus" font-size="18" fill="#f6e3a1">${esc(t.name)}</text>
+        <text x="${x + (left ? -12 : 12)}" y="${y + 14}" text-anchor="${left ? "end" : "start"}" font-family="Marcellus" font-size="12" fill="#b9a98f">${t.modern !== t.name ? esc(t.modern) : ""}</text></g>`; }).join("");
+    const convoys = s.convoys.map((c) => { const t = E.TOWN[c.town], span = Math.max(1, c.arrive - c.out), f = Math.min(.95, Math.max(.05, (s.turn - c.out + .5) / span));
+      const [x, y] = along(routePts(t), f <= .5 ? f * 2 * .92 : (1 - f) * 2 * .92); return shipSVG(x, y - 4, .5); }).join("");
+    const lbl = (lon, lat, text, size, rot = 0, op = .35, fam = "Marcellus") => { const [x, y] = P(lon, lat); return `<text x="${x}" y="${y}" font-family="${fam}" font-size="${size}" letter-spacing="${size / 3}" fill="rgba(246,227,161,${op})" ${rot ? `transform="rotate(${rot} ${x} ${y})"` : ""}>${text}</text>`; };
+    $("sheet-sea").innerHTML = `<div class="mapwrap"><svg viewBox="0 0 ${M.w} ${M.h}" role="img" aria-label="Map of the Adriatic with Acruvium and the trading towns">
+      <defs><radialGradient id="seag" cx=".55" cy=".55" r=".8"><stop offset="0" stop-color="#174468"/><stop offset="1" stop-color="#0b2440"/></radialGradient></defs>
+      <rect width="${M.w}" height="${M.h}" fill="url(#seag)"/>
+      <path d="${M.land}" fill="#2f2450" stroke="#e2bd66" stroke-width="1" stroke-linejoin="round"/>
+      ${lbl(13.6, 42.55, "MARE HADRIATICVM", 24, -38, .28, "Caesar Dressing, Marcellus")}${lbl(16.9, 44.9, "DALMATIA", 22)}${lbl(13.1, 41.6, "ITALIA", 22)}${lbl(19.6, 42.2, "MOESIA", 14, 0, .25)}
+      ${routes}${towns}
+      <g transform="translate(${ax},${ay})"><path d="M0,-14 L3.8,-4.5 14,-4.5 6,2 8.6,12.5 0,6.5 -8.6,12.5 -6,2 -14,-4.5 -3.8,-4.5Z" fill="#e2bd66" stroke="#2c0819" stroke-width="1"/></g>
+      <text x="${ax + 16}" y="${ay + 6}" font-family="Caesar Dressing, Marcellus" font-size="20" fill="#e2bd66">ACRVVIVM</text>
+      ${convoys}
+    </svg></div>
+    <p class="sum" style="margin:0">Click a town to see what it sells and buys this season. Prices move with the wind and current, so north and south are not the same voyage.${s.convoys.length ? ` ${s.convoys.length} of your ships are at sea.` : ""}</p>
+    <div class="towninfo" id="towninfo">${selectedTown ? townInfo(selectedTown) : ""}</div>`;
+    $("sheet-sea").querySelectorAll(".town-hit").forEach((g) => {
+      const go = () => { selectedTown = g.dataset.town; seaView(); };
+      g.addEventListener("click", go);
+      g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    });
+    const send = $("sendhere"); if (send) send.onclick = () => convoyBuilder(selectedTown);
+  }
+  function townInfo(id) {
+    const t = E.TOWN[id];
+    const rows = (side) => Object.keys(side === "buy" ? t.sellsTo : t.buysFrom).map((g) => `<tr><td>${esc(E.nameOf(g))}</td><td>${E.intc(E.priceAt(s, id, g, side))}</td><td>${g === "grain" ? "a month's supply" : "each"}</td></tr>`).join("");
+    return `<h2 style="margin:0">${esc(t.name)}</h2><p class="sum" style="margin:0">${esc(clean(t.notes))} ${t.seasons > 1 ? "" : "Back next season."}</p>
+      <div class="twocol"><div><p class="eyebrow">Sells to you</p><table class="prices"><tbody>${rows("buy")}</tbody></table></div>
+      <div><p class="eyebrow">Buys from you</p><table class="prices"><tbody>${rows("sell")}</tbody></table></div></div>
+      ${phase === "orders" ? `<div class="row"><button class="btn small" type="button" id="sendhere">Send a convoy to ${esc(t.name)}</button></div>` : ""}`;
+  }
+
+  // ---------- council ----------
   const coin = (aid) => `<span class="coin"><img src="img/advisor-${aid}.webp" alt=""></span>`;
   function councilView() {
     $("council").innerHTML = E.COUNCIL_ORDER.map((aid) => {
       const a = E.ADVISORS[aid], st = s.council[aid], state = E.abilityState(s, aid);
       const leaves = Array.from({ length: E.MOOD_MAX }, (_, i) => `<i class="${i < st.mood ? "on" : ""}"></i>`).join("");
-      const line = say[aid] ? `<span class="say">${esc(say[aid])}</span>` : `<span class="say">${esc(a.voice)}</span>`;
-      return `<button class="adv${say[aid] ? " speaks" : ""}" type="button" data-aid="${aid}" aria-label="Show ${esc(a.name)}'s card">${coin(aid)}
+      return `<button class="adv" type="button" data-aid="${aid}" aria-label="Show ${esc(a.name)}'s card">${coin(aid)}
         <span class="who"><span class="name">${esc(a.name)}</span><span class="leaves" title="Mood ${st.mood} of ${E.MOOD_MAX}">${leaves}</span></span>
         <span class="ab">${esc(a.title)} · <b>${esc(a.ability_name)}</b>: <span class="${state === "sulking" ? "sulk" : ""}">${state}</span></span>
-        ${line}</button>`;
+        <span class="say">${say[aid] ? "“" + esc(say[aid]) + "”" : esc(a.voice)}</span></button>`;
     }).join("");
   }
   $("council").addEventListener("click", (e) => {
     const b = e.target.closest(".adv"); if (!b) return;
     const a = E.ADVISORS[b.dataset.aid];
-    const stats = ["experience", "decisions", "strategy", "administration", "persuasion", "logic"];
     openVeil(`<div class="dialog" role="dialog" aria-label="${esc(a.name)}"><img class="fullcard" src="img/advisor-${b.dataset.aid}.webp" alt="${esc(a.name)}, ${esc(a.title)}">
-      <p class="sum" style="margin:0">${stats.map((k) => `${k} ${a[k]}`).join(" · ")} (DRAFT, 1–5)</p>
       <div class="row"><button class="btn" type="button" data-close>Close</button></div></div>`);
-    $("veil").querySelector("[data-close]").onclick = closeVeil;
   });
-  function windView() {
-    const w = E.WINDS[s.wind];
-    const [n] = E.sailing(s, true), [so] = E.sailing(s, false);
-    $("wind").innerHTML = `<p class="eyebrow">Wind and current</p><img src="img/wind-${s.wind}.webp" alt="${esc(w.latin)}, ${esc(w.from === "none" ? "dead calm" : "from the " + w.from)}">
-      <p>Current ${E.CURRENT_TEXT[s.current]}. Convoys north ${E.pct(n)}, south ${E.pct(so)}.</p>`;
-  }
-  function cityView() {
-    const cells = (zone) => {
-      const list = s.buildings.filter((b) => E.BLD[b.kind].zone === zone)
-        .sort((a, b) => (a.done > s.turn) - (b.done > s.turn) || E.BLD_IDS.indexOf(a.kind) - E.BLD_IDS.indexOf(b.kind));
-      const out = list.map((b) => b.done > s.turn
-        ? `<span class="plot wip" title="${esc(E.BLD[b.kind].name)}, ready in turn ${b.done}">${esc(E.BLD[b.kind].short)} · ${b.done - s.turn}</span>`
-        : `<span class="plot" title="${esc(E.BLD[b.kind].name)}">${esc(E.BLD[b.kind].short)}</span>`);
-      while (out.length < (zone === "town" ? E.TOWN_PLOTS : E.FIELD_PLOTS)) out.push(`<span class="plot empty">free</span>`);
-      return out.join("");
-    };
-    const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
-    const sea = s.convoys.map((c) => `a convoy back in turn ${c.arrive}`).concat(s.shipyard.map((t) => `a ship on the slipway, ready in turn ${t}`));
-    $("city").innerHTML = `<p class="eyebrow">Acruvium</p>
-      <div><div class="zone-h"><span>Inside the walls</span><span>${E.plotsUsed(s, "town")}/${E.TOWN_PLOTS}</span></div><div class="plots">${cells("town")}</div></div>
-      <div><div class="zone-h"><span>Fields round the bay</span><span>${E.plotsUsed(s, "field")}/${E.FIELD_PLOTS}</span></div><div class="plots">${cells("field")}</div></div>
-      <p class="fleet">Houses for ${E.intc(E.housing(s))} people. ${Math.trunc(s.ships)} ships, ${free} in harbour, berths for ${E.berths(s)}.${sea.length ? " At sea: " + sea.join("; ") + "." : ""}${s.tribute_debt ? ` Owed to Rome: ${E.intc(s.tribute_debt)} denarii.` : ""}</p>`;
-  }
-  function refresh(before) { ledger(before); councilView(); windView(); cityView(); }
 
-  // ---------- the overlay ----------
-  function openVeil(html) { const v = $("veil"); v.innerHTML = html; v.hidden = false; const f = v.querySelector("button, input"); if (f) f.focus(); }
+  // ---------- corners: compass and die ----------
+  const DIRS = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
+  function compassView() {
+    const w = E.WINDS[s.wind], a = DIRS[s.wind];
+    // the arrow starts on the side the wind comes from and points where it blows
+    const arrow = a === undefined ? `<circle r="9" fill="none" stroke="#f6e3a1" stroke-width="2" stroke-dasharray="2 3"/>`
+      : `<g transform="rotate(${a})"><path d="M0,26 L6,10 L2,10 L2,-22 L-2,-22 L-2,10 L-6,10Z" fill="#f6e3a1"/><path d="M-6,-24 q6,-5 12,0 M-6,-30 q6,-5 12,0" stroke="#f6e3a1" stroke-width="1.6" fill="none"/></g>`;
+    $("compass").innerHTML = `<svg viewBox="-41 -41 82 82" aria-hidden="true"><circle r="38" fill="#2c0819" stroke="#e2bd66" stroke-width="2"/>
+      ${["N", "E", "S", "W"].map((d, i) => `<text x="${(Math.sin(i * Math.PI / 2) * 31).toFixed(1)}" y="${(-Math.cos(i * Math.PI / 2) * 31 + 3.5).toFixed(1)}" text-anchor="middle" font-family="Marcellus" font-size="10" fill="#e2bd66">${d}</text>`).join("")}
+      ${arrow}</svg><span class="cap">${esc(w.id === "CALM" ? "calm" : w.latin)}</span>`;
+    $("compass").setAttribute("aria-label", `Wind: ${w.id === "CALM" ? "dead calm" : w.latin + " from the " + w.from}. Click for details.`);
+  }
+  $("compass").onclick = () => {
+    const w = E.WINDS[s.wind], [n] = E.sailing(s, true), [so] = E.sailing(s, false);
+    const fc = s.forecast && s.forecast.turn === s.turn + 1 ? E.WINDS[s.forecast.wind] : null;
+    openVeil(`<div class="dialog" role="dialog" aria-label="Wind and current"><img src="img/wind-${s.wind}.webp" alt="${esc(w.latin)}" style="width:100%;border-radius:12px">
+      <p style="margin:0">Current ${E.CURRENT_TEXT[s.current]}. Convoys north ${E.pct(n)}, south ${E.pct(so)} on prices. Harvest ${E.pct(E.num(w.harvest_mult, 1) - 1)}.</p>
+      ${fc ? `<p class="sum" style="margin:0">The sages say next season brings ${fc.id === "CALM" ? "a dead calm" : fc.latin + ", from the " + fc.from}.</p>` : ""}
+      <div class="row"><button class="btn" type="button" data-close>Close</button></div></div>`);
+  };
+  function cornerDie() {
+    const r = s && s.last_roll;
+    $("cornerdie").innerHTML = D.dice[stone][(r ? r.r : 20) - 1] + `<span class="cap">${r ? "rolled " + r.r : "d20"}</span>`;
+  }
+  $("cornerdie").onclick = () => {
+    const r = s.last_roll;
+    openVeil(`<div class="dialog die-stage" role="dialog" aria-label="The last roll"><div class="die">${D.dice[stone][(r ? r.r : 20) - 1]}</div>
+      <p style="margin:0">${r ? `${esc(r.why)}: rolled ${r.r}${r.bonus ? ` ${r.bonus > 0 ? "+" : "−"} ${Math.abs(r.bonus)} = ${r.total}` : ""}, needed ${r.target}. ${esc(r.tag)}.` : "No die has been rolled yet. The d20 decides battles, risky choices on the cards, and every voyage home."}</p>
+      <div class="row" style="justify-content:center"><button class="btn" type="button" data-close>Close</button></div></div>`);
+  };
+  function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; $("toasts").appendChild(d); setTimeout(() => d.remove(), 6000); }
+
+  // ---------- overlay ----------
+  function openVeil(html) { const v = $("veil"); v.innerHTML = html; v.hidden = false; v.querySelectorAll("[data-close]").forEach((b) => (b.onclick = closeVeil)); const f = v.querySelector("button, input, select"); if (f) f.focus(); }
   function closeVeil() { $("veil").hidden = true; $("veil").innerHTML = ""; }
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const options = (opts) => opts.map((o, i) => `<button class="opt${o.roll ? " die" : ""}" type="button" data-i="${i}"><span class="key">${"ABCDEFG"[i]}</span><span class="what">${esc(o.label)}</span><span class="sub">${esc(o.sub || "")}</span></button>`).join("");
-  function waitPick(root) { return new Promise((res) => root.querySelectorAll("[data-i]").forEach((b) => (b.onclick = () => res(+b.dataset.i)))); }
+  $("veil").addEventListener("click", (e) => { if (e.target === $("veil") && $("veil").dataset.lock !== "1") closeVeil(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("veil").hidden && $("veil").dataset.lock !== "1") closeVeil(); });
+  function modal(html) { $("veil").dataset.lock = "1"; openVeil(html); }
+  function unmodal() { delete $("veil").dataset.lock; closeVeil(); }
+  const options = (opts) => opts.map((o, i) => `<button class="opt" type="button" data-i="${i}"><span class="key">${"ABCDEFG"[i]}</span><span class="what">${esc(o.label)}</span><span class="sub">${esc(o.sub || "")}</span></button>`).join("");
+  const waitPick = (root) => new Promise((res) => root.querySelectorAll("[data-i]").forEach((b) => (b.onclick = () => res(+b.dataset.i))));
 
   const DECK_ICON = {
     land: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22V6"/><path d="M12 9c-3-1-4-4-4-6 3 1 4 3 4 6zM12 9c3-1 4-4 4-6-3 1-4 3-4 6zM12 14c-3-1-4-4-4-6 3 1 4 3 4 6zM12 14c3-1 4-4 4-6-3 1-4 3-4 6z"/></svg>',
     sea: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 9c3-3 5 3 8 0s5 3 8 0 3-1 4 0M2 14c3-3 5 3 8 0s5 3 8 0 3-1 4 0M2 19c3-3 5 3 8 0s5 3 8 0 3-1 4 0"/></svg>',
     omen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M5 4l1.5 1.5M19 4l-1.5 1.5"/></svg>',
   };
-  function cardHTML(c, i) {
+  function cardHTML(c, i, flipped) {
     const eff = c.choice ? `<div class="eff decide">Your decision</div>` : `<div class="eff">${esc(E.effectsText(c.effects))}</div>`;
     const who = c.advisor && E.ADVISORS[c.advisor] ? ` · ${E.ADVISORS[c.advisor].name}` : "";
     const hint = c.choice ? String(c.choice.prompt).replace(/\s+/g, " ") : c.scribe_hint || "";
-    return `<div class="card${c.quiet ? " quiet" : ""}" data-deck="${c.deck}" id="card-${i}">
-      <div class="back"><span>ACRVVIVM</span></div>
+    return `<button class="card${c.quiet ? " quiet" : ""}${flipped ? " flip" : ""}" data-deck="${c.deck}" id="card-${i}" type="button" aria-label="${flipped ? esc(c.title) : `Turn over the ${E.DECK_LABEL[c.deck]} card`}">
+      <div class="back"><span>${E.DECK_LABEL[c.deck].toUpperCase()}</span><em>click to turn over</em></div>
       <div class="face"><div class="band"><span>${E.DECK_LABEL[c.deck]}${esc(who)}</span>${DECK_ICON[c.deck]}</div>
-      <div class="body"><span class="title">${esc(c.title)}</span><span class="hint">${esc(hint)}</span></div>${eff}</div></div>`;
+      <div class="body"><span class="title">${esc(c.title)}</span><span class="hint">${esc(hint)}</span></div>${eff}</div></button>`;
   }
 
+  // ---------- what the engine asks of the page ----------
   let seasonCards = [];
   const ui = {
     async reveal(cards) {
       seasonCards = cards;
-      $("cards").innerHTML = cards.map(cardHTML).join("");
-      await sleep(350);
-      cards.forEach((_, i) => $("card-" + i).classList.add("flip"));
-      await sleep(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 50 : 1000);
+      $("cards").innerHTML = cards.map((c, i) => cardHTML(c, i, false)).join("");
+      $("cardhint").textContent = "Turn each card over to read it.";
+      await new Promise((done) => {
+        let left = cards.length;
+        cards.forEach((c, i) => {
+          const el = $("card-" + i);
+          el.onclick = () => {
+            if (el.classList.contains("flip")) return;
+            el.classList.add("flip"); el.setAttribute("aria-label", c.title);
+            (c.deck === "omen" ? gong : rustle)();
+            if (--left === 0) setTimeout(done, reduce() ? 50 : 850);
+          };
+        });
+      });
+      $("cardhint").textContent = cards.some((c) => c.choice) ? "Some cards ask for your decision." : "The cards are read.";
     },
     async cardChoice(c, opts) {
       const i = seasonCards.indexOf(c);
@@ -298,67 +594,87 @@ footer .stones button[aria-pressed="true"] { color: var(--gold-pale); border-col
       if (i >= 0) $("card-" + i).classList.add("active");
       const box = $("decide");
       box.innerHTML = `<p class="eyebrow">${E.DECK_LABEL[c.deck]} · your decision</p><h2>${esc(c.title)}</h2>
-        <p class="voice" style="margin:0">${esc(String(c.choice.prompt).replace(/\s+/g, " "))}</p><div class="choice">${options(opts)}</div>`;
+        <p class="voice">${esc(String(c.choice.prompt).replace(/\s+/g, " "))}</p><div class="choice" style="margin-top:10px">${options(opts)}</div>`;
       box.hidden = false;
+      box.scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "nearest" });
       const pick = await waitPick(box);
       box.hidden = true;
       if (i >= 0) $("card-" + i).classList.remove("active");
       return pick;
     },
-    async roll(r) {
-      const faces = D.dice[stone];
-      openVeil(`<div class="dialog die-stage spin" role="dialog" aria-label="Dice roll"><p class="eyebrow" style="margin:0">${esc(r.why)}</p>
-        <div class="die" id="die">${faces[19]}</div><div class="verdict" id="verdict" aria-live="polite"></div><div class="sum" id="sum">d${r.die}${r.bonus ? ` + ${r.bonus}` : ""} · need ${r.target}</div>
+    async roll(r, quiet) {
+      const faces = D.dice[stone], corner = $("cornerdie");
+      s.last_roll = r;
+      clatter();
+      corner.classList.add("spin");
+      if (quiet) {
+        for (let k = 0; k < (reduce() ? 1 : 8); k++) { corner.innerHTML = faces[Math.floor(Math.random() * 20)]; await sleep(60 + k * 10); }
+        corner.classList.remove("spin"); cornerDie();
+        toast(`${r.why}: rolled ${r.r}${r.bonus ? ` ${r.bonus > 0 ? "+" : "−"} ${Math.abs(r.bonus)}` : ""} (need ${r.target}) · ${r.tag}`);
+        return;
+      }
+      modal(`<div class="dialog die-stage spin" role="dialog" aria-label="Dice roll"><p class="eyebrow" style="margin:0">${esc(r.why)}</p>
+        <div class="die" id="die">${faces[19]}</div><div class="verdict" id="verdict" aria-live="polite"></div><div class="sum" id="dsum">d${r.die}${r.bonus ? ` + ${r.bonus}` : ""} · need ${r.target}</div>
         <div class="row" style="justify-content:center"><button class="btn" type="button" id="dieok" hidden>Continue</button></div></div>`);
       const stage = $("veil").firstElementChild;
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      for (let k = 0; k < (reduce ? 1 : 12); k++) { $("die").innerHTML = faces[Math.floor(Math.random() * 20)]; await sleep(55 + k * 9); }
-      stage.classList.remove("spin");
+      for (let k = 0; k < (reduce() ? 1 : 12); k++) { $("die").innerHTML = faces[Math.floor(Math.random() * 20)]; await sleep(55 + k * 9); }
+      stage.classList.remove("spin"); corner.classList.remove("spin"); cornerDie();
       $("die").innerHTML = faces[r.r - 1];
       $("verdict").textContent = r.tag;
       $("verdict").classList.toggle("bad", !r.ok);
-      $("sum").textContent = `rolled ${r.r}${r.bonus ? ` ${r.bonus >= 0 ? "+" : "−"} ${Math.abs(r.bonus)} = ${r.total}` : ""} · needed ${r.target}`;
+      $("dsum").textContent = `rolled ${r.r}${r.bonus ? ` ${r.bonus >= 0 ? "+" : "−"} ${Math.abs(r.bonus)} = ${r.total}` : ""} · needed ${r.target}`;
       const ok = $("dieok"); ok.hidden = false; ok.focus();
       await new Promise((res) => (ok.onclick = res));
-      closeVeil();
+      unmodal();
     },
     async ability(aid, question) {
       const a = E.ADVISORS[aid];
-      openVeil(`<div class="dialog" role="dialog" aria-label="${esc(a.name)}"><div class="head">${coin(aid)}<div><div class="ability">${esc(a.ability_name)}</div>
+      modal(`<div class="dialog" role="dialog" aria-label="${esc(a.name)}"><div class="head">${coin(aid)}<div><div class="ability">${esc(a.ability_name)}</div>
         <div class="uses">${esc(a.name)} · ${a.ability_uses === "game" ? "once per governorship" : "once a year"}</div></div></div>
-        <p class="voice" style="margin:0">“${esc(question)}”</p>
+        <p class="voice">“${esc(question)}”</p>
         <div class="row"><button class="btn" type="button" data-i="1">Yes, do it</button><button class="btn quiet" type="button" data-i="0">No</button></div></div>`);
       const yes = await waitPick($("veil"));
-      closeVeil();
+      unmodal();
       return yes === 1;
     },
     async choose(title, text, opts) {
-      openVeil(`<div class="dialog" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2>${text ? `<p class="voice">${esc(text)}</p>` : ""}<div class="choice">${options(opts)}</div></div>`);
+      modal(`<div class="dialog" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2>${text ? `<p class="voice">${esc(text)}</p>` : ""}<div class="choice">${options(opts)}</div></div>`);
       const i = await waitPick($("veil"));
-      closeVeil();
+      unmodal();
       return i;
     },
     async number(text, lo, hi) {
-      openVeil(`<div class="dialog" role="dialog" aria-label="${esc(text)}"><h2>${esc(text)}</h2>
+      modal(`<div class="dialog" role="dialog" aria-label="${esc(text)}"><h2>${esc(text)}</h2>
         <div class="row"><input type="number" id="numin" min="${lo}" max="${hi}" value="${hi}"> <span class="sum">${lo} to ${hi}</span></div>
         <div class="row"><button class="btn" type="button" id="numok">Agreed</button></div></div>`);
       const v = await new Promise((res) => ($("numok").onclick = () => res(Math.max(lo, Math.min(hi, parseInt($("numin").value, 10) || lo)))));
-      closeVeil();
+      unmodal();
       return v;
     },
   };
   E.setUI(ui);
 
+  function refresh(before) { ledger(before); councilView(); cityView(before); seaView(); compassView(); cornerDie(); }
+
+  // ---------- tabs ----------
+  function showTab(which) {
+    const city = which === "city";
+    $("tab-city").setAttribute("aria-selected", String(city)); $("tab-sea").setAttribute("aria-selected", String(!city));
+    $("sheet-city").hidden = !city; $("sheet-sea").hidden = city;
+  }
+  $("tab-city").onclick = () => showTab("city");
+  $("tab-sea").onclick = () => showTab("sea");
+
   // ---------- the season ----------
   function save() { store.set(KEY, JSON.stringify(s)); }
-
   async function startSeason() {
+    phase = "cards";
     E.rollWeather(s);
-    say = {};
+    say = {}; book = [];
     refresh();
     const [season, year] = E.seasonOf(s.turn);
     $("stage").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season's cards</p>
-      <h2>Three cards are turned over</h2><div class="cards" id="cards"></div></section>
+      <h2>Three cards: the land, the sea and the gods</h2><p class="sum" id="cardhint" style="margin:0 0 10px"></p><div class="cards" id="cards"></div></section>
       <section class="panel" id="decide" hidden></section><section class="panel" id="orders" hidden></section>`;
     if (s.cards_turn !== s.turn) {
       s.before = Object.fromEntries(E.NUMBERS.map((n) => [n, s[n]]));
@@ -369,149 +685,190 @@ footer .stones button[aria-pressed="true"] { color: var(--gold-pale); border-col
       s.cards_turn = s.turn;
       save();
     } else {
-      const cards = s.season_cards.map((id) => D.cards.find((c) => c.id === id)).filter(Boolean);
-      $("cards").innerHTML = cards.map(cardHTML).join("");
-      cards.forEach((_, i) => $("card-" + i).classList.add("flip"));
+      const cards = (s.season_cards || []).map((id) => D.cards.find((c) => c.id === id)).filter(Boolean);
+      $("cards").innerHTML = cards.map((c, i) => cardHTML(c, i, true)).join("");
+      $("cardhint").textContent = "This season's cards, already read.";
     }
     ordersPhase();
   }
 
+  // ---------- the order desk: plans, actions, the order book ----------
+  const GROUPS = [["Treasury and law", ["raise_taxes", "lower_taxes", "hear_petitions", "hang_brigands"]],
+    ["Building and planting", ["build"]], ["Sea and trade", ["send_convoy", "build_ship"]], ["The garrison", ["recruit", "dismiss"]],
+    ["Gods and Rome", ["visit_temple", "hold_festival", "honour_tiberius", "honour_rome"]], ["The council", ["listen_sages"]]];
+  const PLAN_MARK = { bold: "A", prudent: "B" };
+  let plansNow = [];
   function ordersPhase() {
+    phase = "orders";
     ({ wants, say } = E.council(s));
+    plansNow = E.plans(s);
     refresh(s.before);
-    const [bold, prudent] = E.suggest(s);
     const box = $("orders");
     box.hidden = false;
-    const opts = [];
-    if (bold.length) opts.push({ label: "Bold: " + bold.map((o) => E.describe(s, o)).join("; "), sub: E.preview(s, bold), orders: bold });
-    if (prudent.length) opts.push({ label: "Prudent: " + prudent.map((o) => E.describe(s, o)).join("; "), sub: E.preview(s, prudent), orders: prudent });
-    box.innerHTML = `<p class="eyebrow">The scribe</p><h2>What are your orders?</h2>
-      <p class="voice" style="margin:0">“${esc(E.situation(s))} What are your orders?”</p>
-      ${opts.length ? "" : `<p class="sum" style="margin:0">The scribe has no plan to offer: the stores lack the goods or coin for any building. Watch the goods; every 50 soldiers use one a season.</p>`}
-      <div class="choice">${options(opts)}
-        <button class="opt" type="button" id="own"><span class="key">${"ABC"[opts.length]}</span><span class="what">Give your own orders, in your own words</span><span class="sub">e.g. “build a fishery and send a convoy south to sell wine”</span></button>
-        <button class="opt" type="button" id="pick"><span class="key">${"ABCD"[opts.length + 1]}</span><span class="what">Choose decrees from the list</span><span class="sub">up to three this season</span></button>
-      </div><div class="row"><button class="btn quiet" type="button" id="idle">Do nothing this season</button></div><div id="work"></div>`;
-    box.querySelectorAll("[data-i]").forEach((b) => (b.onclick = () => seal(opts[+b.dataset.i].orders)));
-    $("idle").onclick = () => seal([]);
-    $("own").onclick = ownWords;
-    $("pick").onclick = pickDecrees;
-    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
-
-  function confirmOrders(accepted, problems, reply) {
-    const work = $("work");
-    work.innerHTML = `${reply ? `<p class="voice">The scribe: “${esc(reply)}”</p>` : ""}
-      ${problems.length ? `<ul class="problems">${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
-      ${accepted.length ? `<p class="eyebrow" style="margin-top:12px">I will write these decrees</p><ol>${accepted.map((o) => `<li>${esc(E.describe(s, o))}</li>`).join("")}</ol>
-      <p class="sum">${esc(E.preview(s, accepted))}</p><div class="row"><button class="btn" type="button" id="sealit">Seal them</button></div>` : ""}`;
-    if (accepted.length) $("sealit").onclick = () => seal(accepted);
-  }
-
-  function ownWords() {
-    $("work").innerHTML = `<div style="display:grid;gap:10px;margin-top:12px"><label for="words" class="eyebrow" style="margin:0">Your orders, Governor</label>
-      <textarea id="words" placeholder="Build wheat terraces and send a convoy north to buy 2 months of grain"></textarea>
-      <div class="row"><button class="btn" type="button" id="read">Give them to the scribe</button></div><div id="answer"></div></div>`;
-    $("words").focus();
+    box.innerHTML = `<p class="eyebrow">The scribe</p><h2>What are your orders this season?</h2>
+      <p class="voice">“${esc(E.situation(s))} You may give up to ${E.MAX_ORDERS} orders.”</p>
+      <div class="desk">
+        <div class="col"><h3>Your council's plans</h3><p class="sum" style="margin:0">Add a whole plan, then add or strike out single orders.</p><div class="col" id="plans"></div></div>
+        <div class="col"><h3>All actions</h3><div class="groups" id="groups"></div>
+          <div style="display:grid;gap:6px;margin-top:6px"><label for="words" class="eyebrow" style="margin:0">Or in your own words</label>
+          <textarea id="words" placeholder="Plant olives, hang the brigands and send a convoy to Brundisium to sell 10 wine"></textarea>
+          <div class="row"><button class="btn small" type="button" id="read">Give them to the scribe</button></div><div id="answer"></div></div></div>
+        <div class="col book" id="bookcol"></div>
+      </div>`;
+    $("plans").innerHTML = plansNow.map((p, i) => `<div class="plan"><div class="ph">${E.ADVISORS[p.who] ? coin(p.who) : `<span class="mark">${PLAN_MARK[p.who]}</span>`}
+        <div><h3>${esc(p.title)}</h3><small>${esc(E.ADVISORS[p.who] ? E.ADVISORS[p.who].name : "the scribe")}</small></div>
+        <button class="btn small quiet" type="button" data-plan="${i}">Add</button></div>
+        <ul>${p.orders.map((o) => `<li>${esc(E.describe(s, o))}</li>`).join("")}</ul></div>`).join("") || `<p class="sum">No one has a plan the treasury and stores can pay for.</p>`;
+    $("plans").querySelectorAll("[data-plan]").forEach((b) => (b.onclick = () => addOrders(plansNow[+b.dataset.plan].orders)));
+    $("groups").innerHTML = GROUPS.map(([label, ids]) => `<div class="group"><h4>${label}</h4><div class="acts">${ids.map((id) => {
+      const d = E.DECREE[id], c = E.num(d.cost_treasury), mats = E.parseList(d.cost);
+      const price = ["build", "send_convoy"].includes(id) ? (id === "build" ? "or click a free plot" : "or click a town") : [c ? E.intc(c) : "", ...Object.entries(mats).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ");
+      return `<button class="act" type="button" data-act="${id}">${esc(d.name)}${price ? `<small>${esc(price)}</small>` : ""}</button>`; }).join("")}</div></div>`).join("");
+    $("groups").querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => {
+      const id = b.dataset.act;
+      if (id === "build") buildPicker();
+      else if (id === "send_convoy") convoyBuilder(selectedTown);
+      else addOrders([E.order(id)]);
+    }));
     $("read").onclick = () => {
       const text = $("words").value.trim(); if (!text) return;
-      const res = E.wordParse(text);
-      const [accepted, problems] = E.validate(s, res.orders);
-      const keep = $("words").value;
-      confirmOrders(accepted, problems, res.reply);
-      const again = document.createElement("div");
-      again.className = "row"; again.style.marginTop = "8px";
-      again.innerHTML = `<button class="btn quiet" type="button">Write different orders</button>`;
-      again.firstChild.onclick = () => { ownWords(); $("words").value = keep; };
-      $("work").appendChild(again);
+      const res = E.wordParse(s, text);
+      $("answer").innerHTML = `<p class="voice" style="font-size:18px">The scribe: “${esc(res.reply)}”</p>`;
+      if (res.orders.length) { addOrders(res.orders); $("words").value = ""; }
     };
+    renderBook();
+  }
+  function addOrders(list) {
+    const room = E.MAX_ORDERS - book.length;
+    if (room <= 0) { toast(`The order book is full: ${E.MAX_ORDERS} orders a season.`); return; }
+    book = book.concat(list.slice(0, room).map((o) => JSON.parse(JSON.stringify(o))));
+    if (list.length > room) toast(`Only ${room} more order${room > 1 ? "s" : ""} fit this season.`);
+    renderBook();
+  }
+  function renderBook() {
+    const [accepted, problems] = E.validate(s, book);
+    const t = E.totals(s, accepted);
+    const matLine = Object.entries(t.mats).map(([g, q]) => `<span class="${q > s[g] ? "short" : ""}">${q} ${esc(E.nameOf(g).toLowerCase())} <small>(of ${Math.trunc(s[g])})</small></span>`).join(", ");
+    $("bookcol").innerHTML = `<h3>The season's orders</h3>
+      <div class="slots" role="img" aria-label="${book.length} of ${E.MAX_ORDERS} orders">${Array.from({ length: E.MAX_ORDERS }, (_, i) => `<i class="${i < book.length ? "on" : ""}"></i>`).join("")}</div>
+      ${book.length ? `<ol>${book.map((o, i) => { const ok = accepted.includes(o);
+        return `<li class="${ok ? "" : "bad"}"><span>${esc(E.describe(s, o))}${ok ? "" : "<em>cannot be done as it stands</em>"}</span><button type="button" data-del="${i}" aria-label="Strike out ${esc(E.describe(s, o))}">×</button></li>`; }).join("")}</ol>`
+        : `<p class="sum" style="margin:0">No orders yet. Add a plan or single actions. You can also click a free plot on the city sheet, or a town on the map.</p>`}
+      ${problems.length ? `<ul class="problems">${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
+      <p class="cost" style="margin:0">Costs <b>${E.intc(t.treasury)}</b> of ${E.intc(s.treasury)} denarii${matLine ? `; ${matLine}` : ""}.${t.loyalty ? ` Loyalty ${t.loyalty > 0 ? "+" : ""}${t.loyalty}.` : ""}${t.favour ? ` Rome ${t.favour > 0 ? "+" : ""}${t.favour}.` : ""}${t.extra.length ? " " + esc(t.extra.join("; ")) + "." : ""}</p>
+      <div class="row"><button class="btn" type="button" id="sealit">${accepted.length ? `Seal ${accepted.length} order${accepted.length > 1 ? "s" : ""}` : "Do nothing this season"}</button>
+      ${book.length ? `<button class="btn quiet small" type="button" id="clearbook">Clear</button>` : ""}</div>
+      ${accepted.length < book.length ? `<p class="sum" style="margin:0">Orders marked red are left out when you seal.</p>` : ""}`;
+    $("bookcol").querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => { book.splice(+b.dataset.del, 1); renderBook(); }));
+    const clear = $("clearbook"); if (clear) clear.onclick = () => { book = []; renderBook(); };
+    $("sealit").onclick = () => seal(accepted);
   }
 
-  function pickDecrees() {
-    const work = $("work");
-    const builds = E.BUILDING_LIST.filter((b) => b.id !== "forum");
-    work.innerHTML = `<p class="eyebrow" style="margin-top:12px">Decrees · choose up to three</p><div class="decrees">${E.DECREES.map((d, i) => {
-      const cost = E.num(d.cost_treasury), goods = E.num(d.cost_goods);
-      let extra = "";
-      if (d.id === "build") extra = `<select id="bld" aria-label="What to build">${builds.map((b) => `<option value="${b.id}">${esc(b.name)} (${b.zone === "town" ? "town" : "field"}) · ${E.intc(E.num(b.cost_treasury))} den${E.num(b.cost_goods) ? `, ${E.num(b.cost_goods)} goods` : ""}, ${E.num(b.seasons_to_build)} seasons</option>`).join("")}</select>`;
-      if (d.id === "send_convoy") extra = `<select id="cdir" aria-label="Direction"><option value="north">north up the coast</option><option value="south">south</option></select>
-        <select id="ccargo" aria-label="Cargo"><option value="buy_grain">buy grain</option><option value="sell_wine_oil">sell wine &amp; oil</option><option value="sell_goods">sell goods</option></select>
-        <input type="number" id="camt" min="0" max="99" value="0" aria-label="Amount, 0 = as much as sensible" title="Amount (0 = ask me)">`;
-      return `<label class="decree" for="dc${i}"><input type="checkbox" id="dc${i}" data-id="${d.id}"><span>${esc(d.name)}</span><span class="cost">${cost ? E.intc(cost) + " den" : "free"}${goods ? `, ${goods} goods` : ""}</span><span class="extra">${extra}</span></label>`;
-    }).join("")}</div><div class="row" style="margin-top:10px"><button class="btn" type="button" id="check">Check the orders</button></div><div id="answer"></div>`;
-    work.querySelectorAll("input[type=checkbox]").forEach((cb) => (cb.onchange = () => {
-      cb.closest(".decree").classList.toggle("on", cb.checked);
-      if (work.querySelectorAll("input[type=checkbox]:checked").length > 3) { cb.checked = false; cb.closest(".decree").classList.remove("on"); }
-    }));
-    $("check").onclick = () => {
-      const picked = [...work.querySelectorAll("input[type=checkbox]:checked")].map((cb) => {
-        const id = cb.dataset.id;
-        if (id === "build") return E.order("build", "none", "none", 0, $("bld").value);
-        if (id === "send_convoy") return E.order("send_convoy", $("cdir").value, $("ccargo").value, parseInt($("camt").value, 10) || 0);
-        return E.order(id);
-      });
-      if (!picked.length) return;
-      const [accepted, problems] = E.validate(s, picked);
-      const div = $("answer");
-      div.innerHTML = `${problems.length ? `<ul class="problems">${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
-        ${accepted.length === picked.length ? `<p class="sum">${esc(E.preview(s, accepted))}</p><div class="row"><button class="btn" type="button" id="sealit">Seal them</button></div>` : ""}`;
-      if (accepted.length === picked.length) $("sealit").onclick = () => seal(accepted);
+  function buildPicker(zone) {
+    if (phase !== "orders") { toast("Orders are given after the season's cards are read."); return; }
+    const base = E.validate(s, book)[0].length;
+    const rows = E.BUILDING_LIST.filter((b) => b.id !== "forum" && (!zone || b.zone === zone)).map((b) => {
+      const c = E.num(b.cost_treasury), mats = E.parseList(b.cost);
+      const [ok, probs] = E.validate(s, book.concat([E.order("build", { building: b.id })]));
+      const fits = ok.length === base + 1;
+      const n = (k) => E.num(b[k]);
+      const time = `${n("seasons_to_build")} season${n("seasons_to_build") !== 1 ? "s" : ""} to build${n("matures") ? `, first yield ${n("matures")} after` : ""}${n("ramp") > 1 ? `, full in ${n("ramp")} more` : ""}`;
+      const cost = [c ? E.intc(c) + " den" : "", ...Object.entries(mats).map(([g, q]) => `<span class="${q > s[g] ? "short" : ""}">${q} ${esc(E.nameOf(g).toLowerCase())}</span>`)].filter(Boolean).join(", ");
+      return `<button class="pick" type="button" data-b="${b.id}" ${fits ? "" : "disabled"}>${icon(b.id, 38)}<span><span class="t">${esc(b.name)}</span> <span class="d">· ${b.zone === "town" ? "in town" : "in the fields"}</span><br><span class="d">${esc(clean(b.notes))} ${esc(time)}.</span>${fits ? "" : `<br><span class="d short">${esc(probs[probs.length - 1] || "")}</span>`}</span><span class="c">${cost || "free"}</span></button>`;
+    }).join("");
+    openVeil(`<div class="dialog wide" role="dialog" aria-label="Build or plant"><h2>${zone === "town" ? "Build inside the walls" : zone === "field" ? "Build or plant in the fields" : "Build or plant"}</h2>
+      <div class="picklist">${rows}</div><div class="row"><button class="btn quiet" type="button" data-close>Cancel</button></div></div>`);
+    $("veil").querySelectorAll("[data-b]").forEach((b) => (b.onclick = () => { addOrders([E.order("build", { building: b.dataset.b })]); closeVeil(); }));
+  }
+
+  function convoyBuilder(townId) {
+    if (phase !== "orders") { toast("Orders are given after the season's cards are read."); return; }
+    let town = townId || E.TOWNS[0].id;
+    const draw = () => {
+      const t = E.TOWN[town];
+      const sellRows = Object.keys(t.buysFrom).map((g) => `<tr><td>${esc(E.nameOf(g))}</td><td>${E.intc(E.priceAt(s, town, g, "sell"))}</td><td>${Math.trunc(s[g] || 0)}</td><td><input type="number" min="0" max="${Math.trunc(s[g] || 0)}" value="0" data-sell="${g}" aria-label="Sell ${esc(E.nameOf(g))}"></td></tr>`).join("");
+      const buyRows = Object.keys(t.sellsTo).map((g) => `<tr><td>${esc(E.nameOf(g))}${g === "grain" ? " (months)" : ""}</td><td>${E.intc(E.priceAt(s, town, g, "buy"))}</td><td>${g === "grain" ? s.grain.toFixed(1) : Math.trunc(s[g] || 0)}</td><td><input type="number" min="0" max="40" value="0" data-buy="${g}" aria-label="Buy ${esc(E.nameOf(g))}"></td></tr>`).join("");
+      openVeil(`<div class="dialog wide" role="dialog" aria-label="Send a trade convoy"><h2>Send a trade convoy</h2>
+        <div class="townpick">${E.TOWNS.map((x) => `<button type="button" data-town="${x.id}" aria-pressed="${x.id === town}">${esc(x.name)}</button>`).join("")}</div>
+        <p class="sum" style="margin:0">${esc(t.name)} lies ${t.direction} of us, ${t.days} day${t.days > 1 ? "s" : ""}' sailing; the ship is back ${t.seasons > 1 ? "in two seasons" : "next season"}. The crew costs 100 denarii. When she comes home the d20 is rolled for the voyage (need ${E.VOYAGE_TARGET}): a failure loses half the cargo to a storm, a 1 means pirates.</p>
+        <div style="overflow-x:auto"><table class="trade"><thead><tr><th>Sell here</th><th>Price</th><th>In store</th><th>Amount</th></tr></thead><tbody>${sellRows}</tbody></table></div>
+        <div style="overflow-x:auto"><table class="trade"><thead><tr><th>Buy here</th><th>Price</th><th>Have</th><th>Amount</th></tr></thead><tbody>${buyRows}</tbody></table></div>
+        <div><div class="meter" id="meter"><i style="width:0"></i></div><p class="sum" id="ctot" style="margin:6px 0 0"></p></div>
+        <div class="row"><button class="btn" type="button" id="cadd">Add to orders</button><button class="btn quiet" type="button" data-close>Cancel</button></div></div>`);
+      $("veil").querySelectorAll("[data-town]").forEach((b) => (b.onclick = () => { town = b.dataset.town; draw(); }));
+      const read = () => {
+        const o = { id: "send_convoy", town, sell: {}, buy: {}, building: "none" };
+        $("veil").querySelectorAll("[data-sell]").forEach((i) => { const v = Math.max(0, parseInt(i.value, 10) || 0); if (v) o.sell[i.dataset.sell] = v; });
+        $("veil").querySelectorAll("[data-buy]").forEach((i) => { const v = Math.max(0, parseInt(i.value, 10) || 0); if (v) o.buy[i.dataset.buy] = v; });
+        return o;
+      };
+      const update = () => {
+        const o = read(), l = E.loads(o), cost = E.costOf(s, o)[0];
+        const income = Object.entries(o.sell).reduce((v, [g, q]) => v + q * E.priceAt(s, town, g, "sell"), 0);
+        $("meter").classList.toggle("over", l > E.SHIP_LOAD);
+        $("meter").firstElementChild.style.width = Math.min(100, (l / E.SHIP_LOAD) * 100) + "%";
+        $("ctot").textContent = `Cargo ${l} of ${E.SHIP_LOAD} loads (a month of grain is ${E.GRAIN_LOAD}). Pay now ${E.intc(cost)} denarii; she brings home about ${E.intc(income)}.`;
+      };
+      $("veil").querySelectorAll("input").forEach((i) => (i.oninput = update));
+      update();
+      $("cadd").onclick = () => { const o = read(); if (!E.loads(o)) { $("ctot").textContent = "Choose something to sell or buy."; return; } addOrders([o]); closeVeil(); };
     };
+    draw();
   }
 
   async function seal(orders) {
-    $("orders").querySelectorAll("button").forEach((b) => (b.disabled = true));
+    phase = "resolving";
+    $("orders").querySelectorAll("button, textarea").forEach((b) => (b.disabled = true));
     const before = s.before;
     const notes = [...(s.season_notes || [])];
     E.updateMoods(s, wants, orders, notes);
     await E.applyDecrees(s, orders, notes);
     await E.resolve(s, notes);
     E.clampAndCheck(s, notes);
-    say = {};
-    refresh(before);
+    say = {}; book = [];
     const [season, year] = E.seasonOf(s.turn);
-    const rows = E.NUMBERS.filter((n) => Math.abs(s[n] - before[n]) >= 0.05).map((n) => {
-      const d = s[n] - before[n];
-      return `<tr><td>${esc(E.RULES[n].name)}</td><td>${E.fmt(n, before[n])}</td><td>${E.fmt(n, s[n])}</td><td class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${E.fmt(n, Math.abs(d))}</td></tr>`;
+    const rows = E.NUMBERS.filter((n) => Math.abs(s[n] - (before[n] || 0)) >= 0.05).map((n) => {
+      const d = s[n] - (before[n] || 0);
+      return `<tr><td>${esc(E.nameOf(n))}</td><td>${E.fmt(n, before[n] || 0)}</td><td>${E.fmt(n, s[n])}</td><td class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${E.fmt(n, Math.abs(d))}</td></tr>`;
     }).join("");
-    const history = seasonCardsHistory();
+    const history = (s.season_cards || []).map((id) => D.cards.find((c) => c.id === id)).filter((c) => c && String(c.historical_note || "").trim())
+      .map((c) => `History (${c.title}): ${String(c.historical_note).replace(/\s+/g, " ")}`);
     const list = notes.map((t) => `<li>${esc(t)}</li>`).join("") + history.map((t) => `<li class="history">${esc(t)}</li>`).join("");
     const done = s.over;
     s.turn += 1;
+    phase = "report";
+    refresh(before);
     if (done) store.del(KEY); else save();
     $("stage").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season ends</p>
       <h2>${done ? "The end of your governorship" : "The scribe's report"}</h2>${done ? `<p class="voice">${esc(done)} You governed for ${s.turn - 1} seasons.</p>` : ""}
-      <ul class="notes">${list || "<li>A quiet season.</li>"}</ul>
+      <ul class="notes" style="margin-top:8px">${list || "<li>A quiet season.</li>"}</ul>
       ${rows ? `<div style="overflow-x:auto;margin-top:14px"><table class="changes"><tbody>${rows}</tbody></table></div>` : ""}
-      <div class="row" style="margin-top:16px"><button class="btn" type="button" id="next">${done ? "Govern again" : "Next season"}</button></div></section>`;
+      <div class="row" style="margin-top:14px"><button class="btn" type="button" id="next">${done ? "Govern again" : "Next season"}</button></div></section>`;
     $("next").onclick = () => { if (done) { s = E.newGame(); intro(); } else startSeason(); };
-    $("next").focus({ preventScroll: true });
-    $("stage").scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-  function seasonCardsHistory() {
-    return (s.season_cards || []).map((id) => D.cards.find((c) => c.id === id)).filter((c) => c && String(c.historical_note || "").trim())
-      .map((c) => `History (${c.title}): ${String(c.historical_note).replace(/\s+/g, " ")}`);
+    $("stage").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
   }
 
   function intro() {
-    say = {};
+    phase = "intro"; say = {}; book = [];
     refresh();
     $("stage").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, in the Bay of Kotor</p><h2>Tiberius sends you to govern Acruvium</h2>
-      <p class="voice">Each turn is one season. Keep Rome and the people content and the granaries full. Each season three cards are turned over, one from the land, one from the sea and one from the gods; then your council speaks and you give up to three orders.</p>
-      <p class="sum">You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
+      <p class="voice">Each turn is one season. Three cards are turned over: the land, the sea and the gods. Your council speaks, and you give up to ${E.MAX_ORDERS} orders: build and plant, trade by sea with the towns of the Adriatic, keep order, honour the gods and the Emperor.</p>
+      <p class="sum">Things take time. A harbour takes two years to build and a temple three; vines give their first wine a year after planting. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
       <div class="row"><button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;
     $("begin").onclick = startSeason;
   }
 
-  // ---------- die stone picker, new game, boot ----------
-  function stones() {
-    $("stones").innerHTML = "Die: " + Object.keys(D.dice).map((k) => `<button type="button" data-stone="${k}" aria-pressed="${k === stone}">${k}</button>`).join("");
-    $("stones").querySelectorAll("button").forEach((b) => (b.onclick = () => { stone = b.dataset.stone; store.set(STONE_KEY, stone); stones(); }));
+  // ---------- options, new game, boot ----------
+  function opts() {
+    $("opts").innerHTML = `Sound <button type="button" id="snd" aria-pressed="${sound}">${sound ? "on" : "off"}</button> · Die ` +
+      Object.keys(D.dice).map((k) => `<button type="button" data-stone="${k}" aria-pressed="${k === stone}">${k}</button>`).join("");
+    $("snd").onclick = () => { sound = !sound; store.set(SOUND_KEY, sound ? "on" : "off"); opts(); if (sound) rustle(); };
+    $("opts").querySelectorAll("[data-stone]").forEach((b) => (b.onclick = () => { stone = b.dataset.stone; store.set(STONE_KEY, stone); opts(); cornerDie(); }));
   }
-  $("newgame").onclick = () => { store.del(KEY); s = E.newGame(); closeVeil(); intro(); };
-  stones();
+  $("newgame").onclick = () => { store.del(KEY); s = E.newGame(); selectedTown = null; closeVeil(); intro(); };
+  opts();
   let saved = null;
   try { saved = JSON.parse(store.get(KEY) || "null"); } catch (e) { saved = null; }
-  if (saved && saved.turn && !saved.over) { s = saved; startSeason(); } else { s = E.newGame(); intro(); }
+  if (saved && saved.version === 2 && saved.turn && !saved.over) { s = saved; startSeason(); } else { s = E.newGame(); intro(); }
 })();
 </script>

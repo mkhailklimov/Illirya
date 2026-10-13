@@ -15,7 +15,7 @@ choice:
     salt. Fund his caravan and he promises tools and cloth in return.
   options:
     - label: Fund the caravan
-      effects: {treasury: -300, goods: 12}             # DRAFT
+      effects: {treasury: -300, salt: 12}             # DRAFT
     - label: Too risky
       effects: {}
 scribe_hint: Nikandros smiles too much when he talks about profit; Felix the treasurer does not smile at all.

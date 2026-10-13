@@ -129,6 +129,21 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v2 (13 October 2026): what changed
+
+The browser game (`web/engine.js`) plays by these rules; where they differ from the sections below, v2 wins. The terminal game `play.py` stays at v1.
+
+- **Up to 12 orders a season.** Some can be given only once a season (`once` in `decrees.csv`): taxes, the festival, hanging brigands, petitions, the temple, the decree for Tiberius, the sages. Building, convoys, recruiting and keels can be repeated as far as money, materials, plots and ships allow.
+- **New actions:** hang the brigands (50 den; loyalty −1, Rome +2, the prefect +1 mood), hear petitions (free; loyalty +2, the treasurer +1 mood), sacrifice at the temple (50 den; loyalty +1, Rome +1, the haruspex +1 mood), decree honouring Tiberius (100 den; Rome +4), listen to the sages (free; you learn next season's wind now), lay the keel of a ship (300 den, 20 timber, 3 iron, 4 cloth; ready in two seasons).
+- **Goods instead of one 'goods' number** (`goods.csv`): wine, olive oil, fleece, cloth, timber, salt, salted fish, iron are made here; tin, bronze and marble come only by sea; amber, glassware, papyrus, pepper and purple cloth are rare goods sold in Aquileia and Brundisium. Each has a base price.
+- **Buildings cost materials** as well as denarii (`cost` column, e.g. "marble 20; timber 15; bronze 4") and take time in three steps: `seasons_to_build`, then `matures` (seasons before the first yield), then `ramp` (seasons from the first yield to full yield). A harbour takes 8 seasons to build, the temple 12, the baths 8. A vineyard: 1 season to plant, first wine 3 seasons later, full after 4 more. An olive grove: first oil after 7, full after 4 more.
+- **Yields by season** (`yields_in`, `produces`, `uses`): vineyards 12 wine each Autumn; olive groves 10 oil each Winter; pastures 8 fleece at the Spring shearing; salt pans 10 salt each Summer; weavers 3 cloth from 3 fleece every season; the fishery 2 salted fish from 1 salt, plus 0.5 months of food; woodcutters 4 timber; the iron mine 2 iron. A building without its input stands idle.
+- **Convoys go to a town** (`towns.csv`): Epidaurum, Narona, Salona, Aquileia (two seasons there and back), Dyrrachium, Brundisium. Each town sells some goods and buys others, at its own price multiplier on the base price. Wind and current move prices as before (north or south by the town's direction), the trading district adds 10%, Nikandros's deal 20%. One ship carries 40 loads; a month of grain is 10. Purchases are paid when the ship sails; sales are paid when she comes home.
+- **The voyage home is a d20 roll:** d20 + the sailing advantage (−3 to +3), +1 if Epicadus's mood is 4 or more; need 5. Failure: a storm, half the cargo and money lost. A natural 1: pirates take everything, the ship limps home. A natural 20: +10%.
+- **The army no longer eats goods.** Recruits cost 5 iron and 5 cloth instead.
+
+Seen in test games (bots, 40 seasons): money piles up (40,000–60,000 denarii by year 10) while iron and marble run short, so materials are the real limit; and a governor who never buys grain starves within five seasons. Both are for tuning in playtests.
+
 ## The council (advisors as characters)
 
 Each of the five advisors in `advisors.csv` has a **mood** from 0 to 5 (start 3) and **one ability**.

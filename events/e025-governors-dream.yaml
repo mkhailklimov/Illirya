@@ -23,7 +23,7 @@ choice:
         bonus: "0"
         target: 6
         success: {}                                      # nothing happens
-        failure: {ships: -1, goods: -10}                 # DRAFT: a ship is lost with her cargo
+        failure: {ships: -1, wine: -4, oil: -4}                 # DRAFT: a ship is lost with her cargo
 scribe_hint: The dream is told plainly, without explanation; the governor wakes before the ship is gone.
 historical_note: >-
   Romans took dreams seriously. Before the battle of Philippi in 42 BC

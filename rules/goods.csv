@@ -1,0 +1,17 @@
+id,name,unit,origin,price,start,notes
+wine,Wine,amphorae,local,60,10,"DRAFT. From the vineyards, once a year in Autumn."
+oil,Olive oil,amphorae,local,70,6,"DRAFT. From the olive groves, pressed in Winter."
+fleece,Fleece,bales,local,20,8,DRAFT. Sheared in Spring. The weavers turn it into cloth.
+cloth,Cloth,bolts,local,45,6,"DRAFT. Woven from fleece. Tunics for recruits, sails for ships."
+timber,Timber,loads,local,25,30,DRAFT. Oak and pine from the hills above the bay. Almost every building needs it.
+salt,Salt,sacks,local,30,4,"DRAFT. From salt pans on the shore, in Summer. The fishery needs it to salt the catch."
+fish,Salted fish,jars,local,35,0,DRAFT. Salted catch from the fishery; sells well in Italy.
+iron,Iron,bars,local,40,8,"DRAFT. From a mine in the hills, or bought in Aquileia (Noric iron). Weapons, tools, ship nails."
+tin,Tin,ingots,import,90,0,DRAFT. Only by sea. With copper it makes bronze.
+bronze,Bronze,ingots,import,110,2,DRAFT. Only by sea. Fittings for the temple and the baths.
+marble,Marble,blocks,import,80,0,"DRAFT. Brač stone from near Salona, or Greek marble through Brundisium. Temple and baths."
+amber,Amber,pouches,luxury,300,0,DRAFT. Comes down the Amber Road from the Baltic to Aquileia.
+glass,Glassware,crates,luxury,160,0,DRAFT. Aquileia's glassworks were famous.
+papyrus,Papyrus,rolls,luxury,120,0,"DRAFT. From Egypt, through Brundisium."
+pepper,Pepper,sacks,luxury,400,0,DRAFT. From India by way of Egypt and Italy.
+purple,Purple cloth,bolts,luxury,500,0,DRAFT. Dyed with murex; worn by the great.

@@ -1,4 +1,4 @@
-"""Illyria: AD 30 — play "The Governor" in the terminal (Phase 0 playtest tool).
+"""Illyria: AD 30 — play "The Governor" in the terminal. FROZEN at rules v1 (13 Oct 2026); the web game in web/ is the playtest tool now.
 
 It applies the rules in this folder so you can play and tune without doing the
 sums by hand. Change numbers.csv, decrees.csv, seasons.csv, advisors.csv or the
@@ -79,6 +79,10 @@ def num(v, default=0):
 
 
 RULES = {r["id"]: r for r in read_csv("numbers.csv")}
+if "goods" not in RULES:
+    sys.exit("The terminal game is frozen at the v1 rules (one 'goods' number). Play in the browser instead:\n"
+             "  https://claude.ai/artifact/SBg4CFaAq91RdLq7AFo6jX  (web/, rules v2)\n"
+             "To play v1 here: git checkout d7948d9 -- rules events, then python rules/play.py")
 DECREES = read_csv("decrees.csv")
 DECREE = {d["id"]: d for d in DECREES}
 SEASONS = sorted(read_csv("seasons.csv"), key=lambda r: int(r["order"]))

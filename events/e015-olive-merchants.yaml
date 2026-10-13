@@ -14,7 +14,7 @@ choice:
     captain offers his amphorae cheap, to sail home light.
   options:
     - label: Buy the cargo
-      effects: {treasury: -200, wine_oil: 8}      # DRAFT: worth about 480 at market
+      effects: {treasury: -200, oil: 8}      # DRAFT: worth about 480 at market
     - label: Send him on his way
       effects: {}
 scribe_hint: The captain swears by Neptune it is the best oil north of Brundisium.

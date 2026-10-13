@@ -15,7 +15,7 @@ choice:
     galley to escort convoys and chase pirates out of the bay.
   options:
     - label: Build the galley
-      effects: {treasury: -500, goods: -10, ships: 1, favour: 2}     # DRAFT: a fast galley joins the fleet
+      effects: {treasury: -500, timber: -10, ships: 1, favour: 2}     # DRAFT: a fast galley joins the fleet
     - label: Not this year
       effects: {loyalty: -1}                                          # DRAFT: the sailors grumble
 scribe_hint: Epicadus draws the hull in the sand with his staff; the shipwrights are already measuring timber.

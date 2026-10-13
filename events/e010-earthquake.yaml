@@ -7,7 +7,7 @@ years: [30, 42]
 trigger: random
 chance: 0.04
 once: false
-effects: {treasury: -400, goods: -8, loyalty: -2}   # DRAFT: walls and houses to rebuild
+effects: {treasury: -400, timber: -8, loyalty: -2}   # DRAFT: walls and houses to rebuild
 scribe_hint: Roof tiles in the streets, a crack across the forum; the people camp outside for fear of more.
 historical_note: >-
   This coast lies on an active fault: a great earthquake in 1667 ruined

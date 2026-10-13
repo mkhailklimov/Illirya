@@ -22,7 +22,7 @@ choice:
     - label: Pay them to sail elsewhere
       effects: {treasury: -400, favour: -3}             # DRAFT: Rome frowns on paying pirates
     - label: Do nothing and keep the ships in harbour
-      effects: {goods: -5, wine_oil: -3, loyalty: -2}   # DRAFT: trade stops for a season
+      effects: {cloth: -3, wine: -3, loyalty: -2}   # DRAFT: trade stops for a season
 scribe_hint: Fishermen whisper of light, fast ships with no banner; the merchants refuse to sail.
 historical_note: >-
   Illyrian sea-raiding was what first drew Rome across the Adriatic: piracy

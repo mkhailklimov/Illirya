@@ -19,7 +19,7 @@ choice:
         die: 20
         bonus: army / 50 + battle_bonus
         target: 13
-        success: {favour: 4, loyalty: 3, goods: 5}        # DRAFT: spoils and glory
+        success: {favour: 4, loyalty: 3, fleece: 6}        # DRAFT: spoils and glory
         failure: {army: -30, people: -100, loyalty: -4}   # DRAFT: a costly defeat
     - label: Pay them to go back to their valleys
       effects: {treasury: -400, favour: -4}               # DRAFT: Rome hates paying barbarians

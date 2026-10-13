@@ -14,7 +14,7 @@ choice:
     great wooden screw. He says it squeezes more oil from every olive.
   options:
     - label: Pay him to build one
-      effects: {treasury: -400, goods: -5, wine_oil: 10}   # DRAFT
+      effects: {treasury: -400, timber: -5, oil: 10}   # DRAFT
     - label: Our old beam presses will do
       effects: {}
 scribe_hint: He draws the screw on a wax tablet; Nikandros counts the profit in his head.
