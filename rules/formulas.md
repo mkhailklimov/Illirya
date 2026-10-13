@@ -145,6 +145,16 @@ Each of the five advisors in `advisors.csv` has a **mood** from 0 to 5 (start 3)
 | Epicadus (fleet) | Winter run | once per governorship | One convoy may sail in winter, when the sea is closed |
 | Tertius Volusius (haruspex) | Reads the entrails | once a year | Sees a dark omen (a decision, or any number going down) before it is turned over; may sacrifice again to draw another omen |
 
+- **Qualities (DRAFT, not used in any formula yet).** Each advisor has six qualities from 1 to 5 in `advisors.csv`: experience, decisions, strategy, administration, persuasion, logic. They are on the character cards and in the web playtest so you can judge whether they fit each man. Possible uses, to choose later: a bonus to rolls in his field (strategy for battle rolls, persuasion for the haruspex's omens), how often his advice is right (logic), how fast his mood recovers (experience).
+
+| Advisor | Experience | Decisions | Strategy | Administration | Persuasion | Logic |
+|---|---|---|---|---|---|---|
+| Epicadus | 5 | 4 | 3 | 2 | 2 | 3 |
+| Marcus Antistius | 4 | 4 | 4 | 3 | 2 | 3 |
+| Nikandros | 3 | 3 | 3 | 3 | 5 | 4 |
+| Felix | 3 | 2 | 2 | 5 | 3 | 5 |
+| Tertius Volusius | 4 | 3 | 2 | 2 | 5 | 2 |
+
 ## Lose checks (end of season)
 
 - **Recalled:** Roman favour 0.

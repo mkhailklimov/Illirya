@@ -5,7 +5,9 @@
 
 Names, titles, what they watch and their ability come from rules/advisors.csv,
 so the cards change with the game rules. The portrait is the coin bust from
-tiberius.py with each advisor's own headgear and beard.
+tiberius.py with each advisor's own headgear and beard, and
+what he carries (pennant, trident, lituus and amulet). Six qualities (1-5) sit under
+the name.
 """
 import csv, math, os, sys, textwrap
 sys.path.insert(0, os.path.dirname(__file__))
@@ -17,6 +19,9 @@ RULES = os.path.join(os.path.dirname(__file__), "..", "..", "rules", "advisors.c
 DETAIL = "#4a1030"
 CRIMSON = "#9b2240"
 MOOD_START, MOOD_MAX = 3, 5      # as in rules/play.py
+STATS = [("experience", "EXPERIENCE"), ("decisions", "DECISIONS"), ("strategy", "STRATEGY"),
+         ("administration", "ADMINISTRATION"), ("persuasion", "PERSUASION"), ("logic", "LOGIC")]
+STAT_MAX = 5
 
 LEGEND = {
     "fleet": "EPICADVS · LIBVRNVS · NAVARCHVS",
@@ -111,6 +116,50 @@ def veil():
     return drape + edge + folds
 
 
+# --- what each man carries, so the portraits read apart at a glance (bust coordinates) ---
+def outlined(d, w=3):
+    """A gold shape with a dark edge, so it stands off the gold bust."""
+    return f'<path d="{d}" fill="url(#gold)" stroke="{DETAIL}" stroke-width="{w}" stroke-linejoin="round"/>'
+
+
+def vexillum():
+    """Antistius: the cavalry pennant of his cohort on a spear, held before him."""
+    pole = outlined("M368,494 L366,112 L378,112 L382,494Z", 3)
+    tip = outlined("M372,52 L386,90 L372,114 L358,90Z", 3)
+    bar = outlined("M332,108 L412,108 L412,120 L332,120Z", 2.5)
+    cloth = (f'<path d="M336,120 L408,120 L408,222 L394,210 L380,224 L366,210 L352,224 L338,210 L336,222Z" '
+             f'fill="{CRIMSON}" stroke="{DETAIL}" stroke-width="3" stroke-linejoin="round"/>')
+    fringe = "".join(line(f"M{x},218 l0,14", 3, .9) for x in range(340, 408, 9))
+    mark = (f'<circle cx="372" cy="164" r="17" fill="none" stroke="url(#gold)" stroke-width="5"/>'
+            f'<circle cx="372" cy="164" r="6" fill="url(#gold)"/>'
+            + "".join(f'<path d="M372,164 l{dx},{dy}" stroke="url(#gold)" stroke-width="3"/>' for dx, dy in ((0, -26), (0, 26), (-26, 0), (26, 0))))
+    return pole + bar + cloth + fringe + mark + tip
+
+
+def lituus_held():
+    """Tertius: the augur's curved staff raised before his face."""
+    d = "M402,494 L384,184 C382,124 346,104 324,128 C306,150 320,178 344,176 C360,174 360,154 348,150"
+    return (f'<path d="{d}" fill="none" stroke="{DETAIL}" stroke-width="22" stroke-linecap="round"/>'
+            f'<path d="{d}" fill="none" stroke="url(#gold)" stroke-width="13" stroke-linecap="round"/>')
+
+
+def amulet():
+    """Tertius: a bulla, the round gold amulet against evil, on a cord at his throat."""
+    cord = line("M126,352 C160,396 220,410 262,378", 5, .95)
+    return (cord + f'<circle cx="200" cy="420" r="30" fill="{CRIMSON}" stroke="{DETAIL}" stroke-width="3"/>'
+            + f'<circle cx="200" cy="420" r="25" fill="none" stroke="url(#gold)" stroke-width="7"/>'
+            + f'<circle cx="200" cy="420" r="9" fill="url(#gold)"/>' + line("M200,392 L200,402", 4, 1))
+
+
+def trident():
+    """Epicadus: Neptune's trident behind his shoulder."""
+    shaft = outlined("M46,494 L50,132 L58,132 L56,494Z", 2.5)
+    head = outlined("M26,140 L82,140 L82,148 L58,150 L58,156 L50,156 L50,150 L26,148Z", 2)
+    tines = "".join(outlined(f"M{x - 4},142 L{x - 4},{top + 14} L{x - 9},{top + 18} L{x},{top} L{x + 9},{top + 18} L{x + 4},{top + 14} L{x + 4},142Z", 2)
+                    for x, top in ((30, 86), (54, 70), (78, 86)))
+    return shaft + head + tines
+
+
 PORTRAIT = {
     "fleet": lambda: pilos() + beard(True),
     "general": lambda: helmet(),
@@ -120,8 +169,14 @@ PORTRAIT = {
 }
 
 
+BEHIND = {"fleet": trident}                             # drawn before the bust
+IN_FRONT = {"general": vexillum, "priest": lambda: amulet() + lituus_held()}
+
+
 def bust(aid):
-    return (f'<path d="{HEAD_PATH}" fill="url(#gold)"/>' + face_details() + PORTRAIT[aid]())
+    back = BEHIND.get(aid, str)()
+    front = IN_FRONT.get(aid, str)()
+    return back + f'<path d="{HEAD_PATH}" fill="url(#gold)"/>' + face_details() + PORTRAIT[aid]() + front
 
 
 # --- emblems for the badge under the portrait (drawn in a 120x120 box) ---
@@ -172,14 +227,30 @@ def mood_pips(cx, y, mood):
     return "".join(out)
 
 
+def stat_panel(a, y0):
+    """Six qualities in two columns: label on the left, five small diamonds on the right."""
+    out = []
+    for i, (key, label) in enumerate(STATS):
+        col, row = i % 2, i // 2
+        x, y = (86, 392)[col], y0 + row * 32
+        out.append(f'<text x="{x}" y="{y + 6}" font-family="Marcellus" font-size="15" letter-spacing="1.5" fill="#efe0b4">{label}</text>')
+        v = int(a.get(key) or 0)
+        for k in range(STAT_MAX):
+            cx = x + 198 + k * 16
+            d = f"M{cx},{y - 7} L{cx + 6},{y} L{cx},{y + 7} L{cx - 6},{y}Z"
+            out.append(f'<path d="{d}" fill="url(#gold)"/>' if k < v else
+                       f'<path d="{d}" fill="none" stroke="#d9ac4f" stroke-width="1.5" opacity=".6"/>')
+    return "".join(out)
+
+
 def card(a):
     aid = a["id"]
     uses = "ONCE PER GOVERNORSHIP" if a["ability_uses"] == "game" else "ONCE A YEAR"
-    text_lines = textwrap.wrap(a["ability_text"], 46)
-    ability_text = "".join(f'<tspan x="375" dy="{0 if i == 0 else 33}">{t}</tspan>' for i, t in enumerate(text_lines))
+    text_lines = textwrap.wrap(a["ability_text"], 48)
+    ability_text = "".join(f'<tspan x="375" dy="{0 if i == 0 else 30}">{t}</tspan>' for i, t in enumerate(text_lines))
     meander = "".join(f'<path d="M{i},1022 v-18 h26 v12 h-16 v-6" fill="none" stroke="url(#gold)" stroke-width="2.5"/>' for i in range(40, W - 40, 34))
     name = a["name"].upper()
-    name_size = 44 if len(name) <= 18 else 38
+    name_size = 50 if len(name) <= 18 else 42
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">
 <defs>{GOLD}
 <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1530"/><stop offset=".55" stop-color="#2a1d48"/><stop offset="1" stop-color="#3a2552"/></linearGradient>
@@ -191,18 +262,19 @@ def card(a):
 <rect width="{W}" height="{H}" rx="34" fill="url(#glow)"/>
 <rect x="16" y="16" width="{W - 32}" height="{H - 32}" rx="24" fill="none" stroke="url(#gold)" stroke-width="5"/>
 <rect x="28" y="28" width="{W - 56}" height="{H - 56}" rx="16" fill="none" stroke="url(#gold)" stroke-width="1.5" opacity=".6"/>
-<text x="375" y="88" text-anchor="middle" font-family="Marcellus" font-size="28" letter-spacing="7" fill="#f6e3a1" filter="url(#tsh)">{a['title'].upper()}</text>
-{medallion(aid, 375, 340, 220)}
-<circle cx="375" cy="566" r="50" fill="#2c0819" stroke="url(#gold)" stroke-width="4"/>
-<g transform="translate(315,506)">{emblem(aid)}</g>
-<text x="375" y="668" text-anchor="middle" font-family="Marcellus" font-size="{name_size}" letter-spacing="4" fill="url(#gold)" stroke="url(#gold)" stroke-width="1" filter="url(#tsh)">{name}</text>
-<text x="375" y="708" text-anchor="middle" font-family="Corm" font-style="italic" font-weight="500" font-size="27" fill="#efe0b4">watches {a['watches']}</text>
-<text x="375" y="752" text-anchor="middle" font-family="Marcellus" font-size="18" letter-spacing="5" fill="#d9ac4f">MOOD</text>
-{mood_pips(375, 782, MOOD_START)}
-<rect x="62" y="814" width="626" height="180" rx="14" fill="#2c0819" opacity=".85" stroke="url(#gold)" stroke-width="2"/>
-<text x="375" y="854" text-anchor="middle" font-family="Marcellus" font-size="30" letter-spacing="4" fill="url(#gold)">{a['ability_name'].upper()}</text>
-<text x="375" y="880" text-anchor="middle" font-family="Marcellus" font-size="15" letter-spacing="4" fill="#d9ac4f" opacity=".85">{uses}</text>
-<text x="375" y="916" text-anchor="middle" font-family="Corm" font-style="italic" font-weight="500" font-size="27" fill="#fbeedd">{ability_text}</text>
+<text x="375" y="78" text-anchor="middle" font-family="Marcellus" font-size="26" letter-spacing="7" fill="#f6e3a1" filter="url(#tsh)">{a['title'].upper()}</text>
+{medallion(aid, 375, 300, 196)}
+<circle cx="375" cy="512" r="44" fill="#2c0819" stroke="url(#gold)" stroke-width="4"/>
+<g transform="translate(327,464) scale(.8)">{emblem(aid)}</g>
+<text x="375" y="606" text-anchor="middle" font-family="Caesar" font-size="{name_size}" letter-spacing="2" fill="url(#gold)" filter="url(#tsh)">{name}</text>
+<text x="375" y="642" text-anchor="middle" font-family="Corm" font-style="italic" font-weight="500" font-size="24" fill="#efe0b4">watches {a['watches']}</text>
+{stat_panel(a, 682)}
+<text x="300" y="784" text-anchor="end" font-family="Marcellus" font-size="16" letter-spacing="5" fill="#d9ac4f">MOOD</text>
+{mood_pips(408, 778, MOOD_START)}
+<rect x="62" y="804" width="626" height="192" rx="14" fill="#2c0819" opacity=".85" stroke="url(#gold)" stroke-width="2"/>
+<text x="375" y="848" text-anchor="middle" font-family="Caesar" font-size="34" letter-spacing="2" fill="url(#gold)">{a['ability_name'].upper()}</text>
+<text x="375" y="874" text-anchor="middle" font-family="Marcellus" font-size="14" letter-spacing="4" fill="#d9ac4f" opacity=".85">{uses}</text>
+<text x="375" y="910" text-anchor="middle" font-family="Marcellus" font-size="22" fill="#fbeedd">{ability_text}</text>
 {meander}
 </svg>"""
 
