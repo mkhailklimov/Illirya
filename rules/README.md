@@ -7,7 +7,7 @@ The game's numbers live here, not in code. The bot (Phase 1) will read these fil
 | File | Task | What it holds |
 |---|---|---|
 | [numbers.csv](numbers.csv) | 0.4 | The 8 city numbers: unit, range, starting value |
-| [decrees.csv](decrees.csv) | 0.4 | The 10 decrees: cost and what each changes |
+| [decrees.csv](decrees.csv) | 0.4 | The decrees (16 in rules v2): cost and what each changes |
 | [formulas.md](formulas.md) | 0.5 | How a season is resolved: taxes, tribute, army pay, grain, loyalty, favour |
 | [seasons.csv](seasons.csv) | 0.5 | What changes by season (harvest, sailing, tribute due) |
 | [playtest-log.md](playtest-log.md) | 0.6 | 12 turns played by hand, with the numbers after each turn |

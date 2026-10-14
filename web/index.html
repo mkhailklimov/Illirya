@@ -364,6 +364,16 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   const TOWN_SLOTS = [], FIELD_SLOTS = [];
   for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) TOWN_SLOTS.push([150 + c * 92, 214 + r * 78]);
   for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) FIELD_SLOTS.push([586 + c * 92 + r * 14, 196 + r * 82]);
+  for (let c = 0; c < 4; c++) FIELD_SLOTS.push([600 + c * 92, 100]);   // hillside terraces, cleared one by one
+  /** A hillside plot not yet cleared (or being cleared): scrub, click to order the clearing. */
+  function scrubSVG(x, y, left) {
+    const w = 80, h = 66;
+    return `<g class="plot-hit" tabindex="0" role="button" aria-label="${left ? `Being cleared, ready in ${left} season${left > 1 ? "s" : ""}` : "Scrub on the hillside: clear it for a new field"}" data-clear="1" transform="translate(${x},${y})">
+      <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="rgba(36,26,63,.55)" stroke="rgba(159,220,174,.35)" stroke-dasharray="${left ? "6 4" : "2 5"}"/>
+      <g fill="none" stroke="rgba(159,220,174,.5)" stroke-width="1.6" stroke-linecap="round">${[[18, 40], [36, 30], [54, 42], [66, 28]].map(([a, b]) => `<path d="M${a},${b + 10}v-8m-6,4l6,-10l6,10"/>`).join("")}</g>
+      <text x="${w / 2}" y="${h - 7}" text-anchor="middle" font-family="Marcellus" font-size="11.5" fill="rgba(185,169,143,.85)">${left ? "clearing" : "scrub"}</text>
+      ${left ? `<g transform="translate(${w - 13},13)"><circle r="10" fill="#2c0819" stroke="#e2bd66"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#f6e3a1">${left}</text></g>` : ""}</g>`;
+  }
   const sortedPlots = (zone) => s.buildings.filter((b) => E.BLD[b.kind].zone === zone).sort((a, b) => E.BLD_IDS.indexOf(a.kind) - E.BLD_IDS.indexOf(b.kind) || a.done - b.done);
   function plotSVG(b, x, y, zone, i) {
     const w = 80, h = 66;
@@ -410,22 +420,31 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       <text x="324" y="184" text-anchor="middle" font-family="Caesar Dressing, Marcellus" font-size="24" letter-spacing="3" fill="#e2bd66">ACRVVIVM</text>
       <text x="770" y="182" text-anchor="middle" font-family="Marcellus" font-size="14" letter-spacing="4" fill="#b9a98f">FIELDS ROUND THE BAY</text>
       ${TOWN_SLOTS.map(([x, y], i) => plotSVG(town[i], x, y, "town", i)).join("")}
-      ${FIELD_SLOTS.map(([x, y], i) => plotSVG(fields[i], x, y, "field", i)).join("")}
+      ${FIELD_SLOTS.map(([x, y], i) => {
+        const open = E.fieldPlots(s), clearing = [...(s.clearing || [])].sort((a, b) => a - b);
+        if (i < open) return plotSVG(fields[i], x, y, "field", i);
+        const k = i - open;
+        return scrubSVG(x, y, k < clearing.length ? clearing[k] - s.turn : 0);
+      }).join("")}
       ${ships}${keels}
     </svg>`;
   }
   function cityView(before) {
     const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
     $("sheet-city").innerHTML = `<div class="mapwrap" id="citymap">${citySVG()}</div>
-      <div class="legend"><span>${E.plotsUsed(s, "town")}/${E.TOWN_PLOTS} plots in town, ${E.plotsUsed(s, "field")}/${E.FIELD_PLOTS} in the fields</span>
+      <div class="legend"><span>${E.plotsUsed(s, "town")}/${E.TOWN_PLOTS} plots in town, ${E.plotsUsed(s, "field")}/${E.fieldPlots(s)} in the fields (up to ${E.FIELD_PLOTS_MAX})</span>
       <span>Houses for ${E.intc(E.housing(s))} people</span><span>${Math.trunc(s.ships)} ships: ${free} in harbour${E.shipsAtSea(s) ? `, ${E.shipsAtSea(s)} at sea` : ""}; berths for ${E.berths(s)}</span>
       <span><i style="background:#2c0819;border:1px dashed #e2bd66"></i>being built</span><span><i style="background:#1f3a22;border:1px solid #9fdcae"></i>growing</span></div>
       ${storesHTML(before)}`;
     $("citymap").querySelectorAll(".plot-hit").forEach((g) => {
-      const go = () => (g.dataset.zone ? buildPicker(g.dataset.zone) : plotInfo(g.dataset.plot));
+      const go = () => (g.dataset.clear ? clearHere() : g.dataset.zone ? buildPicker(g.dataset.zone) : plotInfo(g.dataset.plot));
       g.addEventListener("click", go);
       g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
     });
+  }
+  function clearHere() {
+    if (phase !== "orders") { toast("Orders are given after the season's cards are read."); return; }
+    addOrders([E.order("clear_land")]);
   }
   function plotInfo(id) {
     const [zone, i] = id.split("-"); const b = sortedPlots(zone)[+i]; if (!b) return;
@@ -694,7 +713,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
 
   // ---------- the order desk: plans, actions, the order book ----------
   const GROUPS = [["Treasury and law", ["raise_taxes", "lower_taxes", "hear_petitions", "hang_brigands"]],
-    ["Building and planting", ["build"]], ["Sea and trade", ["send_convoy", "build_ship"]], ["The garrison", ["recruit", "dismiss"]],
+    ["Building and planting", ["build", "clear_land"]], ["Sea and trade", ["send_convoy", "merchants", "build_ship"]], ["The garrison", ["recruit", "dismiss"]],
     ["Gods and Rome", ["visit_temple", "hold_festival", "honour_tiberius", "honour_rome"]], ["The council", ["listen_sages"]]];
   const PLAN_MARK = { bold: "A", prudent: "B" };
   let plansNow = [];
@@ -722,12 +741,13 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     $("plans").querySelectorAll("[data-plan]").forEach((b) => (b.onclick = () => addOrders(plansNow[+b.dataset.plan].orders)));
     $("groups").innerHTML = GROUPS.map(([label, ids]) => `<div class="group"><h4>${label}</h4><div class="acts">${ids.map((id) => {
       const d = E.DECREE[id], c = E.num(d.cost_treasury), mats = E.parseList(d.cost);
-      const price = ["build", "send_convoy"].includes(id) ? (id === "build" ? "or click a free plot" : "or click a town") : [c ? E.intc(c) : "", ...Object.entries(mats).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ");
+      const price = ["build", "send_convoy", "merchants"].includes(id) ? (id === "build" ? "or click a free plot" : id === "merchants" ? "sailing season, up to 20 loads" : "or click a town") : [c ? E.intc(c) : "", ...Object.entries(mats).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ");
       return `<button class="act" type="button" data-act="${id}">${esc(d.name)}${price ? `<small>${esc(price)}</small>` : ""}</button>`; }).join("")}</div></div>`).join("");
     $("groups").querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => {
       const id = b.dataset.act;
       if (id === "build") buildPicker();
       else if (id === "send_convoy") convoyBuilder(selectedTown);
+      else if (id === "merchants") merchantBuilder();
       else addOrders([E.order(id)]);
     }));
     $("read").onclick = () => {
@@ -814,6 +834,31 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       $("cadd").onclick = () => { const o = read(); if (!E.loads(o)) { $("ctot").textContent = "Choose something to sell or buy."; return; } addOrders([o]); closeVeil(); };
     };
     draw();
+  }
+
+  function merchantBuilder() {
+    if (phase !== "orders") { toast("Orders are given after the season's cards are read."); return; }
+    if (E.seasonOf(s.turn)[0].sailing === "no") { toast("No merchant ships call in winter (mare clausum)."); return; }
+    const rows = E.MERCHANT_GOODS.map((g) => `<tr><td>${esc(E.nameOf(g))}${g === "grain" ? " (months)" : ""}</td><td>${E.intc(E.merchantPrice(g))}</td><td>${g === "grain" ? s.grain.toFixed(1) : Math.trunc(s[g] || 0)}</td><td><input type="number" min="0" max="${E.MERCHANT_LOAD}" value="0" data-buy="${g}" aria-label="Buy ${esc(E.nameOf(g))}"></td></tr>`).join("");
+    openVeil(`<div class="dialog wide" role="dialog" aria-label="Buy from passing merchants"><h2>Buy from passing merchants</h2>
+      <p class="sum" style="margin:0">Greek and Italian ships call at the quay. They sell at half again the base price, but no ship of ours has to sail and nothing is lost at sea: the goods are in the stores at once. Up to ${E.MERCHANT_LOAD} loads a season (a month of grain is ${E.GRAIN_LOAD}). No luxuries.</p>
+      <div style="overflow-x:auto"><table class="trade"><thead><tr><th>Buy</th><th>Price</th><th>Have</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div><div class="meter" id="meter"><i style="width:0"></i></div><p class="sum" id="ctot" style="margin:6px 0 0"></p></div>
+      <div class="row"><button class="btn" type="button" id="cadd">Add to orders</button><button class="btn quiet" type="button" data-close>Cancel</button></div></div>`);
+    const read = () => {
+      const o = E.order("merchants", { buy: {} });
+      $("veil").querySelectorAll("[data-buy]").forEach((i) => { const v = Math.max(0, parseInt(i.value, 10) || 0); if (v) o.buy[i.dataset.buy] = v; });
+      return o;
+    };
+    const update = () => {
+      const o = read(), l = E.loads(o);
+      $("meter").classList.toggle("over", l > E.MERCHANT_LOAD);
+      $("meter").firstElementChild.style.width = Math.min(100, (l / E.MERCHANT_LOAD) * 100) + "%";
+      $("ctot").textContent = `${l} of ${E.MERCHANT_LOAD} loads. Costs ${E.intc(E.costOf(s, o)[0])} denarii.`;
+    };
+    $("veil").querySelectorAll("input").forEach((i) => (i.oninput = update));
+    update();
+    $("cadd").onclick = () => { const o = read(); if (!E.loads(o)) { $("ctot").textContent = "Choose something to buy."; return; } addOrders([o]); closeVeil(); };
   }
 
   async function seal(orders) {

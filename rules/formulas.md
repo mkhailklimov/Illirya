@@ -144,6 +144,15 @@ The browser game (`web/engine.js`) plays by these rules; where they differ from 
 
 Seen in test games (bots, 40 seasons): money piles up (40,000–60,000 denarii by year 10) while iron and marble run short, so materials are the real limit; and a governor who never buys grain starves within five seasons. Both are for tuning in playtests.
 
+### Balance pass, 14 October 2026
+
+- **Buy from passing merchants** (once a season, sailing season only): up to 20 loads of any non-luxury good, or grain (a month = 10 loads), at 1.5 × the base price (grain 750 a month). The goods are in the stores at once, with no ship and no voyage roll. This turns spare denarii into iron, marble and grain, and gives a way out of a grain crisis without a free ship.
+- **Clear new fields** (600 denarii, 2 iron; can be repeated): one more field plot after 2 seasons, on the hillside above the bay. 12 field plots at the start, at most 16. (At the start, 8 of the 12 field plots are already used, so they filled up within the first year.)
+- **Iron mine:** 3 iron a season instead of 2, and up to 2 mines.
+- The council knows these orders: the economist asks to clear land when the fields are full, and suggests the merchants when grain is below 3. The general's and the haruspex's plans buy iron and marble from them, and the scribe understands "buy 5 iron from the merchants" and "clear new fields".
+
+Bots, 60 games of 40 seasons, before → after: famine ended 47% → 32% of games; iron at year 10 about 9 → 27; marble 5 → 12–18; money at year 10 about 58,000 → 45,000. Money still piles up for bots, which do not buy much from the merchants unless short. The question for the playtest is whether a human player now has enough to spend it on.
+
 ## The council (advisors as characters)
 
 Each of the five advisors in `advisors.csv` has a **mood** from 0 to 5 (start 3) and **one ability**.

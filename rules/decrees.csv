@@ -13,3 +13,5 @@ visit_temple,Sacrifice at the temple,gods,50,,yes,,,,1,1,,DRAFT. The governor sa
 honour_tiberius,Decree honouring Tiberius,rome,100,,yes,,,,,4,,DRAFT. An inscription in the forum to the Emperor.
 honour_rome,Send gifts to Rome,rome,400,,no,,,,,8,,DRAFT. On top of the regular tribute.
 listen_sages,Listen to the sages,council,0,,yes,,,,,,,DRAFT. The old men read the sky: you learn next season's wind before it comes.
+merchants,Buy from passing merchants,sea,0,,yes,,,,,,,"DRAFT. Greek and Italian ships call at the quay in the sailing season. Buy up to 20 loads at once, no ship of ours needed, at half again the base price (grain 750 a month). No luxuries."
+clear_land,Clear new fields,land,600,iron 2,no,,,,,,,"DRAFT. Cut the scrub and build terraces on the hillside: one more field plot, ready in two seasons. At most 16 field plots."
