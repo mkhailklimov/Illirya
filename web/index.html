@@ -121,7 +121,9 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .card .back span { font: 400 30px var(--f-display); color: var(--gold); letter-spacing: .1em; }
 .card .back em { font: 400 14px var(--f-voice); letter-spacing: .08em; color: var(--mute); }
 .card:not(.flip):hover .back { box-shadow: inset 0 0 0 2px var(--gold-pale), 0 0 26px rgba(246,227,161,.25); }
-.cards.waiting .card:not(.flip) .back { animation: beckon 1.6s ease-in-out infinite; }
+.card.next .back { animation: beckon 1.6s ease-in-out infinite; }
+.cards .card:not(.flip):not(.next) .back { filter: brightness(.6); }
+.card .eff.done { color: var(--good); letter-spacing: .06em; text-transform: none; font-size: 13.5px; }
 @keyframes beckon { 0%, 100% { box-shadow: inset 0 0 0 2px var(--gold), 0 0 6px rgba(246,227,161,.15); } 50% { box-shadow: inset 0 0 0 3px var(--gold-pale), 0 0 28px rgba(246,227,161,.55); } }
 .card.active { z-index: 1; }
 .card.active > div { animation: chosen 1.4s ease-in-out infinite; }
@@ -155,6 +157,29 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .btn.quiet { background: none; color: var(--gold-pale); border: 1px solid var(--line); }
 .btn.small { padding: 5px 14px; font-size: 12.5px; }
 .problems { margin: 0; padding-left: 20px; color: var(--bad); font-size: 14.5px; }
+.book .problems li { display: list-item; border: 0; padding: 0; counter-increment: none; }
+.book .problems li::before { content: none; }
+
+/* a card's decision: two advisors' proposals, your own order, or let it be */
+.advice { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; margin-top: 12px; }
+.prop { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: start; text-align: left; width: 100%; background: rgba(44, 8, 25, .7); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px 14px 12px; }
+.prop:hover:not(:disabled), .prop:focus-visible { border-color: var(--gold); background: rgba(70, 18, 44, .85); }
+.prop .coinwrap { --d: 56px; }
+.prop .who { color: var(--gold-pale); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.tag { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; padding: 1px 9px; border-radius: 999px; border: 1px solid currentColor; }
+.tag.moderate { color: var(--good); } .tag.risky { color: #ffb36b; }
+.prop .say { font: 400 15.5px/1.45 var(--f-voice); color: var(--ink); }
+.prop .what { display: flex; align-items: center; gap: 8px; color: var(--gold-pale); font-size: 14.5px; }
+.prop .what small { color: var(--mute); }
+.own { display: grid; gap: 6px; margin-top: 14px; }
+.own .row { gap: 8px; }
+.review { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 10px; }
+.review > div { border: 1px solid var(--faint); border-radius: 12px; padding: 10px 14px; }
+.review h3 { margin-bottom: 6px; }
+.review ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15px; }
+.review .wins h3 { color: var(--good); } .review .woes h3 { color: var(--bad); }
+.desk.one { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+@media (max-width: 760px) { .desk.one { grid-template-columns: minmax(0, 1fr); } }
 
 /* order desk */
 .desk { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 14px; }
@@ -255,7 +280,7 @@ footer { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-
 footer .opts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 footer .opts button { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; color: var(--mute); }
 footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color: var(--gold); }
-@media (prefers-reduced-motion: reduce) { .card { transition: none; } .cards.waiting .card:not(.flip) .back, .card.active > div { animation: none; } .spin .die svg, .corner.die.spin svg { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .card.next .back, .card.active > div { animation: none; } .spin .die svg, .corner.die.spin svg { animation: none; } }
 </style>
 
 <div class="wrap">
@@ -278,7 +303,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   </div>
   <div class="stage" id="stage"></div>
   <footer>
-    <span>Phase 0 playtest · rules v2 · all numbers DRAFT</span>
+    <span>Phase 0 playtest · rules v3 · all numbers DRAFT</span>
     <span class="opts" id="opts"></span>
   </footer>
 </div>
@@ -774,25 +799,67 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   // ---------- what the engine asks of the page ----------
   let seasonCards = [];
   const ui = {
-    async reveal(cards) {
+    async lay(cards) {
       seasonCards = cards;
       $("cards").innerHTML = cards.map((c, i) => cardHTML(c, i, false)).join("");
-      $("cardhint").textContent = "Turn each card over to read it: click the glowing cards.";
-      $("cards").classList.add("waiting");
+    },
+    async turn(c, i) {
+      const el = $("card-" + i);
+      document.querySelectorAll(".card.next").forEach((x) => x.classList.remove("next"));
+      el.classList.add("next");
+      $("cardhint").textContent = `Card ${i + 1} of ${seasonCards.length}: turn over the glowing ${E.DECK_LABEL[c.deck].toLowerCase()} card.`;
+      seasonCards.forEach((x, k) => { const other = $("card-" + k); if (k !== i && !other.classList.contains("flip")) other.onclick = () => toast("One card at a time: the glowing one first."); });
       await new Promise((done) => {
-        let left = cards.length;
-        cards.forEach((c, i) => {
-          const el = $("card-" + i);
-          el.onclick = () => {
-            if (el.classList.contains("flip")) return;
-            el.classList.add("flip"); el.setAttribute("aria-label", c.title);
-            ({ omen: gong, land: cornu, sea: bell }[c.deck] || rustle)();
-            if (--left === 0) setTimeout(done, reduce() ? 50 : 850);
-          };
-        });
+        el.onclick = () => {
+          if (el.classList.contains("flip")) return;
+          el.classList.remove("next"); el.classList.add("flip"); el.setAttribute("aria-label", c.title);
+          ({ omen: gong, land: cornu, sea: bell }[c.deck] || rustle)();
+          setTimeout(done, reduce() ? 50 : 750);
+        };
       });
-      $("cards").classList.remove("waiting");
-      $("cardhint").textContent = cards.some((c) => c.choice) ? "A glowing card asks for your decision, just below." : "The cards are read.";
+      refresh(s.before);
+    },
+    async decide(c, i, list, tone) {
+      const box = $("decide");
+      document.querySelectorAll(".card").forEach((el) => el.classList.remove("active"));
+      $("card-" + i).classList.add("active"); $("cards").classList.add("deciding");
+      const effect = tone === "quiet" ? "Nothing presses this season. Your council suggests how to use the calm." : `This season: ${E.effectsText(c.effects)}.`;
+      const costText = (o) => { const [c0, m] = E.costOf(s, o); return [c0 ? E.intc(c0) + " den" : "", ...Object.entries(m).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ") || "costs nothing"; };
+      box.innerHTML = `<p class="eyebrow">${E.DECK_LABEL[c.deck]} card · ${i + 1} of ${seasonCards.length} · your decision</p><h2>${esc(c.title)}</h2>
+        <p class="voice">${esc(String(c.scribe_hint || "").replace(/\s+/g, " "))}</p><p class="sum" style="margin:6px 0 0">${esc(effect)}</p>
+        <div class="advice">${list.map((p, k) => { const a = E.ADVISORS[p.who];
+          return `<button class="prop" type="button" data-i="${k}">${coin(p.who)}<span class="who">${esc(a.name)} <span class="tag ${p.risk}">${p.risk}</span></span>
+            <span class="say">“${esc(p.say)}”</span><span class="what">${orderIcon(p.order, 30)}<span>${esc(E.describe(s, p.order))} <small>· ${esc(costText(p.order))}</small></span></span></button>`; }).join("")
+          || `<p class="sum">Your council has nothing it can afford to propose.</p>`}</div>
+        <div class="own"><label for="ownwords" class="eyebrow" style="margin:0">Or your own order</label>
+          <textarea id="ownwords" placeholder="${tone === "bad" ? "Buy 2 months of grain from the merchants" : "Plant olives"}"></textarea>
+          <div class="row"><button class="btn small" type="button" id="owngo">Give the order</button><button class="btn small quiet" type="button" id="letbe">Let it be</button></div>
+          <div id="ownans"></div></div>`;
+      box.hidden = false;
+      box.scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "nearest" });
+      const pick = await new Promise((res) => {
+        box.querySelectorAll(".prop").forEach((b) => (b.onclick = () => res({ kind: "advice", i: +b.dataset.i })));
+        $("letbe").onclick = () => res({ kind: "none" });
+        $("owngo").onclick = () => {
+          const text = $("ownwords").value.trim(); if (!text) return;
+          const r = E.wordParse(s, text);
+          const say = (m) => ($("ownans").innerHTML = `<p class="voice" style="font-size:17px;margin:0">The scribe: “${esc(m)}”</p>`);
+          if (!r.orders.length) { say(r.reply); return; }
+          const o = r.orders[0], problem = E.canDo(s, o);
+          if (problem) { say(problem); return; }
+          if (r.orders.length > 1) toast("One order per card: the scribe writes down the first.");
+          res({ kind: "order", order: o });
+        };
+      });
+      box.hidden = true;
+      $("cards").classList.remove("deciding"); $("card-" + i).classList.remove("active");
+      return pick;
+    },
+    async decided(c, i, pick) {
+      const eff = $("card-" + i).querySelector(".eff");
+      const text = !pick ? "Answered" : pick.kind === "advice" ? "Advice taken" : pick.kind === "order" ? "Your own order" : "Let it be";
+      eff.className = "eff done"; eff.textContent = "✓ " + text;
+      refresh(s.before);
     },
     async cardChoice(c, opts) {
       const i = seasonCards.indexOf(c);
@@ -888,7 +955,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     if (s.cards_turn !== s.turn) {
       s.before = Object.fromEntries(E.NUMBERS.map((n) => [n, s[n]]));
       const notes = [];
-      const cards = await E.revealCards(s, notes);
+      const cards = await E.playCards(s, notes);
       s.season_cards = cards.map((c) => c.id);
       s.season_notes = notes;
       s.cards_turn = s.turn;
@@ -896,9 +963,11 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     } else {
       const cards = (s.season_cards || []).map((id) => D.cards.find((c) => c.id === id)).filter(Boolean);
       $("cards").innerHTML = cards.map((c, i) => cardHTML(c, i, true)).join("");
-      $("cardhint").textContent = "This season's cards, already read.";
+      $("cardhint").textContent = "This season's cards, already dealt with.";
     }
+    $("cardhint").textContent = "The three cards are dealt with. One order of your own, below, then the season ends.";
     ordersPhase();
+    $("orders").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
   }
 
   // ---------- the order desk: plans, actions, the order book ----------
@@ -910,29 +979,18 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   function ordersPhase() {
     phase = "orders";
     ({ wants, say } = E.council(s));
-    plansNow = E.plans(s);
     refresh(s.before);
     const box = $("orders");
     box.hidden = false;
-    box.innerHTML = `<p class="eyebrow">The scribe</p><h2>What are your orders this season?</h2>
-      <p class="voice">“${esc(E.situation(s))} You may give up to ${E.MAX_ORDERS} orders.”</p>
-      <div class="desk">
-        <div class="col"><h3>Your council's plans</h3><p class="sum" style="margin:0">Untick what you don't want, then add the rest. Take the vineyard and leave the wheat.</p><div class="col" id="plans"></div></div>
+    box.innerHTML = `<p class="eyebrow">The scribe</p><h2>One order of your own</h2>
+      <p class="voice">“${esc(E.situation(s))} The cards are dealt with. You may give one more order this season, or none.”</p>
+      <div class="desk one">
         <div class="col"><h3>All actions</h3><div class="groups" id="groups"></div>
           <div style="display:grid;gap:6px;margin-top:6px"><label for="words" class="eyebrow" style="margin:0">Or in your own words</label>
-          <textarea id="words" placeholder="Plant olives, hang the brigands and send a convoy to Brundisium to sell 10 wine"></textarea>
-          <div class="row"><button class="btn small" type="button" id="read">Give them to the scribe</button></div><div id="answer"></div></div></div>
+          <textarea id="words" placeholder="Send a convoy to Brundisium to sell 10 wine"></textarea>
+          <div class="row"><button class="btn small" type="button" id="read">Give it to the scribe</button></div><div id="answer"></div></div></div>
         <div class="col book" id="bookcol"></div>
       </div>`;
-    $("plans").innerHTML = plansNow.map((p, i) => `<div class="plan"><div class="ph">${E.ADVISORS[p.who] ? coin(p.who) : `<span class="mark">${PLAN_MARK[p.who]}</span>`}
-        <div><h3>${esc(p.title)}</h3><small>${esc(E.ADVISORS[p.who] ? E.ADVISORS[p.who].name : "the scribe")}</small></div>
-        <button class="btn small quiet" type="button" data-plan="${i}">Add ticked</button></div>
-        <ul>${p.orders.map((o, j) => `<li><label><input type="checkbox" data-p="${i}" data-o="${j}" checked>${orderIcon(o, 26)}<span>${esc(E.describe(s, o))}</span></label></li>`).join("")}</ul></div>`).join("") || `<p class="sum">No one has a plan the treasury and stores can pay for.</p>`;
-    $("plans").querySelectorAll("[data-plan]").forEach((b) => (b.onclick = () => {
-      const i = +b.dataset.plan, box = $("plans");
-      const picked = plansNow[i].orders.filter((o, j) => box.querySelector(`[data-p="${i}"][data-o="${j}"]`).checked);
-      if (picked.length) addOrders(picked); else toast("Tick at least one order of this plan.");
-    }));
     $("groups").innerHTML = GROUPS.map(([label, ids]) => `<div class="group"><h4>${label}</h4><div class="acts">${ids.map((id) => {
       const d = E.DECREE[id], c = E.num(d.cost_treasury), mats = E.parseList(d.cost);
       const price = ["build", "send_convoy", "merchants"].includes(id) ? (id === "build" ? "or click a free plot" : id === "merchants" ? "sailing season, up to 20 loads" : "or click a town") : [c ? E.intc(c) : "", ...Object.entries(mats).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ");
@@ -953,24 +1011,25 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     renderBook();
   }
   function addOrders(list) {
-    const room = E.MAX_ORDERS - book.length;
-    if (room <= 0) { toast(`The order book is full: ${E.MAX_ORDERS} orders a season.`); return; }
+    if (!list.length) return;
+    if (book.length >= E.FREE_ORDERS) { book = []; toast("One order of your own a season: the new one replaces the old."); }
+    const room = E.FREE_ORDERS - book.length;
     book = book.concat(list.slice(0, room).map((o) => JSON.parse(JSON.stringify(o))));
-    if (list.length > room) toast(`Only ${room} more order${room > 1 ? "s" : ""} fit this season.`);
+    if (list.length > room) toast("One order of your own a season: the scribe writes down the first.");
     renderBook();
   }
   function renderBook() {
     const [accepted, problems] = E.validate(s, book);
     const t = E.totals(s, accepted);
     const matLine = Object.entries(t.mats).map(([g, q]) => `<span class="${q > s[g] ? "short" : ""}">${q} ${esc(E.nameOf(g).toLowerCase())} <small>(of ${Math.trunc(s[g])})</small></span>`).join(", ");
-    $("bookcol").innerHTML = `<h3>The season's orders</h3>
-      <div class="slots" role="img" aria-label="${book.length} of ${E.MAX_ORDERS} orders">${Array.from({ length: E.MAX_ORDERS }, (_, i) => `<i class="${i < book.length ? "on" : ""}"></i>`).join("")}</div>
+    $("bookcol").innerHTML = `<h3>Your order</h3>
+      <div class="slots" role="img" aria-label="${book.length} of ${E.FREE_ORDERS} orders">${Array.from({ length: E.FREE_ORDERS }, (_, i) => `<i class="${i < book.length ? "on" : ""}"></i>`).join("")}</div>
       ${book.length ? `<ol>${book.map((o, i) => { const ok = accepted.includes(o);
         return `<li class="${ok ? "" : "bad"}">${orderIcon(o, 36)}<span>${esc(E.describe(s, o))}${ok ? "" : "<em>cannot be done as it stands</em>"}</span><button type="button" data-del="${i}" aria-label="Strike out ${esc(E.describe(s, o))}">×</button></li>`; }).join("")}</ol>`
-        : `<p class="sum" style="margin:0">No orders yet. Add a plan or single actions. You can also click a free plot on the city sheet, or a town on the map.</p>`}
+        : `<p class="sum" style="margin:0">No order yet. Pick an action, click a free plot on the city sheet or a town on the map, or end the season without one.</p>`}
       ${problems.length ? `<ul class="problems">${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
       <p class="cost" style="margin:0">Costs <b>${E.intc(t.treasury)}</b> of ${E.intc(s.treasury)} denarii${matLine ? `; ${matLine}` : ""}.${t.loyalty ? ` Loyalty ${t.loyalty > 0 ? "+" : ""}${t.loyalty}.` : ""}${t.favour ? ` Rome ${t.favour > 0 ? "+" : ""}${t.favour}.` : ""}${t.extra.length ? " " + esc(t.extra.join("; ")) + "." : ""}</p>
-      <div class="row"><button class="btn" type="button" id="sealit">${accepted.length ? `Seal ${accepted.length} order${accepted.length > 1 ? "s" : ""}` : "Do nothing this season"}</button>
+      <div class="row"><button class="btn" type="button" id="sealit">${accepted.length ? "Seal it and end the season" : "End the season"}</button>
       ${book.length ? `<button class="btn quiet small" type="button" id="clearbook">Clear</button>` : ""}</div>
       ${accepted.length < book.length ? `<p class="sum" style="margin:0">Orders marked red are left out when you seal.</p>` : ""}`;
     $("bookcol").querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => { book.splice(+b.dataset.del, 1); renderBook(); }));
@@ -1060,7 +1119,6 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     $("orders").querySelectorAll("button, textarea").forEach((b) => (b.disabled = true));
     const before = s.before;
     const notes = [...(s.season_notes || [])];
-    E.updateMoods(s, wants, orders, notes);
     await E.applyDecrees(s, orders, notes);
     await E.resolve(s, notes);
     E.clampAndCheck(s, notes);
@@ -1073,6 +1131,15 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const history = (s.season_cards || []).map((id) => D.cards.find((c) => c.id === id)).filter((c) => c && String(c.historical_note || "").trim())
       .map((c) => `History (${c.title}): ${String(c.historical_note).replace(/\s+/g, " ")}`);
     const list = notes.map((t) => `<li>${esc(t)}</li>`).join("") + history.map((t) => `<li class="history">${esc(t)}</li>`).join("");
+    const WIN = /finished|slides? into the harbour|comes home (safely|early)|sails for Rome|is pleased|cleared:|wins a season's grace|approves|is glad|learns a great deal|success|\+[0-9]/i;
+    const WOE = /hungry|unrest|desert|storm|pirates|only part of its tribute|feels ignored|sulks|uprising|failure|idle|nowhere to live|not fully paid|Warning/i;
+    const woes = notes.filter((n) => WOE.test(n)), wins = notes.filter((n) => !WOE.test(n) && WIN.test(n));
+    for (const n of ["treasury", "loyalty", "favour", "people"]) {
+      const d = s[n] - (before[n] || 0), big = n === "treasury" ? 500 : n === "people" ? 80 : 5;
+      if (d >= big) wins.push(`${E.nameOf(n)} up by ${E.fmt(n, d)}.`); else if (d <= -big) woes.push(`${E.nameOf(n)} down by ${E.fmt(n, -d)}.`);
+    }
+    const review = `<div class="review"><div class="wins"><h3>Achievements</h3>${wins.length ? `<ul>${wins.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : `<p class="sum" style="margin:0">None this season.</p>`}</div>
+      <div class="woes"><h3>Troubles</h3>${woes.length ? `<ul>${woes.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : `<p class="sum" style="margin:0">None this season.</p>`}</div></div>`;
     const done = s.over;
     s.turn += 1;
     phase = "report";
@@ -1081,7 +1148,8 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season ends</p>
       <h2>${done ? "The end of your governorship" : "The scribe's report"}</h2>${done ? `<p class="voice">${esc(done)} You governed for ${s.turn - 1} seasons.</p>` : ""}
-      <ul class="notes" style="margin-top:8px">${list || "<li>A quiet season.</li>"}</ul>
+      ${review}<p class="eyebrow" style="margin:16px 0 6px">The scribe's record</p>
+      <ul class="notes">${list || "<li>A quiet season.</li>"}</ul>
       ${rows ? `<div style="overflow-x:auto;margin-top:14px"><table class="changes"><tbody>${rows}</tbody></table></div>` : ""}
       <div class="row" style="margin-top:14px"><button class="btn" type="button" id="next">${done ? "Govern again" : "Next season"}</button></div></section>`;
     $("next").onclick = () => { if (done) { s = E.newGame(); intro(); } else startSeason(); };
@@ -1093,7 +1161,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     refresh();
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, on the Gulf of Rhizon</p><h2>Tiberius sends you to govern Acruvium</h2>
-      <p class="voice">Each turn is one season. Three cards are turned over: the land, the sea and the gods. Your council speaks, and you give up to ${E.MAX_ORDERS} orders: build and plant, trade by sea with the towns of the Adriatic, keep order, honour the gods and the Emperor.</p>
+      <p class="voice">Each turn is one season. Three cards are turned over one by one: the land, the sea and the gods. On each card two of your council propose what to do, one cautious and one bold, or you give your own order. Then one more order of your own, and the season's review.</p>
       <p class="sum">Things take time. A harbour takes two years to build and a temple three; vines give their first wine a year after planting. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
       <div class="row"><button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;
     $("begin").onclick = startSeason;

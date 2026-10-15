@@ -1,4 +1,4 @@
-// Illyria: AD 30 — the rules engine (rules v2, 13 Oct 2026).
+// Illyria: AD 30 — the rules engine (rules v3, 15 Oct 2026: a decision on every card, then one free order).
 // The web game is now the main playtest tool; rules/play.py is frozen at the v1 rules.
 // The rules data (numbers, goods, towns, decrees, seasons, advisors, winds, buildings, cards)
 // comes from data.js, built by web/build.py from rules/*.csv and events/*.yaml.
@@ -7,7 +7,8 @@
   const D = window.GAME_DATA;
 
   // --- Formula constants (formulas.md) ---
-  const MAX_ORDERS = 12;                 // actions a season
+  const MAX_ORDERS = 12;                 // most orders validate() accepts in one go
+  const FREE_ORDERS = 1;                 // after the three card decisions, the governor gives one order of his own
   const TAX_RATES = { low: [0.25, +2], normal: [0.5, 0], high: [0.75, -4] };
   const TAX_STEPS = ["low", "normal", "high"];
   const ARMY_PAY = 4, TRIBUTE = 3000, TRIBUTE_PAID_FAVOUR = 5, TRIBUTE_MISSED_FAVOUR = -20, TRIBUTE_DEBT_PENALTY = 1.5;
@@ -264,7 +265,7 @@
     const [season] = seasonOf(s.turn);
     let treasury = s.treasury, tax = s.tax;
     const stores = Object.fromEntries(GOODS.map((g) => [g, s[g]]));
-    const accepted = [], problems = [], seen = new Set(), newPlots = { town: 0, field: 0 }, newKinds = {};
+    const accepted = [], problems = [], seen = new Set(s.season_taken || []), newPlots = { town: 0, field: 0 }, newKinds = {};
     let newShips = 0, convoys = 0, clears = 0, army = s.army;
     orders.forEach((o, i) => {
       if (i >= MAX_ORDERS) { if (i === MAX_ORDERS) problems.push(`No more than ${MAX_ORDERS} actions a season.`); return; }
@@ -675,6 +676,130 @@
     }
     return cards;
   }
+
+  // --- Rules v3: on every card two advisors propose one order each, one moderate and one risky ---
+  /** good, bad or quiet: a card that costs the town something is bad. */
+  const cardTone = (c) => (c.quiet ? "quiet" : Object.values(c.effects || {}).some((v) => v < 0) ? "bad" : "good");
+  /** Who speaks on which card: [moderate, risky]. */
+  const PAIRS = {
+    land: { good: ["economist", "general"], bad: ["economist", "general"], quiet: ["economist", "general"] },
+    sea: { good: ["economist", "fleet"], bad: ["treasurer", "fleet"], quiet: ["treasurer", "fleet"] },
+    omen: { good: ["priest", "treasurer"], bad: ["priest", "general"], quiet: ["priest", "fleet"] },
+  };
+  /** Can this one order be given now (after what the season's cards already ordered)? Returns a problem or null. */
+  function canDo(s, o) {
+    const [ok, problems] = validate(s, [{ ...o }]);
+    return ok.length ? null : problems[0] || "It cannot be done.";
+  }
+  /** Each advisor's wishes for a card of this tone, best first; the first that can be done is his proposal. */
+  function wishes(s, who, tone) {
+    const hungry = s.grain < 3;
+    const food = [hungry ? merchantOrder(s, { grain: 2 }) : null, s.grain < 4.5 ? grainConvoy(s, 3) : null];
+    if (who === "economist") return tone === "bad"
+      ? food.concat([b("fishery"), b("wheat"), b("saltpans")])
+      : food.concat([fieldsFull(s) && fieldPlots(s) < FIELD_PLOTS_MAX ? order("clear_land") : null, s.fleece >= 6 && !built(s, "weavers") ? b("weavers") : null,
+        tone === "good" ? b("wheat") : b("vineyard"), b("olives"), b("vineyard"), b("wheat"), b("pasture"), sellConvoy(s, ["wine", "oil"], { wine: FESTIVAL_WINE_KEEP })]);
+    if (who === "general") return tone === "bad"
+      ? [s.army < 250 ? order("recruit") : null, order("hang_brigands"), b("walls"), b("barracks")]
+      : [b("walls"), b("barracks"), s.army < 300 ? order("recruit") : null, s.iron < 8 ? b("mine") : null, order("hang_brigands")];
+    if (who === "fleet") return tone === "bad"
+      ? [order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null, sellConvoy(s, ["fish", "wine", "oil", "timber", "fleece", "cloth"], { wine: FESTIVAL_WINE_KEEP, timber: 20 })]
+      : [sellConvoy(s, ["wine", "oil", "fish", "cloth", "timber", "fleece"], { wine: FESTIVAL_WINE_KEEP, timber: 20 }), order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null];
+    if (who === "treasurer") return [tone === "good" && s.tax !== "high" && s.loyalty >= 55 ? order("raise_taxes") : null, order("hear_petitions"), b("market"),
+      sellConvoy(s, ["wine", "oil", "fish", "cloth"], { wine: FESTIVAL_WINE_KEEP }), s.army > 200 ? order("dismiss") : null];
+    // priest
+    return tone === "bad"
+      ? [order("visit_temple"), s.loyalty < 55 && s.last_festival !== s.turn - 1 ? order("hold_festival") : null, s.favour < 45 ? order("honour_rome") : null, order("honour_tiberius")]
+      : [tone === "quiet" ? order("listen_sages") : null, order("honour_tiberius"), order("visit_temple"), !s.buildings.some((x) => x.kind === "temple") ? b("temple") : null, order("listen_sages")];
+  }
+  const sameOrder = (a, x) => a && x && a.id === x.id && (a.building || "none") === (x.building || "none") && a.town === x.town;
+  /** What the advisor says when he proposes it. */
+  function pitch(s, who, tone, o, c) {
+    const what = describe(s, o).replace(/^./, (m) => m.toLowerCase());
+    const lines = {
+      economist: { good: `A good season, Governor. Turn it into more: ${what}. A wise governor feeds his people first.`,
+        bad: `We must protect the people's bread. Let us ${what}.`, quiet: `A calm season is a season for planting: ${what}. Vines and olives take years.` },
+      general: { good: `Good money, Governor. Spend it on our safety: ${what}.`, bad: `Strength answers this. ${what.replace(/^./, (m) => m.toUpperCase())}, and quickly.`,
+        quiet: `Quiet seasons end. Prepare for the next raid: ${what}.` },
+      fleet: { good: `The sea is open and the gods are kind. ${what.replace(/^./, (m) => m.toUpperCase())}!`, bad: `The sea took from us; the sea will pay us back. ${what.replace(/^./, (m) => m.toUpperCase())}.`,
+        quiet: `Ships in harbour earn nothing. ${what.replace(/^./, (m) => m.toUpperCase())}.` },
+      treasurer: { good: `While fortune smiles, fill the chest: ${what}.`, bad: `Losses must be made good, Governor. Let us ${what}.`, quiet: `Every quiet season should leave the chest fuller: ${what}.` },
+      priest: { good: `The gods have spoken kindly. Thank them, and Rome: ${what}.`, bad: `This is a warning. Appease the gods: ${what}.`, quiet: `Silence from the gods is a question. ${what.replace(/^./, (m) => m.toUpperCase())}.` },
+    };
+    return lines[who][tone];
+  }
+  /** The two proposals for a card that asks no question of its own. */
+  function proposals(s, c) {
+    const tone = cardTone(c), [mod, risky] = (PAIRS[c.deck] || PAIRS.land)[tone];
+    const out = [];
+    for (const [who, risk] of [[mod, "moderate"], [risky, "risky"]]) {
+      const o = wishes(s, who, tone).find((x) => x && !canDo(s, x) && !out.some((p) => sameOrder(p.order, x)));
+      if (o) out.push({ who, risk, order: o, say: pitch(s, who, tone, o, c) });
+    }
+    return { tone, list: out };
+  }
+  /** The governor took one advisor's advice (or none, who = null): he is pleased, the others who spoke feel ignored. */
+  function heed(s, who, spoke, notes) {
+    if (who) { s.council[who].ignored = 0; cheer(s, who, notes, "is pleased you took his advice"); }
+    for (const aid of spoke) {
+      if (aid === who) continue;
+      const st = s.council[aid];
+      st.ignored += 1;
+      if (st.ignored >= IGNORED_LIMIT && st.mood > 0) {
+        st.mood -= 1; st.ignored = 0;
+        notes.push(`${ADVISORS[aid].name} feels ignored (mood ${st.mood}/${MOOD_MAX}).${st.mood === MOOD_SULK ? " He sulks and will not use his gifts for you." : ""}`);
+      }
+    }
+  }
+  /** Carry out one order at once (a card's decision or the free order), counting it against once-a-season decrees. */
+  async function giveOrder(s, o, notes) {
+    s.season_taken = (s.season_taken || []).concat([o.id]);
+    await applyDecrees(s, [o], notes);
+  }
+  /** The season's cards, played one by one: turn it over, its effect, then a decision. */
+  async function playCards(s, notes) {
+    s.season_taken = [];
+    const cards = drawSeasonCards(s);
+    const omen = cards.find((c) => c.deck === "omen");
+    if (omen && darkOmen(omen) && abilityReady(s, "priest")) {
+      const what = omen.choice ? "a decision for you" : effectsText(omen.effects);
+      if (await offerAbility(s, "priest", `I read the entrails before the cards are turned: a dark omen is coming, “${omen.title}” (${what}). Shall I sacrifice again and ask the gods for another sign?`)) {
+        const pool = CARDS.filter((c) => c.deck === "omen" && c.id !== omen.id && cardFits(s, c));
+        if (pool.length) {
+          const fresh = choices(pool, pool.map(weight));
+          cards[cards.indexOf(omen)] = fresh;
+          notes.push(`Tertius Volusius sacrificed again: '${omen.title}' gave way to '${fresh.title}'.`);
+        }
+      }
+    }
+    await ui.lay(cards);
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i];
+      await ui.turn(c, i);
+      if (c.once) s.once_fired.push(c.id);
+      if (c.choice) { await answerCard(s, c, notes); await ui.decided(c, i, null); continue; }
+      applyEffects(s, c.effects);
+      if (!c.quiet) notes.push(`${c.title}: ${effectsText(c.effects)}.`);
+      const { tone, list } = proposals(s, c);
+      const pick = await ui.decide(c, i, list, tone);
+      const spoke = list.map((p) => p.who);
+      if (pick.kind === "advice") {
+        const p = list[pick.i];
+        notes.push(`${c.title}: you take ${ADVISORS[p.who].name}'s advice (${describe(s, p.order).replace(/^./, (m) => m.toLowerCase())}).`);
+        heed(s, p.who, spoke, notes);
+        await giveOrder(s, p.order, notes);
+      } else if (pick.kind === "order") {
+        notes.push(`${c.title}: you give your own order (${describe(s, pick.order).replace(/^./, (m) => m.toLowerCase())}).`);
+        heed(s, null, spoke, notes);
+        await giveOrder(s, pick.order, notes);
+      } else {
+        notes.push(`${c.title}: you let it be.`);
+        heed(s, null, spoke, notes);
+      }
+      await ui.decided(c, i, pick);
+    }
+    return cards;
+  }
   function clampAndCheck(s, notes) {
     for (const n of CORE) s[n] = Math.min(Math.max(s[n], num(RULES[n].min, 0)), num(RULES[n].max, Infinity));
     for (const g of GOODS) s[g] = Math.max(0, s[g]);
@@ -771,10 +896,10 @@
 
   let ui = null;
   window.Engine = {
-    setUI: (u) => { ui = u; }, MAX_ORDERS, CORE, GOODS, GOOD, NUMBERS, RULES, DECREES, DECREE, BLD, BLD_IDS, BUILDING_LIST, ADVISORS, WINDS, TOWNS, TOWN,
+    setUI: (u) => { ui = u; }, MAX_ORDERS, FREE_ORDERS, CORE, GOODS, GOOD, NUMBERS, RULES, DECREES, DECREE, BLD, BLD_IDS, BUILDING_LIST, ADVISORS, WINDS, TOWNS, TOWN,
     COUNCIL_ORDER, DECK_LABEL, TOWN_PLOTS, FIELD_PLOTS, FIELD_PLOTS_MAX, MERCHANT_LOAD, MERCHANT_GOODS, merchantPrice, fieldPlots, MOOD_MAX, CURRENT_TEXT, TRIBUTE, SHIP_LOAD, GRAIN_LOAD, VOYAGE_TARGET,
     newGame, seasonOf, rollWeather, revealCards, council, plans, situation, validate, totals, describe, order, costOf, priceAt, loads,
     sailing, abilityState, updateMoods, applyDecrees, resolve, clampAndCheck, wordParse, fmt, intc, pct, housing, berths, shipsAtSea,
-    plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText,
+    plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
   };
 })();
