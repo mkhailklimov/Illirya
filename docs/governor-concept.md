@@ -88,6 +88,22 @@ Each building costs treasury and goods and takes 1–4 seasons to finish.
 - **Harbour and ships:** sea trade; ships at risk from pirates and storms.
 - **Forum, baths, temple, amphitheatre:** loyalty and Roman favour, but expensive.
 
+## 4a. The wise governor's path (added 15 October 2026)
+
+The owner's view of the long-term strategy the game should reward. The rules and numbers should be built so that this order is the natural, winning path, and a governor who skips ahead feels the cost.
+
+1. **Feed the people and build the economy.** A wise governor first makes sure the town eats and earns: wheat, vineyards and olive groves are the first steps.
+2. **Develop the workshops.** Then turn raw goods into finished ones: armoury, smiths, mills, cloth (weavers), leather, and pithoi (the big storage jars for grain, wine and oil).
+3. **Open up trade.** With goods to sell, invest in getting them out: roads, markets, the fleet.
+4. **Last: temples and the army.** Only once the town stands on its own feet do the big temples and a larger army make sense. (In AD 30 these are temples and shrines; churches come centuries later.)
+
+**What this means for the game's numbers (to design, not yet built):**
+- **Each stage pays for the next.** Farms must bring in enough that workshops become affordable in year 2–3, workshops must make the goods that convoys and markets need, and only that surplus pays for temples and soldiers.
+- **Stages unlock or boost each other**, for example: mills need wheat; smiths need iron and make tools that speed up all later building; the armoury makes soldiers cheaper or stronger, but only matters once there is something to defend; pithoi raise how much grain, wine and oil the stores can hold, so a good harvest isn't wasted; roads open the inland towns; the market multiplies trade.
+- **Skipping ahead hurts.** Temples and a big army early drain the treasury (upkeep) without growing it; a governor who trades before producing has little to sell.
+- **Rome and the gods still press from the start** (tribute, favour, omens), so the governor cannot ignore stage 4 entirely. That tension is the game.
+- **In the prototype today:** stage 1 exists (wheat, vineyard, olives, pasture, fishery, salt pans); stage 2 only partly (weavers, woodcutters, mine; no mill, smithy, armoury, tannery or pithoi yet); stage 3 partly (market, ships, convoys, merchants; no roads); stage 4 exists (temple, barracks, recruit). Next balance passes should fill in stage 2 and add roads, and check with the bot simulation that the four-stage order beats the alternatives.
+
 ## 5. Trade (from the "Merchant of the Adriatic" idea)
 
 - Send a **convoy** by sea or land to a real town. Starting map, nearest first: Risinium, Butua (Budva), Epidaurum (Cavtat), Scodra, Lissus, Narona, Dyrrachium; further away Salona, Brundisium, Aquileia.
