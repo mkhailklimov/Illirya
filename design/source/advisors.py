@@ -6,12 +6,12 @@
 Names, titles, what they watch and their ability come from rules/advisors.csv,
 so the cards change with the game rules. The portrait is the coin bust from
 tiberius.py with each advisor's own headgear and beard, and
-what he carries (vine rod, trident, lituus and amulet); Nikandros wears a petasos. Six qualities (1-5) sit under
+no props: his sign (galley, vine rod, scales, coins, lituus) is the badge under it. Nikandros wears a petasos. Six qualities (1-5) sit under
 the name.
 """
 import csv, math, os, sys, textwrap
 sys.path.insert(0, os.path.dirname(__file__))
-from make import HEAD, TAIL, GOLD, sun, ship, OUT
+from make import HEAD, TAIL, GOLD, OUT
 from tiberius import HEAD_PATH
 
 W, H = 750, 1050
@@ -188,8 +188,10 @@ PORTRAIT = {
 }
 
 
-BEHIND = {"fleet": trident}                             # drawn before the bust
-IN_FRONT = {"general": vitis, "priest": lambda: amulet() + lituus_held()}
+# Nothing held: each man's sign sits outside the portrait, in the badge under it (and on his coin in the game).
+# trident(), vitis(), lituus_held() and amulet() are kept for other pieces.
+BEHIND = {}
+IN_FRONT = {}
 
 
 def bust(aid):
@@ -202,7 +204,11 @@ def bust(aid):
 def emblem(aid):
     g = "url(#gold)"
     if aid == "fleet":
-        return f'<g transform="translate(0,4) scale(0.16)">{ship(sail=CRIMSON, hull="#f6e3a1", emblem="#f6e3a1")}</g>'
+        # a bold galley that still reads at coin-badge size: square sail, hull, curled stern, oars
+        return (f'<path d="M57,10 h6 v66 h-6Z" fill="{g}"/>'
+                f'<path d="M26,18 H94 Q99,42 92,64 H28 Q21,42 26,18Z" fill="{g}"/>'
+                f'<path d="M4,74 H108 C116,74 120,66 118,56 C124,62 124,80 110,88 L96,96 H22Z" fill="{g}"/>'
+                + "".join(f'<path d="M{24 + i * 14},96 l-8,18" stroke="{g}" stroke-width="5" stroke-linecap="round"/>' for i in range(6)))
     if aid == "general":       # the vine rod (vitis), knotted
         return (f'<path d="M30,112 L90,10" fill="none" stroke="{g}" stroke-width="11" stroke-linecap="round"/>'
                 + "".join(f'<ellipse cx="{30 + 60 * f:.0f}" cy="{112 - 102 * f:.0f}" rx="10" ry="5.5" transform="rotate(-30 {30 + 60 * f:.0f} {112 - 102 * f:.0f})" fill="{g}" stroke="{DETAIL}" stroke-width="2"/>'
