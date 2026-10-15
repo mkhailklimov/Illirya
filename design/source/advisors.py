@@ -6,7 +6,7 @@
 Names, titles, what they watch and their ability come from rules/advisors.csv,
 so the cards change with the game rules. The portrait is the coin bust from
 tiberius.py with each advisor's own headgear and beard, and
-what he carries (pennant, trident, lituus and amulet). Six qualities (1-5) sit under
+what he carries (vine rod, trident, lituus and amulet); Nikandros wears a petasos. Six qualities (1-5) sit under
 the name.
 """
 import csv, math, os, sys, textwrap
@@ -98,6 +98,16 @@ def taenia():
     return curls + ribbons + band + texture
 
 
+def petasos():
+    """Nikandros: the Greek traveller's wide-brimmed hat, curls showing at the nape."""
+    curls = "".join(f'<circle cx="{x}" cy="{y}" r="14" fill="url(#gold)"/>' for x, y in ((104, 196), (98, 232), (112, 262)))
+    crown = 'M112,156 C108,84 160,46 216,46 C276,48 304,96 300,140 C236,148 168,156 112,156Z'
+    brim = 'M24,178 C70,138 270,112 368,132 C376,140 368,150 352,154 C260,150 120,170 40,192 C28,192 18,186 24,178Z'
+    return (curls + f'<path d="{crown}" fill="url(#gold)"/>' + f'<path d="{brim}" fill="url(#gold)"/>'
+            + line("M40,184 C120,164 260,146 360,142", 4, .8) + line("M116,150 C176,142 240,138 298,134", 5, .9)
+            + line("M150,92 C180,74 220,70 252,80", 3, .45) + line("M300,150 C306,200 300,250 290,290", 3, .7))
+
+
 def cropped():
     """Felix: a freedman's cropped hair, no wreath."""
     return (line("M302,150 C270,122 200,108 150,128 C116,142 98,176 104,214 C108,240 128,260 150,268", 4, .85)
@@ -136,6 +146,15 @@ def vexillum():
     return pole + bar + cloth + fringe + mark + tip
 
 
+def vitis():
+    """Antistius: the vine rod (vitis) of a Roman officer, held slanting before him."""
+    d = "M318,494 L404,96"
+    knots = "".join(f'<ellipse cx="{318 + 86 * f:.0f}" cy="{494 - 398 * f:.0f}" rx="13" ry="7" transform="rotate(-12 {318 + 86 * f:.0f} {494 - 398 * f:.0f})" '
+                    f'fill="url(#gold)" stroke="{DETAIL}" stroke-width="3"/>' for f in (.18, .42, .66, .9))
+    return (f'<path d="{d}" fill="none" stroke="{DETAIL}" stroke-width="24" stroke-linecap="round"/>'
+            f'<path d="{d}" fill="none" stroke="url(#gold)" stroke-width="15" stroke-linecap="round"/>' + knots)
+
+
 def lituus_held():
     """Tertius: the augur's curved staff raised before his face."""
     d = "M402,494 L384,184 C382,124 346,104 324,128 C306,150 320,178 344,176 C360,174 360,154 348,150"
@@ -163,14 +182,14 @@ def trident():
 PORTRAIT = {
     "fleet": lambda: pilos() + beard(True),
     "general": lambda: helmet(),
-    "economist": lambda: taenia() + beard(False),
+    "economist": lambda: petasos() + beard(False),
     "treasurer": lambda: cropped(),
     "priest": lambda: veil(),
 }
 
 
 BEHIND = {"fleet": trident}                             # drawn before the bust
-IN_FRONT = {"general": vexillum, "priest": lambda: amulet() + lituus_held()}
+IN_FRONT = {"general": vitis, "priest": lambda: amulet() + lituus_held()}
 
 
 def bust(aid):
@@ -184,14 +203,15 @@ def emblem(aid):
     g = "url(#gold)"
     if aid == "fleet":
         return f'<g transform="translate(0,4) scale(0.16)">{ship(sail=CRIMSON, hull="#f6e3a1", emblem="#f6e3a1")}</g>'
-    if aid == "general":       # legion standard
-        return (f'<g fill="{g}"><rect x="56" y="22" width="8" height="92"/><rect x="40" y="36" width="40" height="6" rx="3"/>'
-                f'<circle cx="60" cy="58" r="9"/><circle cx="60" cy="80" r="9"/>'
-                f'<path d="M34,22 C40,8 52,8 56,16 L58,4 C60,0 64,0 64,4 L64,16 C70,8 82,8 86,22 C76,18 68,20 64,26 L56,26 C52,20 44,18 34,22Z"/></g>')
-    if aid == "economist":     # amphora
-        return (f'<path d="M50,12 L70,12 L68,26 C88,36 92,62 84,84 C78,100 68,108 60,116 C52,108 42,100 36,84 '
-                f'C28,62 32,36 52,26Z" fill="{g}"/>'
-                f'<path d="M50,30 C36,30 34,46 44,50 M70,30 C84,30 86,46 76,50" fill="none" stroke="{g}" stroke-width="5"/>')
+    if aid == "general":       # the vine rod (vitis), knotted
+        return (f'<path d="M30,112 L90,10" fill="none" stroke="{g}" stroke-width="11" stroke-linecap="round"/>'
+                + "".join(f'<ellipse cx="{30 + 60 * f:.0f}" cy="{112 - 102 * f:.0f}" rx="10" ry="5.5" transform="rotate(-30 {30 + 60 * f:.0f} {112 - 102 * f:.0f})" fill="{g}" stroke="{DETAIL}" stroke-width="2"/>'
+                          for f in (.2, .45, .7, .92)))
+    if aid == "economist":     # merchant's scales
+        pan = lambda x: (f'<path d="M{x},30 L{x - 18},70 M{x},30 L{x + 18},70" stroke="{g}" stroke-width="3" fill="none"/>'
+                         f'<path d="M{x - 22},70 L{x + 22},70 C{x + 18},86 {x - 18},86 {x - 22},70Z" fill="{g}"/>')
+        return (f'<path d="M60,10 L60,108 M38,112 L82,112 M16,30 L104,30" stroke="{g}" stroke-width="7" stroke-linecap="round" fill="none"/>'
+                f'<circle cx="60" cy="12" r="7" fill="{g}"/>' + pan(24) + pan(96))
     if aid == "treasurer":     # stack of coins
         return "".join(f'<ellipse cx="60" cy="{y}" rx="34" ry="11" fill="{g}" stroke="{DETAIL}" stroke-width="2"/>'
                        for y in (98, 84, 70, 56)) + f'<circle cx="60" cy="56" r="5" fill="{DETAIL}"/>'
@@ -267,7 +287,7 @@ def card(a):
 <circle cx="375" cy="512" r="44" fill="#2c0819" stroke="url(#gold)" stroke-width="4"/>
 <g transform="translate(327,464) scale(.8)">{emblem(aid)}</g>
 <text x="375" y="606" text-anchor="middle" font-family="Caesar" font-size="{name_size}" letter-spacing="2" fill="url(#gold)" filter="url(#tsh)">{name}</text>
-<text x="375" y="642" text-anchor="middle" font-family="Corm" font-style="italic" font-weight="500" font-size="24" fill="#efe0b4">watches {a['watches']}</text>
+<text x="375" y="642" text-anchor="middle" font-family="Marcellus" font-size="22" letter-spacing="1" fill="#efe0b4">watches {a['watches']}</text>
 {stat_panel(a, 682)}
 <text x="300" y="784" text-anchor="end" font-family="Marcellus" font-size="16" letter-spacing="5" fill="#d9ac4f">MOOD</text>
 {mood_pips(408, 778, MOOD_START)}

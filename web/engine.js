@@ -214,7 +214,7 @@
     else if (s.treasury + income * (ttt + 1) < due) { say.treasurer = `At this rate we cannot pay Rome's ${intc(due)} denarii when the tribute falls due.`; wants.treasurer = money; }
     else say.treasurer = `The chest holds ${intc(s.treasury)} denarii. Tribute of ${intc(due)} is due ${ttt === 0 ? "this season" : `in ${ttt} season${ttt > 1 ? "s" : ""}`}.`;
     const mult = num(WINDS[s.wind].harvest_mult, 1);
-    if (s.grain < 3) { say.economist = `Only ${s.grain.toFixed(1)} months of grain left. Buy grain in Narona or Dyrrachium, or from the merchants at the quay, or the people will starve.`; wants.economist = (o) => buysGrain(o) || (o.id === "merchants" && (o.buy || {}).grain > 0); }
+    if (s.grain < 3) { say.economist = `Only ${s.grain.toFixed(1)} months of grain left. Buy grain in Dyrrachium, or from the merchants at the quay, or the people will starve.`; wants.economist = (o) => buysGrain(o) || (o.id === "merchants" && (o.buy || {}).grain > 0); }
     else if (s.grain < 6) { say.economist = "Our terraces feed us only 8 months a year. More wheat, a fishery or bought grain, Governor, or we go short."; wants.economist = (o) => buysGrain(o) || buildOf("wheat", "fishery")(o); }
     else if (s.wine + s.oil >= 14 && season.sailing === "yes") { say.economist = `${Math.trunc(s.wine)} amphorae of wine and ${Math.trunc(s.oil)} of oil wait in the stores. Aquileia and Brundisium pay best.`; wants.economist = sells("wine", "oil"); }
     else if (s.fleece >= 6 && !built(s, "weavers")) { say.economist = `${Math.trunc(s.fleece)} bales of fleece and no one to weave them. A weavers' workshop, Governor.`; wants.economist = buildOf("weavers"); }
@@ -700,7 +700,7 @@
     ["hold_festival", /\b(festival|games|feast|celebrat\w*|holiday)\b/],
     ["merchants", /\b(merchants?|at the quay)\b/],
     ["clear_land", /\b(clear\w*|new fields?|scrub)\b/],
-    ["send_convoy", /\b(convoy|sail|trade with|sell|buy|export|import|epidaurum|narona|salona|aquileia|dyrrachium|brundisium)\b/],
+    ["send_convoy", /\b(convoy|sail|trade with|sell|buy|export|import|epidaurum|salona|aquileia|dyrrachium|brundisium)\b/],
   ];
   const BUILD_VERB = /\b(build|construct|plant|found|erect|lay out|dig|open|expand|establish|set up|start|make)\b/;
   const BUILD_WORDS = [

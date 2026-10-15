@@ -1,7 +1,7 @@
 <title>Illyria: The Governor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caesar+Dressing&family=Cormorant+Garamond:ital,wght@1,500&family=Marcellus&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caesar+Dressing&family=Marcellus&display=swap">
 <style>
 /* Layout: the table of a board game. The board (city sheet or Adriatic map, in tabs) beside the council;
    below it the season's stage: cards, then the order book, then the report. Compass and die sit in the corners. */
@@ -22,7 +22,7 @@
   --land: #6d5a1e; --seacard: #11485a; --omen: #5a1640;
   --f-display: "Caesar Dressing", "Marcellus", Georgia, serif;
   --f-label: "Marcellus", Georgia, "Times New Roman", serif;
-  --f-voice: "Cormorant Garamond", Georgia, serif;
+  --f-voice: "Marcellus", Georgia, serif;
   --gutter: clamp(16px, 3vw, 32px);
 }
 * { box-sizing: border-box; }
@@ -37,7 +37,7 @@ button:disabled { cursor: default; opacity: .55; }
 h2 { font: 400 clamp(23px, 2.8vw, 29px)/1.15 var(--f-display); color: var(--gold); margin: 0 0 8px; letter-spacing: .03em; text-wrap: balance; }
 h3 { font: 400 17px/1.3 var(--f-label); color: var(--gold-pale); margin: 0; letter-spacing: .04em; }
 .eyebrow { font-size: 12.5px; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); margin: 0 0 8px; }
-.voice { font: italic 500 21px/1.4 var(--f-voice); color: var(--ink); max-width: 62ch; margin: 0; }
+.voice { font: 400 19px/1.5 var(--f-voice); color: var(--ink); max-width: 62ch; margin: 0; }
 .sum { color: var(--mute); font-size: 15px; font-variant-numeric: tabular-nums; }
 .panel { background: rgba(38, 27, 66, .72); border: 1px solid var(--line); border-radius: 16px; padding: 16px clamp(14px, 2.2vw, 22px); min-width: 0; }
 
@@ -74,7 +74,7 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .plot-hit, .town-hit { cursor: pointer; }
 .plot-hit:hover .plot-frame, .plot-hit:focus-visible .plot-frame { stroke: var(--gold-pale); stroke-width: 3; }
 .plot-hit:focus, .town-hit:focus { outline: none; }
-.town-hit:hover .dot, .town-hit:focus-visible .dot { stroke: var(--gold-pale); stroke-width: 4; }
+.town-hit:hover .walls, .town-hit:focus-visible .walls { stroke: var(--gold-pale); stroke-width: 3; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--mute); }
 .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .stores { display: grid; gap: 10px; }
@@ -95,7 +95,10 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .council { display: grid; gap: 10px; }
 .adv { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 2px 12px; align-items: start; background: none; border: 0; padding: 4px 0; text-align: left; width: 100%; }
 .adv + .adv { border-top: 1px solid var(--faint); padding-top: 10px; }
-.coin { --d: 64px; width: var(--d); height: var(--d); border-radius: 50%; overflow: hidden; position: relative; grid-row: span 3; box-shadow: 0 0 0 2px var(--gold), 0 6px 16px rgba(0,0,0,.5); flex: none; display: block; }
+.coinwrap { --d: 64px; position: relative; display: block; flex: none; grid-row: span 3; width: var(--d); height: var(--d); }
+.coin { width: var(--d); height: var(--d); border-radius: 50%; overflow: hidden; position: relative; box-shadow: 0 0 0 2px var(--gold), 0 6px 16px rgba(0,0,0,.5); display: block; }
+.badge { position: absolute; right: calc(var(--d) * -.12); bottom: calc(var(--d) * -.1); width: calc(var(--d) * .48); height: calc(var(--d) * .48); border-radius: 50%; background: #2c0819; box-shadow: 0 0 0 1.5px var(--gold), 0 3px 8px rgba(0,0,0,.6); display: grid; place-items: center; }
+.badge svg { width: 80%; height: 80%; display: block; }
 .coin img { position: absolute; width: calc(var(--d) * 1.911); max-width: none; left: calc(var(--d) * -0.4555); top: calc(var(--d) * -0.2643); }
 .adv .who { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; align-items: baseline; }
 .adv .name { color: var(--gold-pale); font-size: 16px; }
@@ -104,7 +107,7 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .leaves i.on { background: var(--gold); opacity: 1; }
 .ab { font-size: 12.5px; color: var(--mute); }
 .ab b { font-weight: 400; color: var(--gold); } .ab .sulk { color: var(--bad); }
-.say { font: italic 500 17px/1.32 var(--f-voice); color: var(--ink); }
+.say { font: 400 15.5px/1.4 var(--f-voice); color: var(--ink); }
 
 /* stage */
 .stage { display: grid; gap: 16px; }
@@ -116,19 +119,25 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .card > div { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 14px; border: 2px solid var(--gold); overflow: hidden; }
 .card .back { background: repeating-linear-gradient(45deg, rgba(226,189,102,.08) 0 10px, transparent 10px 20px), var(--wine); display: grid; place-items: center; align-content: center; gap: 8px; }
 .card .back span { font: 400 30px var(--f-display); color: var(--gold); letter-spacing: .1em; }
-.card .back em { font: italic 500 17px var(--f-voice); color: var(--mute); }
+.card .back em { font: 400 14px var(--f-voice); letter-spacing: .08em; color: var(--mute); }
 .card:not(.flip):hover .back { box-shadow: inset 0 0 0 2px var(--gold-pale), 0 0 26px rgba(246,227,161,.25); }
+.cards.waiting .card:not(.flip) .back { animation: beckon 1.6s ease-in-out infinite; }
+@keyframes beckon { 0%, 100% { box-shadow: inset 0 0 0 2px var(--gold), 0 0 6px rgba(246,227,161,.15); } 50% { box-shadow: inset 0 0 0 3px var(--gold-pale), 0 0 28px rgba(246,227,161,.55); } }
+.card.active { z-index: 1; }
+.card.active > div { animation: chosen 1.4s ease-in-out infinite; }
+@keyframes chosen { 0%, 100% { box-shadow: 0 0 0 3px var(--gold-pale), 0 0 18px rgba(246,227,161,.35); } 50% { box-shadow: 0 0 0 4px #fff4c8, 0 0 44px rgba(246,227,161,.75); } }
+.cards.deciding .card:not(.active) { opacity: .45; transition: opacity .3s; }
+#decide { border-color: var(--gold); box-shadow: 0 0 30px rgba(246,227,161,.18); }
 .card .face { transform: rotateY(180deg); background: var(--wine); display: grid; grid-template-rows: auto 1fr auto; }
 .card .band { padding: 7px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--gold-pale); }
 .card[data-deck="land"] .band { background: var(--land); } .card[data-deck="sea"] .band { background: var(--seacard); } .card[data-deck="omen"] .band { background: var(--omen); }
 .card .band svg { width: 22px; height: 22px; }
 .card .body { padding: 10px 14px; display: grid; align-content: start; gap: 6px; min-width: 0; }
 .card .title { font-size: 19px; line-height: 1.25; color: var(--gold-pale); text-wrap: balance; }
-.card .hint { font: italic 500 16.5px/1.35 var(--f-voice); color: var(--mute); }
+.card .hint { font: 400 15px/1.4 var(--f-voice); color: var(--mute); }
 .card .eff { padding: 8px 14px; border-top: 1px solid var(--line); font-size: 14px; }
 .card .eff.decide { color: var(--gold); letter-spacing: .14em; text-transform: uppercase; font-size: 12.5px; }
 .card.quiet .face { opacity: .8; }
-.card.active > div { box-shadow: 0 0 0 3px var(--gold-pale), 0 0 30px rgba(246, 227, 161, .35); }
 .choice { display: grid; gap: 8px; }
 .opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 14px; align-items: start; text-align: left; width: 100%; background: rgba(44, 8, 25, .7); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
 .opt:hover:not(:disabled) { border-color: var(--gold); background: rgba(70, 18, 44, .85); }
@@ -149,21 +158,26 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .col { display: grid; gap: 10px; min-width: 0; align-content: start; }
 .plan { border: 1px solid var(--faint); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; background: rgba(44, 8, 25, .45); }
 .plan .ph { display: flex; align-items: center; gap: 10px; }
-.plan .ph .coin { --d: 34px; box-shadow: 0 0 0 1.5px var(--gold); }
+.plan .ph .coinwrap { --d: 38px; } .plan .ph .coin { box-shadow: 0 0 0 1.5px var(--gold); }
 .plan .ph .mark { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--gold); display: grid; place-items: center; font: 400 17px var(--f-display); color: var(--gold); flex: none; }
 .plan .ph div { min-width: 0; flex: 1; }
 .plan .ph small { display: block; font-size: 12px; color: var(--mute); letter-spacing: .1em; text-transform: uppercase; }
-.plan ul { margin: 0; padding-left: 18px; font-size: 14.5px; }
+.plan ul { margin: 0; padding: 0; list-style: none; font-size: 14.5px; display: grid; gap: 3px; }
+.plan label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 2px 4px; border-radius: 8px; }
+.plan label:hover { background: rgba(226, 189, 102, .08); }
+.plan input[type=checkbox] { accent-color: var(--gold); width: 17px; height: 17px; flex: none; margin: 0; }
+.plan label:has(input:not(:checked)) span { color: var(--mute); text-decoration: line-through; }
 .groups { display: grid; gap: 10px; }
 .group h4 { margin: 0 0 6px; font: 400 12px var(--f-label); letter-spacing: .22em; text-transform: uppercase; color: var(--mute); }
 .acts { display: flex; flex-wrap: wrap; gap: 6px; }
-.act { background: rgba(44, 8, 25, .6); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 14px; color: var(--gold-pale); text-align: left; }
+.act { background: rgba(44, 8, 25, .6); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 6px; font-size: 14px; color: var(--gold-pale); text-align: left; display: inline-flex; align-items: center; gap: 6px; }
+.act small { display: inline; }
 .act:hover { border-color: var(--gold); background: rgba(70, 18, 44, .85); }
 .act small { color: var(--mute); margin-left: 6px; font-size: 12px; }
 textarea, input[type=number], select { background: var(--wine); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: 15.5px var(--f-label); max-width: 100%; }
 textarea { width: 100%; min-height: 64px; resize: vertical; }
 .book ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; counter-reset: o; }
-.book li { counter-increment: o; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 7px 10px; border: 1px solid var(--faint); border-radius: 10px; font-size: 14.5px; }
+.book li { counter-increment: o; display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 10px; border: 1px solid var(--faint); border-radius: 10px; font-size: 14.5px; }
 .book li::before { content: counter(o, upper-roman); font: 400 15px var(--f-display); color: var(--gold); min-width: 2.1em; }
 .book li.bad { border-color: var(--bad); }
 .book li em { color: var(--bad); font-style: normal; display: block; font-size: 13px; }
@@ -180,7 +194,7 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
 .notes li { padding-left: 18px; position: relative; max-width: 78ch; }
 .notes li::before { content: "◆"; position: absolute; left: 0; top: .1em; font-size: 10px; color: var(--gold); }
-.notes li.history { font: italic 500 18px/1.4 var(--f-voice); color: var(--mute); }
+.notes li.history { font: 400 16px/1.5 var(--f-voice); color: var(--mute); }
 .changes { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 15px; }
 .changes td { padding: 4px 8px; border-bottom: 1px solid var(--faint); }
 .changes td:nth-child(n+2) { text-align: right; }
@@ -190,7 +204,7 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .dialog { width: min(600px, 100%); max-height: calc(100% - 20px); overflow: auto; background: linear-gradient(180deg, #1b1a3e, #2c1c48); border: 2px solid var(--gold); border-radius: 18px; padding: 20px; display: grid; gap: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
 .dialog.wide { width: min(780px, 100%); }
 .dialog .head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
-.dialog .head .coin { --d: 80px; }
+.dialog .head .coinwrap { --d: 80px; }
 .dialog .ability { font: 400 24px/1.1 var(--f-display); color: var(--gold); }
 .dialog .uses { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--mute); }
 .die-stage { justify-items: center; text-align: center; }
@@ -224,8 +238,11 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .corner.compass { left: calc(14px + env(safe-area-inset-left, 0px)); }
 .corner.die { right: calc(14px + env(safe-area-inset-right, 0px)); border-radius: 18px; }
 .corner svg { width: 80px; height: 80px; display: block; }
+.corner.compass { width: 112px; height: 112px; border-radius: 50%; overflow: visible; }
+.corner.compass svg { width: 108px; height: 108px; }
+.rose-big { width: min(300px, 70vw); margin: 0 auto; display: block; }
 .corner .cap { position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); background: var(--night); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-pale); white-space: nowrap; }
-@media (max-width: 600px) { .corner { width: 70px; height: 70px; } .corner svg { width: 60px; height: 60px; } }
+@media (max-width: 600px) { .corner { width: 70px; height: 70px; } .corner svg { width: 60px; height: 60px; } .corner.compass { width: 84px; height: 84px; } .corner.compass svg { width: 80px; height: 80px; } }
 .toasts { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 16; display: grid; gap: 6px; width: min(520px, calc(100% - 230px)); pointer-events: none; }
 @media (max-width: 600px) { .toasts { width: calc(100% - 180px); } }
 .toast { background: rgba(27, 26, 62, .96); border: 1px solid var(--gold); border-radius: 12px; padding: 8px 12px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
@@ -233,7 +250,7 @@ footer { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-
 footer .opts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 footer .opts button { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; color: var(--mute); }
 footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color: var(--gold); }
-@media (prefers-reduced-motion: reduce) { .card { transition: none; } .spin .die svg, .corner.die.spin svg { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .cards.waiting .card:not(.flip) .back, .card.active > div { animation: none; } .spin .die svg, .corner.die.spin svg { animation: none; } }
 </style>
 
 <div class="wrap">
@@ -242,6 +259,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     <div class="when"><span id="when"></span><button class="ghost" id="newgame" type="button">New game</button></div>
   </header>
   <section class="ledger" id="ledger" aria-label="The town's numbers"></section>
+  <div class="stage" id="cardsbar"></div>
   <div class="table">
     <div class="board">
       <div class="tabs" role="tablist">
@@ -288,13 +306,13 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     [0, .09, .2].forEach((t0, k) => {
       const n = noise(a, .32), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + t0;
       f.type = "bandpass"; f.frequency.value = 1800 + k * 900; f.Q.value = .8;
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.16 - k * .03, t + .02); g.gain.exponentialRampToValueAtTime(.001, t + .3);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.055 - k * .012, t + .02); g.gain.exponentialRampToValueAtTime(.001, t + .3);
       n.connect(f).connect(g).connect(a.destination); n.start(t); n.stop(t + .33);
     });
   }
   function gong() {     // a bronze gong for the omens
     const a = audio(); if (!a) return;
-    const t = a.currentTime, out = a.createGain(); out.gain.value = .22; out.connect(a.destination);
+    const t = a.currentTime, out = a.createGain(); out.gain.value = .075; out.connect(a.destination);
     [[1, .9], [2.32, .5], [2.76, .45], [3.71, .3], [4.5, .2], [5.9, .12]].forEach(([r, v], i) => {
       const o = a.createOscillator(), g = a.createGain();
       o.frequency.value = 98 * r * (1 + (i % 2 ? .003 : -.002));
@@ -309,7 +327,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const a = audio(); if (!a) return;
     [0, .07, .16, .29, .45].forEach((t0, k) => {
       const n = noise(a, .03), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + t0;
-      f.type = "highpass"; f.frequency.value = 2500; g.gain.setValueAtTime(.22 - k * .035, t); g.gain.exponentialRampToValueAtTime(.001, t + .03);
+      f.type = "highpass"; f.frequency.value = 2500; g.gain.setValueAtTime(.09 - k * .015, t); g.gain.exponentialRampToValueAtTime(.001, t + .03);
       n.connect(f).connect(g).connect(a.destination); n.start(t);
     });
   }
@@ -334,6 +352,26 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     woodcutters: '<path d="M-16,12h20l4,-6h-20ZM-12,6l4,-6h20l-4,6M4,-16l12,12M14,-12l-6,-6l4,-2l4,4Z"/>',
     mine: '<path d="M-14,14L8,-8M-4,-16c10,0 18,6 20,14c-6,-6 -12,-8 -20,-8ZM-16,14h32"/>',
   };
+  // one picture per order (same 40x40 box); a build order shows the building itself
+  const O = {
+    raise_taxes: '<ellipse cx="-5" cy="11" rx="10" ry="4"/><ellipse cx="-5" cy="4" rx="10" ry="4"/><ellipse cx="-5" cy="-3" rx="10" ry="4"/><path d="M13,13V-15M8,-10l5,-5 5,5"/>',
+    lower_taxes: '<ellipse cx="-5" cy="11" rx="10" ry="4"/><ellipse cx="-5" cy="4" rx="10" ry="4"/><path d="M13,-15V13M8,8l5,5 5,-5"/>',
+    hang_brigands: '<path d="M-15,16h20M-9,16V-15h20M-9,-8l7,-7M11,-15v6"/><circle cx="11" cy="-5" r="3"/><path d="M11,-2v8M7,2h8M11,6l-3,7M11,6l3,7"/>',
+    hear_petitions: '<path d="M-11,-15h22v6h-4v24h-22v-6h4Z"/><path d="M-3,-5h9M-3,1h9M-3,7h6"/>',
+    recruit: '<path d="M-12,12V2a12,12 0 0 1 24,0v10M-12,5h-3M-6,12V6h12v6M-9,-9c3,-7 15,-7 18,0"/><path d="M15,-17v9M10.5,-12.5h9"/>',
+    dismiss: '<path d="M-12,12V2a12,12 0 0 1 24,0v10M-12,5h-3M-6,12V6h12v6M-9,-9c3,-7 15,-7 18,0"/><path d="M10.5,-12.5h9"/>',
+    build: '<path d="M-15,16L5,-4M1,-8l8,-8 8,8 -8,8Z"/><path d="M-15,16h10"/>',
+    build_ship: '<path d="M-17,3h34l-6,9h-22Z"/><path d="M0,3V-16M0,-15c8,2 11,7 11,14h-11"/><path d="M-12,12l-2,5M-6,12l-1,5M0,12v5M6,12l1,5M12,12l2,5"/>',
+    send_convoy: '<path d="M-18,5h24l-5,8h-15Z M-7,5V-13 M-7,-12c6,2 9,6 9,12h-9"/><path d="M7,-6h11M14,-10l4,4 -4,4"/>',
+    merchants: '<path d="M-4,-16h8M-3,-16v4c-8,3 -10,10 -8,18c1,5 6,9 11,11c5,-2 10,-6 11,-11c2,-8 0,-15 -8,-18v-4M-8,-9c-5,0 -6,6 -3,8M8,-9c5,0 6,6 3,8"/>',
+    clear_land: '<path d="M-16,16h20M-12,16v-7h12v7M2,6L14,-14M10,-16c6,0 8,6 6,10l-6,-4Z"/>',
+    hold_festival: '<path d="M-10,16h20M-8,16c-6,-10 -6,-22 -2,-28M8,16c6,-10 6,-22 2,-28M-10,-12h20M-4,-12v26M0,-12v26M4,-12v26"/>',
+    visit_temple: '<path d="M-12,16h24M-10,16V2h20v14M-14,2h28M0,-2c-6,-4 -4,-10 0,-14c0,5 6,6 4,11c-1,2 -2,3 -4,3"/>',
+    honour_tiberius: '<path d="M-8,14c-9,-6 -11,-19 -5,-28M8,14c9,-6 11,-19 5,-28M-12,5c-5,0 -6,-4 -6,-4c4,-1 6,1 6,4M-15,-5c-5,-1 -5,-5 -5,-5c4,0 5,2 5,5M12,5c5,0 6,-4 6,-4c-4,-1 -6,1 -6,4M15,-5c5,-1 5,-5 5,-5c-4,0 -5,2 -5,5M-6,14l6,4 6,-4"/>',
+    honour_rome: '<path d="M-14,-2h28v16h-28ZM-14,-2c0,-9 28,-9 28,0M-14,5h28M0,2v6"/><path d="M-4,-14l4,-4 4,4"/>',
+    listen_sages: '<path d="M-10,14c-6,-10 -4,-24 10,-26c14,2 16,16 10,26Z"/><circle cx="-4" cy="-5" r="3.5"/><circle cx="4" cy="-5" r="3.5"/><path d="M-2,1l2,3 2,-3M-12,-12l4,4M12,-12l-4,4"/>',
+  };
+  const orderIcon = (o, size = 30) => `<svg class="oi" viewBox="-20 -20 40 40" width="${size}" height="${size}" fill="none" stroke="#e2bd66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${o.id === "build" && I[o.building] ? I[o.building] : O[o.id] || ""}</svg>`;
   const icon = (k, size = 40) => `<svg viewBox="-20 -20 40 40" width="${size}" height="${size}" fill="none" stroke="#e2bd66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k] || ""}</svg>`;
 
   // ---------- ledger and stores ----------
@@ -361,14 +399,17 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   }
 
   // ---------- the city sheet ----------
-  const TOWN_SLOTS = [], FIELD_SLOTS = [];
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) TOWN_SLOTS.push([150 + c * 92, 214 + r * 78]);
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) FIELD_SLOTS.push([586 + c * 92 + r * 14, 196 + r * 82]);
-  for (let c = 0; c < 4; c++) FIELD_SLOTS.push([600 + c * 92, 100]);   // hillside terraces, cleared one by one
+  // Plot centres on the plan (1000 x 600): town plots along the five streets inside the walls, nearest the forum first;
+  // fields outside the walls left and right; the last four are hillside scrub, cleared one by one.
+  const PS = .85, PW = 80 * PS, PH = 66 * PS;
+  const corner = ([x, y]) => [x - PW / 2, y - PH / 2];
+  const TOWN_SLOTS = [[380, 300], [620, 300], [443, 211], [557, 211], [380, 400], [620, 400], [290, 300], [710, 300], [408, 128], [592, 128], [290, 400], [710, 400]].map(corner);
+  const FIELD_SLOTS = [[135, 300], [865, 300], [135, 410], [865, 410], [135, 210], [865, 210], [55, 300], [945, 300], [55, 410], [945, 410], [55, 210], [945, 210],
+    [135, 120], [865, 120], [55, 120], [945, 120]].map(corner);
   /** A hillside plot not yet cleared (or being cleared): scrub, click to order the clearing. */
   function scrubSVG(x, y, left) {
     const w = 80, h = 66;
-    return `<g class="plot-hit" tabindex="0" role="button" aria-label="${left ? `Being cleared, ready in ${left} season${left > 1 ? "s" : ""}` : "Scrub on the hillside: clear it for a new field"}" data-clear="1" transform="translate(${x},${y})">
+    return `<g class="plot-hit" tabindex="0" role="button" aria-label="${left ? `Being cleared, ready in ${left} season${left > 1 ? "s" : ""}` : "Scrub on the hillside: clear it for a new field"}" data-clear="1" transform="translate(${x},${y}) scale(${PS})">
       <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="rgba(36,26,63,.55)" stroke="rgba(159,220,174,.35)" stroke-dasharray="${left ? "6 4" : "2 5"}"/>
       <g fill="none" stroke="rgba(159,220,174,.5)" stroke-width="1.6" stroke-linecap="round">${[[18, 40], [36, 30], [54, 42], [66, 28]].map(([a, b]) => `<path d="M${a},${b + 10}v-8m-6,4l6,-10l6,10"/>`).join("")}</g>
       <text x="${w / 2}" y="${h - 7}" text-anchor="middle" font-family="Marcellus" font-size="11.5" fill="rgba(185,169,143,.85)">${left ? "clearing" : "scrub"}</text>
@@ -377,7 +418,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   const sortedPlots = (zone) => s.buildings.filter((b) => E.BLD[b.kind].zone === zone).sort((a, b) => E.BLD_IDS.indexOf(a.kind) - E.BLD_IDS.indexOf(b.kind) || a.done - b.done);
   function plotSVG(b, x, y, zone, i) {
     const w = 80, h = 66;
-    if (!b) return `<g class="plot-hit" tabindex="0" role="button" aria-label="Free plot ${zone === "town" ? "inside the walls" : "in the fields"}: build here" data-zone="${zone}" transform="translate(${x},${y})">
+    if (!b) return `<g class="plot-hit" tabindex="0" role="button" aria-label="Free plot ${zone === "town" ? "inside the walls" : "in the fields"}: build here" data-zone="${zone}" transform="translate(${x},${y}) scale(${PS})">
       <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="rgba(15,20,48,.35)" stroke="rgba(226,189,102,.4)" stroke-dasharray="5 5"/>
       <text x="${w / 2}" y="${h / 2 + 8}" text-anchor="middle" font-family="Marcellus" font-size="24" fill="rgba(226,189,102,.55)">+</text></g>`;
     const st = E.buildingState(s, b), B = E.BLD[b.kind];
@@ -385,7 +426,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const badge = st.phase === "building" ? `<g transform="translate(${w - 13},13)"><circle r="10" fill="#2c0819" stroke="#e2bd66"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#f6e3a1">${st.left}</text></g>`
       : st.phase === "growing" ? `<g transform="translate(${w - 13},13)"><circle r="10" fill="#1f3a22" stroke="#9fdcae"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#9fdcae">${st.left}</text></g>`
       : st.phase === "young" ? `<g transform="translate(${w - 13},13)"><circle r="9" fill="none" stroke="rgba(159,220,174,.3)" stroke-width="3"/><circle r="9" fill="none" stroke="#9fdcae" stroke-width="3" stroke-dasharray="${(st.f * 56.5).toFixed(1)} 56.5" transform="rotate(-90)"/></g>` : "";
-    return `<g class="plot-hit" tabindex="0" role="button" aria-label="${esc(B.name)}, ${esc(st.text)}" data-plot="${zone}-${i}" transform="translate(${x},${y})">
+    return `<g class="plot-hit" tabindex="0" role="button" aria-label="${esc(B.name)}, ${esc(st.text)}" data-plot="${zone}-${i}" transform="translate(${x},${y}) scale(${PS})">
       <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="${zone === "town" ? "rgba(44,8,25,.88)" : "rgba(38,52,30,.82)"}" stroke="#e2bd66" stroke-width="1.5" ${st.phase === "building" ? 'stroke-dasharray="6 4"' : ""}/>
       <g transform="translate(${w / 2},27) scale(.85)" opacity="${dim}" fill="none" stroke="#e2bd66" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${I[b.kind] || ""}</g>
       <text x="${w / 2}" y="${h - 7}" text-anchor="middle" font-family="Marcellus" font-size="12.5" fill="#f6e3a1" opacity="${dim}">${esc(B.short)}</text>${badge}</g>`;
@@ -399,26 +440,45 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   function citySVG() {
     const town = sortedPlots("town"), fields = sortedPlots("field");
     const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
-    const ships = Array.from({ length: Math.min(free, 6) }, (_, k) => shipSVG(220 + k * 72, 520 + (k % 2) * 16, .9)).join("");
-    const keels = s.shipyard.map((t, k) => shipSVG(640 + k * 76, 500, .8, true) + `<text x="${640 + k * 76}" y="534" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#b9a98f">keel · ${t - s.turn}</text>`).join("");
-    return `<svg viewBox="0 0 1000 600" role="img" aria-label="Map of Acruvium: the walled town, its harbour and the fields round the bay">
+    const MOORING = [[300, 512], [348, 512], [396, 512], [300, 542], [348, 542], [396, 542]];
+    const ships = MOORING.slice(0, Math.min(free, 6)).map(([x, y]) => shipSVG(x, y, .55)).join("");
+    const SLIPS = [600, 660, 720];
+    const keels = s.shipyard.slice(0, 3).map((t, k) => shipSVG(SLIPS[k], 512, .5, true) + `<text x="${SLIPS[k]}" y="548" text-anchor="middle" font-family="Marcellus" font-size="11" fill="#f6e3a1">keel · ${t - s.turn}</text>`).join("");
+    const C = [500, 350];
+    const STREETS = [[[425, 350], [0, 350]], [[575, 350], [1000, 350]], [[500, 300], [500, 0]], [[460, 300], [160, 0]], [[540, 300], [840, 0]]];
+    const street = ([[x1, y1], [x2, y2]]) => `M${x1},${y1} L${x2},${y2}`;
+    const cols = [];
+    for (let x = 435; x <= 565; x += 13) cols.push([x, 308], [x, 392]);
+    for (let y = 321; y <= 380; y += 13) cols.push([433, y], [567, y]);
+    return `<svg viewBox="0 0 1000 600" role="img" aria-label="Plan of Acruvium from above: the forum in the middle, five streets, the walls, the fields outside and the harbour with mole, shipyard and fort">
       <defs><linearGradient id="bay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a4a6e"/><stop offset="1" stop-color="#0b2440"/></linearGradient>
-      <linearGradient id="mount" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2f5c"/><stop offset="1" stop-color="#241a3f"/></linearGradient></defs>
-      <rect width="1000" height="600" fill="#1a1436"/>
-      <path d="M0,170 L60,120 L130,140 L210,60 L300,95 L370,30 L450,80 L520,40 L620,100 L700,70 L790,120 L880,85 L1000,130 V470 H0Z" fill="url(#mount)"/>
-      <path d="M210,60 L250,110 M370,30 L400,90 M520,40 L560,95 M700,70 L730,120" stroke="rgba(246,227,161,.12)" stroke-width="2"/>
-      <path d="M520,190 L470,150 L440,120 L405,96 L380,72" fill="none" stroke="#e2bd66" stroke-width="3" stroke-dasharray="2 5" opacity=".8"/>
-      <g transform="translate(380,64)"><path d="M-10,8V-6h4v-4h4v4h4v-4h4v4h4V8Z" fill="#2c0819" stroke="#e2bd66" stroke-width="1.5"/></g>
-      <text x="398" y="44" font-family="Marcellus" font-size="13" letter-spacing="2" fill="#b9a98f">FORTRESS</text>
-      <path d="M0,470 C120,452 260,488 400,470 C540,452 700,486 840,468 C900,460 960,466 1000,470 V600 H0Z" fill="url(#bay)"/>
-      ${[0, 1, 2, 3].map((k) => `<path d="M${40 + k * 240},${560 + (k % 2) * 18} q20,-8 40,0 t40,0" fill="none" stroke="rgba(246,227,161,.18)" stroke-width="1.5"/>`).join("")}
-      <text x="980" y="588" text-anchor="end" font-family="Caesar Dressing, Marcellus" font-size="22" letter-spacing="3" fill="rgba(246,227,161,.35)">SINVS RHIZONICVS</text>
-      <path d="M128,196 L520,190 L534,450 L114,458Z" fill="rgba(15,20,48,.55)" stroke="#e2bd66" stroke-width="5" stroke-linejoin="round"/>
-      ${[[128, 196], [520, 190], [534, 450], [114, 458]].map(([x, y]) => `<rect x="${x - 11}" y="${y - 11}" width="22" height="22" fill="#2c0819" stroke="#e2bd66" stroke-width="2.5"/>`).join("")}
-      <path d="M190,462 h300 v12 h-300Z" fill="#3a2f5c" stroke="#e2bd66" stroke-width="1.5"/>
-      <text x="340" y="472" text-anchor="middle" font-family="Marcellus" font-size="10.5" letter-spacing="3" fill="#b9a98f">QUAY</text>
-      <text x="324" y="184" text-anchor="middle" font-family="Caesar Dressing, Marcellus" font-size="24" letter-spacing="3" fill="#e2bd66">ACRVVIVM</text>
-      <text x="770" y="182" text-anchor="middle" font-family="Marcellus" font-size="14" letter-spacing="4" fill="#b9a98f">FIELDS ROUND THE BAY</text>
+      <clipPath id="landclip"><path d="M0,0H1000V472 C750,484 600,462 450,474 C300,486 150,468 0,480Z"/></clipPath>
+      <pattern id="furrows" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><path d="M0,7H14" stroke="rgba(159,220,174,.07)" stroke-width="2"/></pattern></defs>
+      <rect width="1000" height="600" fill="#22193f"/>
+      <rect width="1000" height="600" fill="url(#furrows)" clip-path="url(#landclip)"/>
+      <path d="M0,0H1000V62 C900,40 820,70 720,48 C620,28 560,58 500,44 C420,28 340,62 260,44 C170,26 90,58 0,40Z" fill="#2e2452"/>
+      <ellipse cx="${C[0]}" cy="${C[1]}" rx="300" ry="280" fill="rgba(15,20,48,.45)" clip-path="url(#landclip)"/>
+      <g fill="none" stroke-linecap="butt">${STREETS.map((st) => `<path d="${street(st)}" stroke="rgba(226,189,102,.35)" stroke-width="17"/><path d="${street(st)}" stroke="#3f3466" stroke-width="13"/>`).join("")}
+        <path d="M500,400 V476" stroke="rgba(226,189,102,.35)" stroke-width="11"/><path d="M500,400 V476" stroke="#3f3466" stroke-width="7"/></g>
+      <ellipse cx="${C[0]}" cy="${C[1]}" rx="300" ry="280" fill="none" stroke="#e2bd66" stroke-width="5" clip-path="url(#landclip)"/>
+      ${[[200, 350], [800, 350], [500, 70], [301, 141], [699, 141]].map(([x, y]) => `<rect x="${x - 11}" y="${y - 11}" width="22" height="22" fill="#2c0819" stroke="#e2bd66" stroke-width="2.5"/>`).join("")}
+      <rect x="425" y="300" width="150" height="100" rx="4" fill="#3a2f5c" stroke="#e2bd66" stroke-width="2"/>
+      <rect x="445" y="318" width="110" height="64" fill="none" stroke="rgba(226,189,102,.3)" stroke-dasharray="3 5"/>
+      ${cols.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.6" fill="#e2bd66"/>`).join("")}
+      <text x="500" y="358" text-anchor="middle" font-family="Caesar Dressing, Marcellus" font-size="24" letter-spacing="3" fill="#e2bd66">FORVM</text>
+      <path d="M0,480 C150,468 300,486 450,474 C600,462 750,484 1000,472 V600 H0Z" fill="url(#bay)"/>
+      ${[0, 1, 2].map((k) => `<path d="M${470 + k * 30},${575 - (k % 2) * 10} q12,-6 24,0 t24,0" fill="none" stroke="rgba(246,227,161,.18)" stroke-width="1.4"/>`).join("")}
+      <path d="M262,476 V566 H446" fill="none" stroke="#5a4c80" stroke-width="16" stroke-linejoin="round"/>
+      <path d="M262,476 V566 H446" fill="none" stroke="#e2bd66" stroke-width="1.5" stroke-dasharray="7 4" stroke-linejoin="round"/>
+      <text x="252" y="530" text-anchor="end" font-family="Marcellus" font-size="12" letter-spacing="3" fill="#b9a98f">MOLE</text>
+      ${SLIPS.map((x) => `<path d="M${x - 20},474 L${x + 20},474 L${x + 26},560 L${x - 26},560Z" fill="#3a2f5c" stroke="rgba(226,189,102,.5)"/>`).join("")}
+      <text x="660" y="586" text-anchor="middle" font-family="Marcellus" font-size="12" letter-spacing="3" fill="#b9a98f">SHIPYARD</text>
+      <path d="M800,478 C850,470 890,474 918,480 L968,548 C930,572 856,570 832,546Z" fill="#2e2452" stroke="#e2bd66" stroke-width="1.2"/>
+      <g transform="translate(895,518)"><path d="M-44,14V-10h8v-6h4v4h4v-4h4v6h40v-6h4v4h4v-4h4v6h8V14Z" fill="#2c0819" stroke="#e2bd66" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M-6,14V4a6,6 0 0 1 12,0v10" fill="#e2bd66" opacity=".8"/><path d="M-20,-2h6M14,-2h6" stroke="#e2bd66" stroke-width="2"/></g>
+      <text x="895" y="590" text-anchor="middle" font-family="Marcellus" font-size="12" letter-spacing="3" fill="#b9a98f">FORT</text>
+      <text x="30" y="34" font-family="Caesar Dressing, Marcellus" font-size="26" letter-spacing="3" fill="#e2bd66">ACRVVIVM</text>
+      <text x="30" y="590" font-family="Caesar Dressing, Marcellus" font-size="18" letter-spacing="3" fill="rgba(246,227,161,.35)">SINVS RHIZONICVS</text>
       ${TOWN_SLOTS.map(([x, y], i) => plotSVG(town[i], x, y, "town", i)).join("")}
       ${FIELD_SLOTS.map(([x, y], i) => {
         const open = E.fieldPlots(s), clearing = [...(s.clearing || [])].sort((a, b) => a - b);
@@ -468,16 +528,22 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     return pts[pts.length - 1];
   }
   let selectedTown = null;
+  /** A small walled town: three towers and a gate. Lit when selected (and for Acruvium). */
+  function townMark(x, y, k, lit) {
+    return `<g transform="translate(${x},${y}) scale(${k})"><path class="walls" d="M-13,9V-6h2v2h2v-2h2V-1h4V-11h2v2h2v-2h2V-1h4V-6h2v2h2v-2h2V9Z"
+      fill="${lit ? "#e2bd66" : "#2c0819"}" stroke="${lit ? "#2c0819" : "#e2bd66"}" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M-3,9V4a3,3 0 0 1 6,0v5" fill="${lit ? "#2c0819" : "#e2bd66"}" opacity=".9"/></g>`;
+  }
   function seaView() {
     const [ax, ay] = P(...ACRV);
     const routes = E.TOWNS.map((t) => { const pts = routePts(t), mid = along(pts, .55);
       return `<path d="${routePath(pts)}" fill="none" stroke="#f6e3a1" stroke-width="2.2" stroke-dasharray="1 7" stroke-linecap="round" opacity="${selectedTown === t.id ? 1 : .5}"/>
         ${selectedTown === t.id ? `<text x="${(mid[0] + 10).toFixed(1)}" y="${(mid[1] + 4).toFixed(1)}" font-family="Marcellus" font-size="14" fill="#f6e3a1">${t.days} day${t.days > 1 ? "s" : ""}' sailing</text>` : ""}`; }).join("");
-    const towns = E.TOWNS.map((t) => { const [x, y] = P(+t.lon, +t.lat), left = ["dyrrachium", "epidaurum", "brundisium", "ancon", "pola"].includes(t.id);
+    const towns = E.TOWNS.map((t) => { const [x, y] = P(+t.lon, +t.lat), left = ["dyrrachium", "epidaurum", "brundisium"].includes(t.id);
       return `<g class="town-hit" tabindex="0" role="button" aria-label="${esc(t.name)}: what it sells and buys" data-town="${t.id}">
         <circle cx="${x}" cy="${y}" r="16" fill="transparent"/>
-        <circle class="dot" cx="${x}" cy="${y}" r="7" fill="${selectedTown === t.id ? "#f6e3a1" : "#2c0819"}" stroke="#e2bd66" stroke-width="2.5"/>
-        <text x="${x + (left ? -12 : 12)}" y="${y + 6}" text-anchor="${left ? "end" : "start"}" font-family="Marcellus" font-size="18" fill="#f6e3a1">${esc(t.name)}</text>
+        ${townMark(x, y, 1, selectedTown === t.id)}
+        <text x="${x + (left ? -19 : 19)}" y="${y + 6}" text-anchor="${left ? "end" : "start"}" font-family="Marcellus" font-size="18" fill="#f6e3a1">${esc(t.name)}</text>
 </g>`; }).join("");
     const convoys = s.convoys.map((c) => { const t = E.TOWN[c.town], span = Math.max(1, c.arrive - c.out), f = Math.min(.95, Math.max(.05, (s.turn - c.out + .5) / span));
       const [x, y] = along(routePts(t), f <= .5 ? f * 2 * .92 : (1 - f) * 2 * .92); return shipSVG(x, y - 4, .5); }).join("");
@@ -488,8 +554,8 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       <path d="${M.land}" fill="#2f2450" stroke="#e2bd66" stroke-width="1" stroke-linejoin="round"/>
       ${lbl(13.6, 42.55, "MARE HADRIATICVM", 24, -38, .28, "Caesar Dressing, Marcellus")}${lbl(16.9, 44.9, "DALMATIA", 22)}${lbl(13.1, 41.6, "ITALIA", 22)}${lbl(19.6, 42.2, "MOESIA", 14, 0, .25)}
       ${routes}${towns}
-      <g transform="translate(${ax},${ay})"><path d="M0,-14 L3.8,-4.5 14,-4.5 6,2 8.6,12.5 0,6.5 -8.6,12.5 -6,2 -14,-4.5 -3.8,-4.5Z" fill="#e2bd66" stroke="#2c0819" stroke-width="1"/></g>
-      <text x="${ax + 16}" y="${ay + 6}" font-family="Caesar Dressing, Marcellus" font-size="20" fill="#e2bd66">ACRVVIVM</text>
+      ${townMark(ax, ay, 1.45, true)}
+      <text x="${ax + 20}" y="${ay + 6}" font-family="Caesar Dressing, Marcellus" font-size="20" fill="#e2bd66">ACRVVIVM</text>
       ${convoys}
     </svg></div>
     <p class="sum" style="margin:0">Click a town to see what it sells and buys this season. Prices move with the wind and current, so north and south are not the same voyage.${s.convoys.length ? ` ${s.convoys.length} of your ships are at sea.` : ""}</p>
@@ -511,7 +577,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   }
 
   // ---------- council ----------
-  const coin = (aid) => `<span class="coin"><img src="img/advisor-${aid}.webp" alt=""></span>`;
+  const coin = (aid) => `<span class="coinwrap"><span class="coin"><img src="img/advisor-${aid}.webp" alt=""></span><span class="badge">${(D.emblems || {})[aid] || ""}</span></span>`;
   function councilView() {
     $("council").innerHTML = E.COUNCIL_ORDER.map((aid) => {
       const a = E.ADVISORS[aid], st = s.council[aid], state = E.abilityState(s, aid);
@@ -531,20 +597,39 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
 
   // ---------- corners: compass and die ----------
   const DIRS = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
+  /** Eight-point wind rose. The point on the side the wind comes from glows, and a Roman wind-head blows in from there. */
+  function roseSVG(wind, cls = "") {
+    const a = DIRS[wind], calm = a === undefined;
+    const pt = (d, g) => `${(Math.sin(g * Math.PI / 180) * d).toFixed(2)},${(-Math.cos(g * Math.PI / 180) * d).toFixed(2)}`;
+    const point = (g, L, w) => {
+      const lit = !calm && g === a, north = g === 0;
+      const light = lit ? "#fff4c8" : "#f0d184", dark = lit ? "#f6e3a1" : north ? "#b8324f" : "#9c7a34";
+      return `<g opacity="${calm || lit ? 1 : .62}" ${lit ? 'filter="url(#rglow)"' : ""}><path d="M0,0 L${pt(w, g - 45)} L${pt(L, g)}Z" fill="${light}"/><path d="M0,0 L${pt(L, g)} L${pt(w, g + 45)}Z" fill="${dark}"/></g>`;
+    };
+    const inter = [45, 135, 225, 315].map((g) => point(g, 31, 5)).join("");
+    const cards = [0, 90, 180, 270].map((g) => point(g, 46, 7)).join("");
+    const ticks = Array.from({ length: 32 }, (_, k) => `<path d="M${pt(22, k * 11.25)} L${pt(k % 4 ? 24 : 25.5, k * 11.25)}" stroke="#e2bd66" stroke-width="${k % 4 ? .8 : 1.4}"/>`).join("");
+    const [hx, hy] = calm ? [0, 0] : pt(37, a).split(",").map(Number);
+    const head = calm ? "" : `<g transform="rotate(${a})" stroke="#fff4c8" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".95">
+        <path d="M-4,-27 q2.5,3 0,6 t0,6"/><path d="M0,-28 q2.5,3 0,6 t0,6 t0,5"/><path d="M4,-27 q2.5,3 0,6 t0,6"/></g>
+      <g transform="translate(${hx},${hy})"><circle r="9" fill="#f6e3a1" stroke="#2c0819" stroke-width="1.3"/>
+        <path d="M-8.5,-1.5 C-9,-11 9,-11 8.5,-1.5" fill="none" stroke="#9c7a34" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="-3.6" cy="2.6" r="2.7" fill="#e2bd66"/><circle cx="3.6" cy="2.6" r="2.7" fill="#e2bd66"/>
+        <circle cx="-3" cy="-1.2" r="1" fill="#2c0819"/><circle cx="3" cy="-1.2" r="1" fill="#2c0819"/><circle cx="0" cy="4.6" r="1.6" fill="#2c0819"/></g>`;
+    return `<svg class="${cls}" viewBox="-50 -50 100 100" aria-hidden="true"><defs><filter id="rglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <circle r="25.5" fill="#2c0819" stroke="#e2bd66" stroke-width="1.6"/>${ticks}${inter}${cards}
+      <circle r="3.2" fill="#2c0819" stroke="#e2bd66" stroke-width="1.2"/>${head}</svg>`;
+  }
   function compassView() {
-    const w = E.WINDS[s.wind], a = DIRS[s.wind];
-    // the arrow starts on the side the wind comes from and points where it blows
-    const arrow = a === undefined ? `<circle r="9" fill="none" stroke="#f6e3a1" stroke-width="2" stroke-dasharray="2 3"/>`
-      : `<g transform="rotate(${a})"><path d="M0,26 L6,10 L2,10 L2,-22 L-2,-22 L-2,10 L-6,10Z" fill="#f6e3a1"/><path d="M-6,-24 q6,-5 12,0 M-6,-30 q6,-5 12,0" stroke="#f6e3a1" stroke-width="1.6" fill="none"/></g>`;
-    $("compass").innerHTML = `<svg viewBox="-41 -41 82 82" aria-hidden="true"><circle r="38" fill="#2c0819" stroke="#e2bd66" stroke-width="2"/>
-      ${["N", "E", "S", "W"].map((d, i) => `<text x="${(Math.sin(i * Math.PI / 2) * 31).toFixed(1)}" y="${(-Math.cos(i * Math.PI / 2) * 31 + 3.5).toFixed(1)}" text-anchor="middle" font-family="Marcellus" font-size="10" fill="#e2bd66">${d}</text>`).join("")}
-      ${arrow}</svg><span class="cap">${esc(w.id === "CALM" ? "calm" : w.latin)}</span>`;
+    const w = E.WINDS[s.wind];
+    $("compass").innerHTML = roseSVG(s.wind) + `<span class="cap">${esc(w.id === "CALM" ? "calm" : w.latin)}</span>`;
     $("compass").setAttribute("aria-label", `Wind: ${w.id === "CALM" ? "dead calm" : w.latin + " from the " + w.from}. Click for details.`);
   }
   $("compass").onclick = () => {
     const w = E.WINDS[s.wind], [n] = E.sailing(s, true), [so] = E.sailing(s, false);
     const fc = s.forecast && s.forecast.turn === s.turn + 1 ? E.WINDS[s.forecast.wind] : null;
-    openVeil(`<div class="dialog" role="dialog" aria-label="Wind and current"><img src="img/wind-${s.wind}.webp" alt="${esc(w.latin)}" style="width:100%;border-radius:12px">
+    openVeil(`<div class="dialog" role="dialog" aria-label="Wind and current">${roseSVG(s.wind, "rose-big")}
+      <h2 style="margin:0;text-align:center">${esc(w.id === "CALM" ? "Tranquillitas · dead calm" : `${w.latin} · from the ${w.from}`)}</h2>
       <p style="margin:0">Current ${E.CURRENT_TEXT[s.current]}. Convoys north ${E.pct(n)}, south ${E.pct(so)} on prices. Harvest ${E.pct(E.num(w.harvest_mult, 1) - 1)}.</p>
       ${fc ? `<p class="sum" style="margin:0">The sages say next season brings ${fc.id === "CALM" ? "a dead calm" : fc.latin + ", from the " + fc.from}.</p>` : ""}
       <div class="row"><button class="btn" type="button" data-close>Close</button></div></div>`);
@@ -592,7 +677,8 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     async reveal(cards) {
       seasonCards = cards;
       $("cards").innerHTML = cards.map((c, i) => cardHTML(c, i, false)).join("");
-      $("cardhint").textContent = "Turn each card over to read it.";
+      $("cardhint").textContent = "Turn each card over to read it: click the glowing cards.";
+      $("cards").classList.add("waiting");
       await new Promise((done) => {
         let left = cards.length;
         cards.forEach((c, i) => {
@@ -605,12 +691,13 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
           };
         });
       });
-      $("cardhint").textContent = cards.some((c) => c.choice) ? "Some cards ask for your decision." : "The cards are read.";
+      $("cards").classList.remove("waiting");
+      $("cardhint").textContent = cards.some((c) => c.choice) ? "A glowing card asks for your decision, just below." : "The cards are read.";
     },
     async cardChoice(c, opts) {
       const i = seasonCards.indexOf(c);
       document.querySelectorAll(".card").forEach((el) => el.classList.remove("active"));
-      if (i >= 0) $("card-" + i).classList.add("active");
+      if (i >= 0) { $("card-" + i).classList.add("active"); $("cards").classList.add("deciding"); }
       const box = $("decide");
       box.innerHTML = `<p class="eyebrow">${E.DECK_LABEL[c.deck]} · your decision</p><h2>${esc(c.title)}</h2>
         <p class="voice">${esc(String(c.choice.prompt).replace(/\s+/g, " "))}</p><div class="choice" style="margin-top:10px">${options(opts)}</div>`;
@@ -619,6 +706,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       const pick = await waitPick(box);
       box.hidden = true;
       if (i >= 0) $("card-" + i).classList.remove("active");
+      $("cards").classList.remove("deciding");
       return pick;
     },
     async roll(r, quiet) {
@@ -692,9 +780,11 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     say = {}; book = [];
     refresh();
     const [season, year] = E.seasonOf(s.turn);
-    $("stage").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season's cards</p>
+    $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season's cards</p>
       <h2>Three cards: the land, the sea and the gods</h2><p class="sum" id="cardhint" style="margin:0 0 10px"></p><div class="cards" id="cards"></div></section>
-      <section class="panel" id="decide" hidden></section><section class="panel" id="orders" hidden></section>`;
+      <section class="panel" id="decide" hidden></section>`;
+    $("stage").innerHTML = `<section class="panel" id="orders" hidden></section>`;
+    $("cardsbar").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
     if (s.cards_turn !== s.turn) {
       s.before = Object.fromEntries(E.NUMBERS.map((n) => [n, s[n]]));
       const notes = [];
@@ -727,7 +817,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     box.innerHTML = `<p class="eyebrow">The scribe</p><h2>What are your orders this season?</h2>
       <p class="voice">“${esc(E.situation(s))} You may give up to ${E.MAX_ORDERS} orders.”</p>
       <div class="desk">
-        <div class="col"><h3>Your council's plans</h3><p class="sum" style="margin:0">Add a whole plan, then add or strike out single orders.</p><div class="col" id="plans"></div></div>
+        <div class="col"><h3>Your council's plans</h3><p class="sum" style="margin:0">Untick what you don't want, then add the rest. Take the vineyard and leave the wheat.</p><div class="col" id="plans"></div></div>
         <div class="col"><h3>All actions</h3><div class="groups" id="groups"></div>
           <div style="display:grid;gap:6px;margin-top:6px"><label for="words" class="eyebrow" style="margin:0">Or in your own words</label>
           <textarea id="words" placeholder="Plant olives, hang the brigands and send a convoy to Brundisium to sell 10 wine"></textarea>
@@ -736,13 +826,17 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       </div>`;
     $("plans").innerHTML = plansNow.map((p, i) => `<div class="plan"><div class="ph">${E.ADVISORS[p.who] ? coin(p.who) : `<span class="mark">${PLAN_MARK[p.who]}</span>`}
         <div><h3>${esc(p.title)}</h3><small>${esc(E.ADVISORS[p.who] ? E.ADVISORS[p.who].name : "the scribe")}</small></div>
-        <button class="btn small quiet" type="button" data-plan="${i}">Add</button></div>
-        <ul>${p.orders.map((o) => `<li>${esc(E.describe(s, o))}</li>`).join("")}</ul></div>`).join("") || `<p class="sum">No one has a plan the treasury and stores can pay for.</p>`;
-    $("plans").querySelectorAll("[data-plan]").forEach((b) => (b.onclick = () => addOrders(plansNow[+b.dataset.plan].orders)));
+        <button class="btn small quiet" type="button" data-plan="${i}">Add ticked</button></div>
+        <ul>${p.orders.map((o, j) => `<li><label><input type="checkbox" data-p="${i}" data-o="${j}" checked>${orderIcon(o, 26)}<span>${esc(E.describe(s, o))}</span></label></li>`).join("")}</ul></div>`).join("") || `<p class="sum">No one has a plan the treasury and stores can pay for.</p>`;
+    $("plans").querySelectorAll("[data-plan]").forEach((b) => (b.onclick = () => {
+      const i = +b.dataset.plan, box = $("plans");
+      const picked = plansNow[i].orders.filter((o, j) => box.querySelector(`[data-p="${i}"][data-o="${j}"]`).checked);
+      if (picked.length) addOrders(picked); else toast("Tick at least one order of this plan.");
+    }));
     $("groups").innerHTML = GROUPS.map(([label, ids]) => `<div class="group"><h4>${label}</h4><div class="acts">${ids.map((id) => {
       const d = E.DECREE[id], c = E.num(d.cost_treasury), mats = E.parseList(d.cost);
       const price = ["build", "send_convoy", "merchants"].includes(id) ? (id === "build" ? "or click a free plot" : id === "merchants" ? "sailing season, up to 20 loads" : "or click a town") : [c ? E.intc(c) : "", ...Object.entries(mats).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ");
-      return `<button class="act" type="button" data-act="${id}">${esc(d.name)}${price ? `<small>${esc(price)}</small>` : ""}</button>`; }).join("")}</div></div>`).join("");
+      return `<button class="act" type="button" data-act="${id}">${orderIcon({ id }, 24)}<span>${esc(d.name)}${price ? `<small>${esc(price)}</small>` : ""}</span></button>`; }).join("")}</div></div>`).join("");
     $("groups").querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => {
       const id = b.dataset.act;
       if (id === "build") buildPicker();
@@ -772,7 +866,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     $("bookcol").innerHTML = `<h3>The season's orders</h3>
       <div class="slots" role="img" aria-label="${book.length} of ${E.MAX_ORDERS} orders">${Array.from({ length: E.MAX_ORDERS }, (_, i) => `<i class="${i < book.length ? "on" : ""}"></i>`).join("")}</div>
       ${book.length ? `<ol>${book.map((o, i) => { const ok = accepted.includes(o);
-        return `<li class="${ok ? "" : "bad"}"><span>${esc(E.describe(s, o))}${ok ? "" : "<em>cannot be done as it stands</em>"}</span><button type="button" data-del="${i}" aria-label="Strike out ${esc(E.describe(s, o))}">×</button></li>`; }).join("")}</ol>`
+        return `<li class="${ok ? "" : "bad"}">${orderIcon(o, 36)}<span>${esc(E.describe(s, o))}${ok ? "" : "<em>cannot be done as it stands</em>"}</span><button type="button" data-del="${i}" aria-label="Strike out ${esc(E.describe(s, o))}">×</button></li>`; }).join("")}</ol>`
         : `<p class="sum" style="margin:0">No orders yet. Add a plan or single actions. You can also click a free plot on the city sheet, or a town on the map.</p>`}
       ${problems.length ? `<ul class="problems">${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
       <p class="cost" style="margin:0">Costs <b>${E.intc(t.treasury)}</b> of ${E.intc(s.treasury)} denarii${matLine ? `; ${matLine}` : ""}.${t.loyalty ? ` Loyalty ${t.loyalty > 0 ? "+" : ""}${t.loyalty}.` : ""}${t.favour ? ` Rome ${t.favour > 0 ? "+" : ""}${t.favour}.` : ""}${t.extra.length ? " " + esc(t.extra.join("; ")) + "." : ""}</p>
@@ -884,19 +978,21 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     phase = "report";
     refresh(before);
     if (done) store.del(KEY); else save();
-    $("stage").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season ends</p>
+    $("stage").innerHTML = "";
+    $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season ends</p>
       <h2>${done ? "The end of your governorship" : "The scribe's report"}</h2>${done ? `<p class="voice">${esc(done)} You governed for ${s.turn - 1} seasons.</p>` : ""}
       <ul class="notes" style="margin-top:8px">${list || "<li>A quiet season.</li>"}</ul>
       ${rows ? `<div style="overflow-x:auto;margin-top:14px"><table class="changes"><tbody>${rows}</tbody></table></div>` : ""}
       <div class="row" style="margin-top:14px"><button class="btn" type="button" id="next">${done ? "Govern again" : "Next season"}</button></div></section>`;
     $("next").onclick = () => { if (done) { s = E.newGame(); intro(); } else startSeason(); };
-    $("stage").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
+    $("cardsbar").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
   }
 
   function intro() {
     phase = "intro"; say = {}; book = [];
     refresh();
-    $("stage").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, on the Gulf of Rhizon</p><h2>Tiberius sends you to govern Acruvium</h2>
+    $("stage").innerHTML = "";
+    $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, on the Gulf of Rhizon</p><h2>Tiberius sends you to govern Acruvium</h2>
       <p class="voice">Each turn is one season. Three cards are turned over: the land, the sea and the gods. Your council speaks, and you give up to ${E.MAX_ORDERS} orders: build and plant, trade by sea with the towns of the Adriatic, keep order, honour the gods and the Emperor.</p>
       <p class="sum">Things take time. A harbour takes two years to build and a temple three; vines give their first wine a year after planting. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
       <div class="row"><button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;
