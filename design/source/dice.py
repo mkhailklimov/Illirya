@@ -17,13 +17,16 @@ from make import HEAD, TAIL, OUT
 
 W = H = 360
 CX, CY, R = 180, 186, 150
-STONES = ("obsidian", "amber", "malachite")
+STONES = ("obsidian", "amber", "malachite", "opal", "aquamarine", "onyx")   # the last three: the land, sea and omen dice of rules v5
 
 # per stone: base gradient (light, dark), edge colour, numeral fill and outline, small-numeral colour
 LOOK = {
     "obsidian": {"light": "#1f1a2b", "dark": "#020104", "edge": "#7d7398", "gloss": .5, "ink": "url(#inlay)", "rim": "#2c0819", "small": "#d9ac4f"},
     "amber": {"gloss": 1, "light": "#ffc861", "dark": "#8a3d08", "edge": "#ffe2a0", "ink": "#3a1404", "rim": "#ffe9b8", "small": "#5a2408"},
     "malachite": {"gloss": 1, "light": "#4fd39a", "dark": "#06402a", "edge": "#b8f0d4", "ink": "url(#inlay)", "rim": "#06301f", "small": "#f6e3a1"},
+    "opal": {"gloss": .7, "light": "#fbf8ff", "dark": "#c3cde4", "edge": "#ffffff", "ink": "#3a2a55", "rim": "#fdfbff", "small": "#5a4a78"},
+    "aquamarine": {"gloss": 1, "light": "#bff3f0", "dark": "#2b7f93", "edge": "#e4fffd", "ink": "#0c3442", "rim": "#e8fffe", "small": "#0f4a5a"},
+    "onyx": {"gloss": .5, "light": "#26222a", "dark": "#050406", "edge": "#d8d2c8", "ink": "url(#inlay)", "rim": "#1a0f12", "small": "#e8e0d0"},
 }
 # facets: light (+) or shadow (-) laid over the stone, light from the upper left
 SHADE = [+.30, +.10, +.05, -.20, -.45, -.25, +.00, +.22, +.38]
@@ -66,6 +69,24 @@ def material(stone, uid):
             x, y, r = CX + rnd.uniform(-100, 100), CY + rnd.uniform(-100, 100), rnd.uniform(1.5, 3.5)
             out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="#4a1a04" opacity=".6"/>')
         out.append(f'<path d="M{CX - 70},{CY + 60} c20,-14 40,-6 56,-20 c10,-9 22,-8 30,-2" fill="none" stroke="#6a2a06" stroke-width="2" opacity=".45"/>')
+    elif stone == "opal":         # milky body with a play of colour: flecks of fire, green and blue
+        out.append(f'<circle cx="{CX - 30}" cy="{CY - 30}" r="{R * .9:.0f}" fill="#ffffff" opacity=".35"/>')
+        out.append(f'<ellipse cx="{CX + 40}" cy="{CY + 50}" rx="120" ry="70" fill="#ffd9ec" opacity=".35" transform="rotate(-25 {CX + 40} {CY + 50})"/>')
+        out.append(f'<ellipse cx="{CX - 60}" cy="{CY + 10}" rx="90" ry="60" fill="#d4f5ff" opacity=".4"/>')
+        for _ in range(80):
+            x, y = CX + rnd.uniform(-135, 135), CY + rnd.uniform(-135, 135)
+            col = rnd.choice(("#ff5f86", "#37d6a6", "#4f8dff", "#ffc23d", "#a970ff", "#3fe0ff"))
+            out.append(f'<ellipse cx="{x:.1f}" cy="{y:.1f}" rx="{rnd.uniform(2.5, 8):.1f}" ry="{rnd.uniform(1.5, 4):.1f}" fill="{col}" opacity="{rnd.uniform(.35, .75):.2f}" transform="rotate({rnd.uniform(0, 180):.0f} {x:.1f} {y:.1f})"/>')
+    elif stone == "aquamarine":   # clear sea-green crystal: long inner streaks and a bright core
+        out.append(f'<ellipse cx="{CX - 10}" cy="{CY - 20}" rx="{R * .7:.0f}" ry="{R * .5:.0f}" fill="#eafffd" opacity=".35"/>')
+        for i in range(9):
+            x = CX - 120 + i * 30 + rnd.uniform(-8, 8)
+            out.append(f'<path d="M{x:.1f},{CY - 150} l{rnd.uniform(-30, 30):.1f},300" stroke="#ffffff" stroke-width="{rnd.uniform(1, 3):.1f}" opacity="{rnd.uniform(.12, .3):.2f}"/>')
+    elif stone == "onyx":         # black stone with fine white bands
+        ox, oy = CX + 160, CY + 190
+        for i in range(26):
+            r = 60 + i * 12 + rnd.uniform(-3, 3)
+            out.append(f'<circle cx="{ox}" cy="{oy}" r="{r:.1f}" fill="none" stroke="#efe8dc" stroke-width="{rnd.uniform(.8, 2.6):.1f}" opacity="{rnd.uniform(.25, .6):.2f}"/>')
     else:                         # obsidian: a faint violet sheen and a few conchoidal ripples
         out.append(f'<ellipse cx="{CX - 50}" cy="{CY - 60}" rx="120" ry="60" fill="#6c5aa8" opacity=".18" transform="rotate(-30 {CX - 50} {CY - 60})"/>')
         for i in range(5):

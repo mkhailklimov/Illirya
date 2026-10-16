@@ -1,4 +1,4 @@
-// Illyria: AD 30 — the rules engine (rules v4, 16 Oct 2026: gambles on risky advice, letters from Rome, the tribes, growth in peace).
+// Illyria: AD 30 — the rules engine (rules v5, 16 Oct 2026: three decisions, then three dice thrown together; letters from Rome, the tribes, growth in peace).
 // The web game is now the main playtest tool; rules/play.py is frozen at the v1 rules.
 // The rules data (numbers, goods, towns, decrees, seasons, advisors, winds, buildings, cards)
 // comes from data.js, built by web/build.py from rules/*.csv and events/*.yaml.
@@ -12,7 +12,7 @@
   const TAX_RATES = { low: [0.25, +1], normal: [0.4, 0], high: [0.55, -2] };   // denarii a person a season, loyalty a season (v4)
   const TAX_STEPS = ["low", "normal", "high"];
   const ARMY_PAY = 4, TRIBUTE = 3000, TRIBUTE_PAID_FAVOUR = 5, TRIBUTE_MISSED_FAVOUR = -20, TRIBUTE_DEBT_PENALTY = 1.5;
-  const GRAIN_EATEN = 3, GRAIN_BASE_EATERS = 4000, GRAIN_PRICE = 500;
+  const GRAIN_EATEN = 3, GRAIN_BASE_EATERS = 4600, GRAIN_PRICE = 500;
   const TOWN_PLOTS = 12, FIELD_PLOTS = 12, BASE_WHEAT = 4;
   const SHIP_LOAD = 40, GRAIN_LOAD = 10;  // a ship carries 40 loads; a month of grain is 10 of them
   const VOYAGE_DIE = 20, VOYAGE_TARGET = 5; // d20 + sailing advantage when a convoy comes home
@@ -31,6 +31,11 @@
   const GAMBLE_DIE = 20, GAMBLE_TARGET = 10;          // a risky proposal is a d20 + the advisor's talent
   const GAMBLE_STAT = { general: "strategy", fleet: "experience", treasurer: "logic", economist: "persuasion", priest: "persuasion" };
   const TREATY_TARGET = 11, BATTLE_TARGET = 12, MARCH_MIN_ARMY = 150, HOSTILE_SEASONS = 12, RAID_WEIGHT = 3;
+  // Rules v5: every card's decision is a check, rolled when all three are made
+  const DIE_OF = { land: "opal", sea: "aquamarine", omen: "onyx" };
+  const CHECK_DC = { moderate: 6, risky: 11, own: 9, letbe_bad: 9, letbe: 4, option: 3 };
+  const WIND_SEA = { N: [-3, "the bora is rising"], S: [-1, "a hot wind from Africa"], W: [1, "a gentle west wind"], SW: [-2, "the stormy Africus"], E: [0, ""], CALM: [3, "a flat calm"] };
+  const BONUS_CAP = 8;
   const END_TURN = 52;                               // Winter AD 42: Claudius sends a successor
   const EMPERORS = [[1, "Tiberius"], [29, "Gaius"], [44, "Claudius"]];   // from turn: Spring 37, Winter 40
 
@@ -517,7 +522,7 @@
     const t = TRIBE[o.tribe], st = ((s.tribes = s.tribes || {})[t.id] = { ...tribeState(s, t.id) });
     const talker = num(ADVISORS.economist.persuasion, 3) >= num(ADVISORS.priest.persuasion, 3) ? "economist" : "priest";
     const bonus = Math.max(-6, Math.min(6, num(ADVISORS[talker].persuasion, 3) - 3 + st.tries - t.strength - (hostile(s, t.id) ? 3 : 0)));
-    const r = await roll(20, bonus, TREATY_TARGET, `${ADVISORS[talker].name} treats with the ${t.name}`);
+    const r = o.preRoll || await roll(20, bonus, TREATY_TARGET, `${ADVISORS[talker].name} treats with the ${t.name}`);
     if (r.ok) {
       st.state = "ally"; st.hostile_until = 0;
       s.loyalty += 2;
@@ -530,7 +535,7 @@
   async function marchTribe(s, o, notes) {
     const t = TRIBE[o.tribe], st = ((s.tribes = s.tribes || {})[t.id] = { ...tribeState(s, t.id) });
     const bonus = Math.max(-6, Math.min(6, Math.floor(s.army / 50) + Math.trunc(stat(s, "battle_bonus")) + num(ADVISORS.general.strategy, 3) - 3 - t.strength));
-    const res = await roll(20, bonus, BATTLE_TARGET, `Antistius marches against the ${t.name}`);
+    const res = o.preRoll || await roll(20, bonus, BATTLE_TARGET, `Antistius marches against the ${t.name}`);
     let ok = res.ok;
     if (!ok && res.r !== 1 && res.total + LEAD_CHARGE_BONUS >= BATTLE_TARGET &&
         await offerAbility(s, "general", `Let me lead the charge myself: +${LEAD_CHARGE_BONUS} turns this into a victory.`)) {
@@ -568,6 +573,18 @@
       if (o.id === "recruit" && lose) { eff.army = 25; eff.loyalty = (eff.loyalty || 0) - 2; }
       if (o.id === "build_ship" && lose) s.treasury -= 150;
       if (!GAMBLE_TEXT[o.id] && o.boost && !["treat_tribe", "march_tribe"].includes(o.id)) s.treasury += win ? 150 : -150;
+      if (o.boost === "lost" && !["treat_tribe", "march_tribe"].includes(o.id)) {   // a disaster on the die: paid for, and nothing to show
+        if (o.id === "send_convoy") {
+          for (const [g, q] of Object.entries(o.sell || {})) s[g] -= q;
+          s.ships = Math.max(0, s.ships - 1); s.army = Math.max(0, s.army - 10);
+          notes.push(`Disaster at sea: the ship for ${TOWN[o.town] ? TOWN[o.town].name : "the coast"} goes down with her cargo, the money paid and ten marines.`);
+        } else if (o.id === "build") notes.push(`Disaster: the works on the ${BLD[o.building].name.toLowerCase()} collapse; the money and materials are lost.`);
+        else if (o.id === "recruit") { s.loyalty -= 4; notes.push("Disaster: the recruits riot in the forum and run off to the hills; nobody is enlisted."); }
+        else { s.treasury -= 150; s.loyalty -= 2; notes.push(`Disaster: '${describe(s, o)}' goes badly wrong (−150 denarii, loyalty −2).`); }
+        s.calamity_turn = s.turn;
+        continue;
+      }
+      if (o.dearer) { s.treasury -= o.dearer; notes.push(`A setback: '${describe(s, o)}' costs ${o.dearer} denarii more than planned.`); }
       if (o.id === "treat_tribe") await treatTribe(s, o, notes);
       else if (o.id === "march_tribe") await marchTribe(s, o, notes);
       if (d.id === "raise_taxes") s.tax = TAX_STEPS[TAX_STEPS.indexOf(s.tax) + 1];
@@ -598,7 +615,7 @@
       else if (d.id === "visit_temple") cheer(s, "priest", notes, "is glad to see the governor at the altar");
       else if (d.id === "hear_petitions") cheer(s, "treasurer", notes, "learns a great deal about who owes what");
       else if (d.id === "listen_sages") {
-        s.forecast = drawWeather(s.turn + 1);
+        s.forecast = drawWeather(s.turn + 1); s.forecast_turn = s.turn + 1;
         const w = WINDS[s.forecast.wind];
         notes.push(`The sages read the sky: next season brings ${w.id === "CALM" ? "a dead calm" : `${w.latin}, the wind from the ${w.from}`}. ${w.effect}`);
       }
@@ -842,8 +859,9 @@
   };
   /** Can this one order be given now (after what the season's cards already ordered)? Returns a problem or null. */
   function canDo(s, o) {
-    const [ok, problems] = validate(s, [{ ...o }]);
-    return ok.length ? null : problems[0] || "It cannot be done.";
+    const before = (s.season_pending || []).map((x) => ({ ...x }));
+    const [ok, problems] = validate(s, before.concat([{ ...o }]));
+    return ok.length === before.length + 1 ? null : problems[problems.length - 1] || "It cannot be done.";
   }
   /** Each advisor's wishes for a card of this tone, best first; the first that can be done is his proposal. */
   function wishes(s, who, tone) {
@@ -892,9 +910,121 @@
     const out = [];
     for (const [who, risk] of [[mod, "moderate"], [risky, "risky"]]) {
       const o = wishes(s, who, tone).find((x) => x && !canDo(s, x) && !out.some((p) => sameOrder(p.order, x)));
-      if (o) out.push({ who, risk, order: o, say: pitch(s, who, tone, o, c), gamble: risk === "risky" && !["treat_tribe", "march_tribe"].includes(o.id) ? gambleOf(s, who, o) : null });
+      if (o) out.push({ who, risk, order: o, say: pitch(s, who, tone, o, c) });
     }
-    return { tone, list: out };
+    for (const p of out) p.check = checkFor(s, c, { kind: "advice", who: p.who, risk: p.risk, order: p.order });
+    return { tone, list: out, letbe: checkFor(s, c, { kind: "none" }) };
+  }
+  // --- Checks (rules v5): the die of the card's deck, a DC, and the bonuses that move it, shown before you choose ---
+  const isSea = (o) => o && ["send_convoy", "build_ship", "merchants"].includes(o.id);
+  const isArms = (o) => o && ["recruit", "hang_brigands", "dismiss", "march_tribe"].includes(o.id);
+  /** chance of total >= dc on a d20 where a 1 always fails and a 20 always succeeds */
+  const chanceOf = (bonus, dc) => Math.max(5, Math.min(95, 5 * (21 - Math.max(2, Math.min(21, dc - bonus)))));
+  function conditions(s, c, o, who) {
+    const parts = [];
+    const add = (v, label) => { if (v) parts.push([label, v]); };
+    if (who && ADVISORS[who]) {
+      const stat = GAMBLE_STAT[who] || "experience", st = s.council[who];
+      add(num(ADVISORS[who][stat], 3) - 3, `${ADVISORS[who].name.split(" ")[0]}'s ${stat}`);
+      if (st.mood >= 4) add(1, `${ADVISORS[who].name.split(" ")[0]} in good heart`);
+      else if (st.mood <= MOOD_SULK) add(-2, `${ADVISORS[who].name.split(" ")[0]} sulking`);
+    }
+    if (c.deck === "sea" || isSea(o)) {
+      const [w, label] = WIND_SEA[s.wind] || [0, ""];
+      add(w, label);
+      if (seasonOf(s.turn)[0].sailing === "no") add(-3, "the winter sea");
+      if (s.forecast_turn === s.turn) add(1, "the sages read the sky");
+      if (built(s, "harbour") > 1) add(1, "a second harbour");
+    }
+    if (isArms(o) || c.category === "raiders") {
+      add(Math.trunc(stat(s, "battle_bonus")), "walls and barracks");
+      add(Math.min(3, Math.floor(s.army / 100)), "the garrison");
+    }
+    if (c.deck === "omen") {
+      if (built(s, "temple")) add(2, "the temple");
+      if (s.council.priest.mood >= 4 && who !== "priest") add(1, "Tertius at peace with the gods");
+    }
+    if (c.deck === "land" && s.loyalty < 35) add(-1, "a sullen town");
+    if (s.calamity_turn === s.turn) add(-1, "the town in mourning");
+    return parts;
+  }
+  /** The check for one choice on a card: {die, dc, parts, bonus, chance, win, lose}. */
+  function checkFor(s, c, pick) {
+    const die = DIE_OF[c.deck] || "opal";
+    let dc, parts = [], win = "", lose = "", bonus;
+    const tone = cardTone(c);
+    if (pick.kind === "advice" || pick.kind === "order") {
+      const o = pick.order, who = pick.kind === "advice" ? pick.who : null;
+      if (o.id === "treat_tribe" || o.id === "march_tribe") {
+        const od = tribeOdds(s, o.tribe), w = o.id === "treat_tribe" ? od.treat : od.march;
+        return { die, dc: w.target, parts: [[o.id === "treat_tribe" ? "the chiefs' mood" : "our strength against theirs", w.bonus]], bonus: w.bonus, chance: chanceOf(w.bonus, w.target),
+          win: o.id === "treat_tribe" ? "their land and their friendship" : "their land and loot", lose: o.id === "treat_tribe" ? "the gifts are wasted" : "men lost; they turn hostile" };
+      }
+      const risk = pick.kind === "order" ? "own" : pick.risk;
+      dc = CHECK_DC[risk];
+      parts = conditions(s, c, o, who);
+      const [gw, gl] = GAMBLE_TEXT[o.id] || DEFAULT_GAMBLE;
+      win = risk === "risky" ? gw : "carried out as ordered";
+      lose = risk === "risky" ? gl : "it costs a quarter more";
+    } else if (pick.kind === "option") {
+      const opt = c.choice.options[pick.i];
+      if (opt.roll) {
+        dc = Math.trunc(opt.roll.target);
+        const base = rollBonus(s, opt.roll.bonus);
+        parts = (base ? [[String(opt.roll.bonus).replace(/_/g, " ").replace("army / 50", "soldiers / 50"), base]] : []).concat(conditions(s, c, null, c.advisor));
+        win = effectsText(opt.roll.success); lose = effectsText(opt.roll.failure);
+      } else { dc = CHECK_DC.option; parts = conditions(s, c, null, null); win = effectsText(opt.effects); lose = "things go worse than you hoped"; }
+    } else {
+      dc = tone === "bad" ? CHECK_DC.letbe_bad : CHECK_DC.letbe;
+      parts = conditions(s, c, null, null);
+      win = tone === "bad" ? "the trouble passes" : "nothing changes"; lose = tone === "bad" ? "it gets worse: half of it again" : "a little bad luck";
+    }
+    bonus = Math.max(-BONUS_CAP, Math.min(BONUS_CAP, parts.reduce((a, [, v]) => a + v, 0)));
+    return { die, dc, parts, bonus, chance: chanceOf(bonus, dc), win, lose };
+  }
+  const TIER = (r, total, dc) => (r === 1 ? "disaster" : r === 20 ? "triumph" : total >= dc ? "success" : "setback");
+  const scale = (eff, k) => Object.fromEntries(Object.entries(eff || {}).map(([n, v]) => [n, typeof v !== "number" ? v : n === "grain" ? Math.round(v * k * 10) / 10 : Math.round(v * k)]));
+  const negatives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([, v]) => typeof v === "number" && v < 0));
+  const positives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([, v]) => typeof v === "number" && v > 0));
+  /** Carry out one card's decision with the tier its die gave. */
+  async function settle(s, d, res, notes) {
+    const c = d.card, tier = res.tier, title = c.title;
+    const said = { disaster: "disaster", setback: "a setback", success: "success", triumph: "a triumph" }[tier];
+    if (d.pick.kind === "advice" || d.pick.kind === "order") {
+      const o = { ...d.pick.order };
+      if (o.id === "treat_tribe" || o.id === "march_tribe") o.preRoll = { r: res.r, total: res.total, ok: tier === "success" || tier === "triumph", tag: res.tag };
+      else if (tier === "disaster") o.boost = "lost";
+      else if (tier === "triumph") o.boost = "win";
+      else if (d.pick.risk === "risky") o.boost = tier === "success" ? "win" : "lose";
+      else if (tier === "setback") o.dearer = Math.max(50, Math.round(costOf(s, o)[0] * 0.25));
+      notes.push(`${title}: the ${d.check.die} die says ${said} (${res.r}${res.bonus ? (res.bonus > 0 ? " + " : " − ") + Math.abs(res.bonus) : ""} against ${d.check.dc}).`);
+      const [ok, pr] = validate(s, [{ ...d.pick.order }]);   // the cards since may have emptied the chest
+      if (!ok.length) { notes.push(`${title}: the order lapses: ${pr[0] || "it can no longer be done"}`); return; }
+      await giveOrder(s, o, notes);
+      if (tier === "triumph" && d.pick.who) cheer(s, d.pick.who, notes, "is delighted by the outcome");
+    } else if (d.pick.kind === "option") {
+      const opt = c.choice.options[d.pick.i];
+      let eff = concrete(opt.effects);
+      if (opt.roll) {
+        const ok = tier === "success" || tier === "triumph";
+        let extra = concrete(opt.roll[ok ? "success" : "failure"]);
+        if (tier === "triumph") extra = scale(extra, 1.5);
+        if (tier === "disaster") extra = scale(extra, 1.5);
+        for (const [n, v] of Object.entries(extra)) eff[n] = (eff[n] || 0) + v;
+      } else if (tier === "disaster") eff = { ...scale(positives(eff), 0.5), ...scale(negatives(eff), 1.5) };
+      else if (tier === "triumph") eff = { ...scale(positives(eff), 1.5), ...negatives(eff) };
+      notes.push(`${title}: you chose '${opt.label}', and the ${d.check.die} die says ${said} (${effectsText(eff)}).`);
+      applyEffects(s, eff);
+      if (isCalamity({}, eff)) s.calamity_turn = s.turn;
+    } else {
+      const neg = negatives(c.rolled || c.effects), pos = positives(c.rolled || c.effects), bad = cardTone(c) === "bad";
+      let eff = {};
+      if (tier === "disaster") eff = bad ? neg : { treasury: -100 };
+      else if (tier === "setback") eff = bad ? scale(neg, 0.5) : {};
+      else if (tier === "triumph") eff = bad ? scale(neg, -0.5) : scale(pos, 0.5);
+      notes.push(`${title}: you let it be, and the ${d.check.die} die says ${said}${Object.keys(eff).length ? ` (${effectsText(eff)})` : ""}.`);
+      applyEffects(s, eff);
+    }
   }
   /** The governor took one advisor's advice (or none, who = null): he is pleased, the others who spoke feel ignored. */
   function heed(s, who, spoke, notes) {
@@ -914,9 +1044,9 @@
     s.season_taken = (s.season_taken || []).concat([o.id]);
     await applyDecrees(s, [o], notes);
   }
-  /** The season's cards, played one by one: turn it over, its effect, then a decision. */
+  /** The season's cards (rules v5): turn each over and decide; when all three are decided, the three dice are thrown together. */
   async function playCards(s, notes) {
-    s.season_taken = [];
+    s.season_taken = []; s.season_pending = [];
     const cards = drawSeasonCards(s);
     const omen = cards.find((c) => c.deck === "omen");
     if (omen && darkOmen(omen) && abilityReady(s, "priest")) {
@@ -933,41 +1063,48 @@
     s.card_last = s.card_last || {};
     for (const c of cards) s.card_last[c.id] = s.turn;
     await ui.lay(cards);
+    const decisions = [];
     for (let i = 0; i < cards.length; i++) {
       const c = cards[i];
       await ui.turn(c, i);
       if (c.once) s.once_fired.push(c.id);
-      if (c.choice) { await answerCard(s, c, notes); await ui.decided(c, i, null); continue; }
-      const eff = concrete(c.effects);
-      applyEffects(s, eff);
-      if (!c.quiet) notes.push(`${c.title}: ${effectsText(eff)}.`);
-      if (isCalamity(c, eff)) s.calamity_turn = s.turn;
-      if (c.damage) damage(s, c, notes);
-      c.rolled = eff;
-      const { tone, list } = proposals(s, c);
-      const pick = await ui.decide(c, i, list, tone);
-      const spoke = list.map((p) => p.who);
-      if (pick.kind === "advice") {
-        const p = list[pick.i];
-        notes.push(`${c.title}: you take ${ADVISORS[p.who].name}'s advice (${describe(s, p.order).replace(/^./, (m) => m.toLowerCase())}).`);
-        heed(s, p.who, spoke, notes);
-        const o = { ...p.order };
-        if (p.risk === "risky" && p.gamble) {
-          const g = p.gamble, r = await roll(g.die, g.bonus, g.target, `${ADVISORS[p.who].name}'s gamble: ${describe(s, o).replace(/^./, (m) => m.toLowerCase())}`);
-          o.boost = r.ok ? "win" : "lose";
-          notes.push(`The gamble ${r.ok ? "pays off" : "fails"} (d20: ${r.r}${g.bonus ? (g.bonus > 0 ? " + " : " − ") + Math.abs(g.bonus) : ""}): ${r.ok ? g.win : g.lose}.`);
-        }
-        await giveOrder(s, o, notes);
-      } else if (pick.kind === "order") {
-        notes.push(`${c.title}: you give your own order (${describe(s, pick.order).replace(/^./, (m) => m.toLowerCase())}).`);
-        heed(s, null, spoke, notes);
-        await giveOrder(s, pick.order, notes);
+      let pick;
+      if (c.choice) {
+        const opts = c.choice.options.map((o, k) => ({ label: o.label, sub: o.roll ? "" : effectsText(o.effects), check: checkFor(s, c, { kind: "option", i: k }) }));
+        pick = { kind: "option", i: await ui.cardChoice(c, opts) };
       } else {
-        notes.push(`${c.title}: you let it be.`);
-        heed(s, null, spoke, notes);
+        const eff = concrete(c.effects);
+        applyEffects(s, eff);
+        if (!c.quiet) notes.push(`${c.title}: ${effectsText(eff)}.`);
+        if (isCalamity(c, eff)) s.calamity_turn = s.turn;
+        if (c.damage) damage(s, c, notes);
+        c.rolled = eff;
+        const { tone, list, letbe } = proposals(s, c);
+        const choice = await ui.decide(c, i, list, tone, letbe);
+        const spoke = list.map((p) => p.who);
+        if (choice.kind === "advice") { const p = list[choice.i]; pick = { kind: "advice", who: p.who, risk: p.risk, order: p.order }; heed(s, p.who, spoke, notes); }
+        else if (choice.kind === "order") { pick = { kind: "order", order: choice.order }; heed(s, null, spoke, notes); }
+        else { pick = { kind: "none" }; heed(s, null, spoke, notes); }
+        if (pick.order) s.season_pending.push(pick.order);
       }
-      await ui.decided(c, i, pick);
+      const check = checkFor(s, c, pick);
+      decisions.push({ card: c, i, pick, check });
+      await ui.decided(c, i, pick, check);
     }
+    // the throw: one die per card, all at once
+    const results = decisions.map((d) => {
+      const r = rint(1, 20), total = r + d.check.bonus, tier = TIER(r, total, d.check.dc);
+      return { r, bonus: d.check.bonus, total, dc: d.check.dc, die: d.check.die, tier, ok: tier === "success" || tier === "triumph",
+        tag: { disaster: "Disaster", setback: "Setback", success: "Success", triumph: "Triumph" }[tier], why: d.card.title };
+    });
+    await ui.throwDice(decisions, results);
+    s.last_roll = { ...results[results.length - 1], target: results[results.length - 1].dc };
+    s.season_outcomes = [];
+    for (let k = 0; k < decisions.length; k++) {
+      await settle(s, decisions[k], results[k], notes);
+      s.season_outcomes.push(`${decisions[k].card.title}: ${results[k].tag.toLowerCase()} (${results[k].r}${results[k].bonus ? (results[k].bonus > 0 ? "+" : "") + results[k].bonus : ""} vs ${results[k].dc})`);
+    }
+    s.season_pending = [];
     return cards;
   }
   function clampAndCheck(s, notes) {
@@ -1134,6 +1271,6 @@
     sailing, abilityState, updateMoods, applyDecrees, resolve, clampAndCheck, wordParse, fmt, intc, pct, housing, berths, shipsAtSea,
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
     TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
-    stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS,
+    stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
   };
 })();

@@ -5,7 +5,7 @@ const ctx = { window: {}, console, Math, JSON };
 vm.createContext(ctx);
 for (const f of ["data.js", "engine.js"]) vm.runInContext(fs.readFileSync(require("path").join(__dirname, f), "utf8"), ctx);
 const E = ctx.window.Engine;
-let style = "econ", s = null, log = { quakes: 0, letters: 0, gambles: 0, wins: 0, rolls: 0 };
+let style = "econ", s = null, log = { quakes: 0, letters: 0, gambles: 0, wins: 0, rolls: 0 }, tiers = {};
 const ECON = ["economist", "treasurer", "fleet", "priest"];
 const ui = {
   lay: async () => {}, turn: async (c) => { if (c.id === "e010-earthquake") log.quakes++; if (c.letter) log.letters++; },
@@ -26,14 +26,15 @@ const ui = {
     if (list[k].risk === "risky") log.gambles++;
     return { kind: "advice", i: k };
   },
-  roll: async (r) => { log.rolls++; if (r.ok) log.wins++; }, ability: async () => true, choose: async () => 0, number: async (t, lo, hi) => hi,
+  roll: async (r) => { log.rolls++; if (r.ok) log.wins++; },
+  throwDice: async (ds, rs) => { for (const r of rs) { tiers[r.tier] = (tiers[r.tier] || 0) + 1; log.rolls++; if (r.ok) log.wins++; } }, ability: async () => true, choose: async () => 0, number: async (t, lo, hi) => hi,
 };
 E.setUI(ui);
 (async () => {
   const N = +(process.argv[2] || 20);
   for (style of ["econ", "army", "careful", "random"]) {
     const res = [];
-    log = { quakes: 0, letters: 0, gambles: 0, wins: 0, rolls: 0 };
+    log = { quakes: 0, letters: 0, gambles: 0, wins: 0, rolls: 0 }; tiers = {};
     for (let g = 0; g < N; g++) {
       s = E.newGame();
       const peopleAt = {};
@@ -66,6 +67,6 @@ E.setUI(ui);
     const why = {}; for (const r of res.filter((r) => !r.fin)) { const k = r.over.split(":")[0]; why[k] = (why[k] || 0) + 1; }
     const won = res.reduce((a, r) => a + (r.tribes.match(/[ac]/g) || []).length, 0);
     console.log(`${style.padEnd(8)} finished ${fin}/${N}  score ${avg("score")}  people ${avg("people")} (t12 ${avg("p12")}, t24 ${avg("p24")}, t36 ${avg("p36")})  treasury ${avg("treasury")}  loyalty ${avg("loy")}  favour ${avg("fav")}  army ${avg("army")}  tribes won ${won}  lost: ${JSON.stringify(why)}`);
-    console.log(`         per game: quakes ${(log.quakes / N).toFixed(2)}, letters ${(log.letters / N).toFixed(1)}, gambles ${(log.gambles / N).toFixed(1)}, dice ${(log.rolls / N).toFixed(1)} (won ${Math.round(100 * log.wins / Math.max(1, log.rolls))}%)`);
+    console.log(`         per game: quakes ${(log.quakes / N).toFixed(2)}, letters ${(log.letters / N).toFixed(1)}, gambles ${(log.gambles / N).toFixed(1)}, dice ${(log.rolls / N).toFixed(1)} (won ${Math.round(100 * log.wins / Math.max(1, log.rolls))}%), card dice ${JSON.stringify(tiers)}`);
   }
 })();

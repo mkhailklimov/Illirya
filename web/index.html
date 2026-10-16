@@ -280,6 +280,27 @@ footer { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-
 footer .opts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 footer .opts button { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; color: var(--mute); }
 footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color: var(--gold); }
+/* rules v5: a check on every choice (the BG3 way: DC, bonuses, chance, and a strip of the twenty faces) */
+.check { display: grid; gap: 4px; grid-column: 1 / -1; border-top: 1px dashed var(--faint); padding-top: 7px; font-size: 13px; color: var(--mute); }
+.check .strip { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 2px; }
+.check .strip i { height: 9px; border-radius: 2px; }
+.t-disaster { background: #e05252; } .t-setback { background: #e8a14f; } .t-success { background: #6fbf87; } .t-triumph { background: #f6e3a1; }
+.check .odds { color: var(--ink); font-size: 13.5px; } .check .odds b { font: 400 18px var(--f-label); color: var(--gold-pale); margin-right: 4px; }
+.check .stakes { color: var(--mute); }
+.check .die-name { text-transform: capitalize; }
+.letbe { display: grid; gap: 6px; text-align: left; background: rgba(15, 20, 48, .5); border: 1px dashed var(--line); border-radius: 14px; padding: 10px 14px; width: 100%; }
+.letbe:hover { border-color: var(--gold); }
+.card .eff.pending { color: var(--gold-pale); text-transform: none; letter-spacing: .02em; font-size: 13.5px; }
+.throw { width: min(900px, 100%); }
+.throw .dice3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 600px) { .throw .dice3 { grid-template-columns: minmax(0, 1fr); } }
+.throw .one { display: grid; justify-items: center; gap: 4px; text-align: center; border: 1px solid var(--faint); border-radius: 14px; padding: 10px; }
+.throw .one .die { width: min(170px, 44vw); } .throw .one .die svg { width: 100%; height: auto; display: block; }
+.throw .one.spin .die svg { animation: tumble .12s linear infinite; }
+.throw .one .ct { font-size: 14px; color: var(--gold-pale); } .throw .one .sub { font-size: 12.5px; color: var(--mute); }
+.throw .tier { font: 400 24px var(--f-display); min-height: 1.2em; }
+.tier.disaster { color: #ff7a7a; } .tier.setback { color: #ffb36b; } .tier.success { color: #9fdcae; } .tier.triumph { color: #fff4c8; text-shadow: 0 0 14px rgba(246,227,161,.8); }
+.corner.die .trio { display: flex; gap: 2px; } .corner.die .trio svg { width: 28px; height: 28px; }
 /* rules v4 */
 .card.quake { animation: quake .09s linear 9; }
 @keyframes quake { 0% { translate: 0 0; } 25% { translate: -5px 2px; } 50% { translate: 4px -3px; } 75% { translate: -3px -1px; } 100% { translate: 0 0; } }
@@ -331,7 +352,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   </div>
   <div class="stage" id="stage"></div>
   <footer>
-    <span>Phase 0 playtest · rules v4 · all numbers DRAFT</span>
+    <span>Phase 0 playtest · rules v5 · all numbers DRAFT</span>
     <span class="opts" id="opts"></span>
   </footer>
 </div>
@@ -347,7 +368,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   const E = window.Engine, D = window.GAME_DATA;
   const $ = (id) => document.getElementById(id);
   const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const KEY = "illyria-web-save-v4", STONE_KEY = "illyria-die", SOUND_KEY = "illyria-sound";
+  const KEY = "illyria-web-save-v5", STONE_KEY = "illyria-die", SOUND_KEY = "illyria-sound";
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
   let s = null, wants = {}, say = {}, book = [], phase = "intro", stone = store.get(STONE_KEY) || "obsidian", sound = store.get(SOUND_KEY) !== "off";
   if (!D.dice[stone]) stone = "obsidian";
@@ -825,8 +846,9 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       <div class="row"><button class="btn" type="button" data-close>Close</button></div></div>`);
   };
   function cornerDie() {
-    const r = s && s.last_roll;
-    $("cornerdie").innerHTML = D.dice[stone][(r ? r.r : 20) - 1] + `<span class="cap">${r ? "rolled " + r.r : "d20"}</span>`;
+    const r = s && s.last_roll, trio = s && s.last_trio;
+    if (trio && trio.length) { $("cornerdie").innerHTML = `<span class="trio">${trio.map((t) => (D.dice[t.die] || D.dice[stone])[t.r - 1]).join("")}</span><span class="cap">${trio.map((t) => t.r).join(" · ")}</span>`; return; }
+    $("cornerdie").innerHTML = (D.dice[r && r.die] || D.dice[stone])[(r ? r.r : 20) - 1] + `<span class="cap">${r ? "rolled " + r.r : "d20"}</span>`;
   }
   $("cornerdie").onclick = () => {
     const r = s.last_roll;
@@ -954,7 +976,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       });
       refresh(s.before);
     },
-    async decide(c, i, list, tone) {
+    async decide(c, i, list, tone, letbe) {
       const box = $("decide");
       if (c.rolled && Object.values(c.effects || {}).some(Array.isArray)) { const e = $("card-" + i).querySelector(".eff"); if (e) e.textContent = E.effectsText(c.rolled); }
       document.querySelectorAll(".card").forEach((el) => el.classList.remove("active"));
@@ -966,12 +988,13 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
         <div class="advice">${list.map((p, k) => { const a = E.ADVISORS[p.who];
           return `<button class="prop" type="button" data-i="${k}">${coin(p.who)}<span class="who">${esc(a.name)} <span class="tag ${p.risk}">${p.risk}</span></span>
             <span class="say">“${esc(p.say)}”</span><span class="what">${orderIcon(p.order, 30)}<span>${esc(E.describe(s, p.order))} <small>· ${esc(costText(p.order))}</small></span></span>
-            ${p.gamble ? `<span class="gamble">${D.dice[stone][19]}<span><b>A gamble: d20 ${p.gamble.bonus >= 0 ? "+" : "−"} ${Math.abs(p.gamble.bonus)}, need ${p.gamble.target}</b> (his ${esc(p.gamble.stat)}). Win: ${esc(p.gamble.win)}. Lose: ${esc(p.gamble.lose)}.</span></span>` : ""}</button>`; }).join("")
+            ${checkHTML(p.check)}</button>`; }).join("")
           || `<p class="sum">Your council has nothing it can afford to propose.</p>`}</div>
         <div class="own"><label for="ownwords" class="eyebrow" style="margin:0">Or your own order</label>
           <textarea id="ownwords" placeholder="${tone === "bad" ? "Buy 2 months of grain from the merchants" : "Plant olives"}"></textarea>
-          <div class="row"><button class="btn small" type="button" id="owngo">Give the order</button><button class="btn small quiet" type="button" id="letbe">Let it be</button></div>
-          <div id="ownans"></div></div>`;
+          <div class="row"><button class="btn small" type="button" id="owngo">Ask the scribe</button></div>
+          <div id="ownans"></div></div>
+        <button class="letbe" type="button" id="letbe"><span style="color:var(--gold-pale)">Let it be: give no order and see how it falls</span>${checkHTML(letbe)}</button>`;
       box.hidden = false;
       box.scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "nearest" });
       const pick = await new Promise((res) => {
@@ -986,18 +1009,46 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
           if (!r.orders.length) { say(r.reply); return; }
           const o = r.orders[0], problem = E.canDo(s, o);
           if (problem) { say(`${r.reply}\n\nBut it cannot be done: ${problem}`); return; }
-          res({ kind: "order", order: o });
+          const ch = E.checkFor(s, c, { kind: "order", order: o });
+          $("ownans").innerHTML = `<div class="bubble">${esc(r.reply)}</div><button class="prop" type="button" id="owncommit" style="margin-top:8px"><span class="what" style="grid-column:1/-1">${orderIcon(o, 30)}<span>${esc(E.describe(s, o))}</span></span>${checkHTML(ch)}</button>`;
+          $("owncommit").onclick = () => res({ kind: "order", order: o });
         };
       });
       box.hidden = true;
       $("cards").classList.remove("deciding"); $("card-" + i).classList.remove("active");
       return pick;
     },
-    async decided(c, i, pick) {
+    async decided(c, i, pick, check) {
       const eff = $("card-" + i).querySelector(".eff");
-      const text = !pick ? "Answered" : pick.kind === "advice" ? "Advice taken" : pick.kind === "order" ? "Your own order" : "Let it be";
-      eff.className = "eff done"; eff.textContent = "✓ " + text;
+      const text = pick.kind === "option" ? "Answered" : pick.kind === "advice" ? "Advice taken" : pick.kind === "order" ? "Your own order" : "Let it be";
+      eff.className = "eff pending"; eff.textContent = `${text} · ${check.chance}% on the ${check.die} die`;
       refresh(s.before);
+    },
+    /** The moment of the season: the three dice, thrown together. */
+    async throwDice(decisions, results) {
+      $("cardhint").textContent = "The three decisions are made. Throw the dice.";
+      modal(`<div class="dialog throw" role="dialog" aria-label="The dice of the season"><p class="eyebrow" style="margin:0">The season's dice</p><h2 style="margin:0">Fortune decides</h2>
+        <div class="dice3">${decisions.map((d, k) => `<div class="one" id="d3-${k}"><span class="ct">${esc(d.card.title)}</span><span class="sub">${esc(DIE_LABEL[d.check.die] || d.check.die)} · DC ${d.check.dc} · ${d.check.chance}%</span>
+          <div class="die">${(D.dice[d.check.die] || D.dice[stone])[19]}</div><span class="tier" id="t3-${k}"></span><span class="sub" id="s3-${k}">&nbsp;</span></div>`).join("")}</div>
+        <div class="row" style="justify-content:center"><button class="btn" type="button" id="throw">Throw the dice</button><button class="btn" type="button" id="thrown" hidden>See what happened</button></div></div>`);
+      await new Promise((go) => ($("throw").onclick = go));
+      $("throw").hidden = true;
+      clatter(); setTimeout(clatter, 140); setTimeout(clatter, 260);
+      decisions.forEach((d, k) => $("d3-" + k).classList.add("spin"));
+      const faces = (k) => D.dice[decisions[k].check.die] || D.dice[stone];
+      for (let t = 0; t < (reduce() ? 1 : 10); t++) { decisions.forEach((d, k) => { $("d3-" + k).querySelector(".die").innerHTML = faces(k)[Math.floor(Math.random() * 20)]; }); await sleep(60 + t * 8); }
+      for (let k = 0; k < results.length; k++) {
+        const r = results[k], el = $("d3-" + k);
+        el.classList.remove("spin"); el.querySelector(".die").innerHTML = faces(k)[r.r - 1];
+        $("t3-" + k).textContent = r.tag; $("t3-" + k).className = "tier " + r.tier;
+        $("s3-" + k).textContent = `rolled ${r.r}${r.bonus ? ` ${r.bonus > 0 ? "+" : "−"} ${Math.abs(r.bonus)} = ${r.total}` : ""} against ${r.dc}`;
+        if (r.tier === "disaster") rumble(); else if (r.tier === "triumph") gong();
+        await sleep(reduce() ? 50 : 450);
+      }
+      s.last_trio = results.map((r) => ({ die: r.die, r: r.r }));
+      const done = $("thrown"); done.hidden = false; done.focus();
+      await new Promise((go) => (done.onclick = go));
+      unmodal(); cornerDie();
     },
     async cardChoice(c, opts) {
       const i = seasonCards.indexOf(c);
@@ -1005,7 +1056,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       if (i >= 0) { $("card-" + i).classList.add("active"); $("cards").classList.add("deciding"); }
       const box = $("decide");
       box.innerHTML = `<p class="eyebrow">${E.DECK_LABEL[c.deck]} · your decision</p><h2>${esc(c.title)}</h2>
-        <p class="voice">${esc(String(c.choice.prompt).replace(/\s+/g, " "))}</p><div class="choice" style="margin-top:10px">${options(opts)}</div>`;
+        <p class="voice">${esc(String(c.choice.prompt).replace(/\s+/g, " "))}</p><div class="choice" style="margin-top:10px">${opts.map((o, k) => `<button class="opt" type="button" data-i="${k}"><span class="key">${"ABCDEFG"[k]}</span><span class="what">${esc(o.label)}</span><span class="sub">${esc(o.sub || "")}</span>${checkHTML(o.check)}</button>`).join("")}</div>`;
       box.hidden = false;
       box.scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "nearest" });
       const pick = await waitPick(box);
@@ -1123,7 +1174,8 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const sugs = E.suggestions(s);
     const costText = (o) => { const [c0, m] = E.costOf(s, o); return [c0 ? E.intc(c0) + " den" : "", ...Object.entries(m).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ") || "costs nothing"; };
     box.innerHTML = `<p class="eyebrow">The scribe</p><h2>One order of your own</h2>
-      <p class="voice">“${esc(E.situation(s))} The cards are dealt with. One more order this season, or none.”</p>
+      <p class="voice">“${esc(E.situation(s))} The dice have fallen. One more order this season: make good what went wrong, or make the most of what went right.”</p>
+      ${(s.season_outcomes || []).length ? `<p class="sum" style="margin:6px 0 0">${s.season_outcomes.map(esc).join(" · ")}</p>` : ""}
       <div class="sugs" style="margin-top:12px">${sugs.map((p, k) => { const a = E.ADVISORS[p.who];
         return `<button class="prop" type="button" data-sug="${k}">${coin(p.who)}<span class="who">${esc(a.name)}</span>
           <span class="say">“${esc(p.say)}”</span><span class="what">${orderIcon(p.order, 30)}<span>${esc(E.describe(s, p.order))} <small>· ${esc(costText(p.order))}</small></span></span></button>`; }).join("")
@@ -1139,7 +1191,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       const text = $("words").value.trim(); if (!text) return;
       const out = $("answer");
       out.innerHTML = `<div class="bubble wait">The scribe is writing…</div>`; $("read").disabled = true;
-      const r = await askScribe(text, "");
+      const r = await askScribe(text, (s.season_outcomes || []).length ? `This season's dice: ${s.season_outcomes.join("; ")}. Help the governor make good the losses or make the most of the successes.` : "");
       $("read").disabled = false;
       out.innerHTML = `<div class="bubble">${esc(r.reply)}</div>`;
       if (r.orders.length) addOrders(r.orders);
@@ -1317,8 +1369,8 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     const history = (s.season_cards || []).map((id) => D.cards.find((c) => c.id === id)).filter((c) => c && String(c.historical_note || "").trim())
       .map((c) => `History (${c.title}): ${String(c.historical_note).replace(/\s+/g, " ")}`);
     const list = notes.map((t) => `<li>${esc(t)}</li>`).join("") + history.map((t) => `<li class="history">${esc(t)}</li>`).join("");
-    const WIN = /finished|slides? into the harbour|comes home (safely|early)|sails for Rome|is pleased|cleared:|wins a season's grace|approves|is glad|learns a great deal|success|\+[0-9]/i;
-    const WOE = /hungry|unrest|desert|storm|pirates|only part of its tribute|feels ignored|sulks|uprising|failure|idle|nowhere to live|not fully paid|Warning/i;
+    const WIN = /triumph|finished|slides? into the harbour|comes home (safely|early)|sails for Rome|is pleased|cleared:|wins a season's grace|approves|is glad|learns a great deal|success|\+[0-9]/i;
+    const WOE = /hungry|unrest|desert|storm|pirates|only part of its tribute|feels ignored|sulks|uprising|failure|idle|nowhere to live|not fully paid|Warning|disaster|a setback|lapses|goes down|thrown down/i;
     const woes = notes.filter((n) => WOE.test(n)), wins = notes.filter((n) => !WOE.test(n) && WIN.test(n));
     for (const n of ["treasury", "loyalty", "favour", "people"]) {
       const d = s[n] - (before[n] || 0), big = n === "treasury" ? 500 : n === "people" ? 80 : 5;
@@ -1342,6 +1394,17 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     $("cardsbar").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
   }
 
+  const DIE_LABEL = { opal: "opal", aquamarine: "aquamarine", onyx: "onyx" };
+  /** A check, shown before you choose: the twenty faces coloured by what they mean, the chance, the DC and every bonus by name. */
+  function checkHTML(ch) {
+    if (!ch) return "";
+    const need = ch.dc - ch.bonus;
+    const seg = Array.from({ length: 20 }, (_, k) => { const f = k + 1, t = f === 1 ? "disaster" : f === 20 ? "triumph" : f >= need ? "success" : "setback"; return `<i class="t-${t}" title="${f}: ${t}"></i>`; }).join("");
+    const parts = ch.parts.length ? ch.parts.map(([l, v]) => `${esc(l)} ${v > 0 ? "+" : "−"}${Math.abs(v)}`).join(" · ") : "no bonus";
+    return `<span class="check"><span class="strip" aria-hidden="true">${seg}</span>
+      <span class="odds"><b>${ch.chance}%</b> <span class="die-name">${esc(DIE_LABEL[ch.die] || ch.die)}</span> d20 ${ch.bonus >= 0 ? "+" : "−"} ${Math.abs(ch.bonus)} against DC ${ch.dc}</span>
+      <span>${parts}</span><span class="stakes">Success: ${esc(ch.win)}. Setback: ${esc(ch.lose)}. A 1 is a disaster, a 20 a triumph.</span></span>`;
+  }
   function scoreHTML() {
     const sc = E.score(s);
     return `<p class="eyebrow" style="margin:14px 0 4px">What your successor finds</p><table class="score"><tbody>${sc.parts.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join("")}
@@ -1352,7 +1415,7 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     refresh();
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, on the Gulf of Rhizon</p><h2>Tiberius sends you to govern Acruvium</h2>
-      <p class="voice">Each turn is one season. Three cards are turned over one by one: the land, the sea and the gods. On each card two of your council propose what to do, one cautious and one bold. The bold one is a gamble on the d20. Then one more order of your own, and the season's review.</p>
+      <p class="voice">Each turn is one season. Three cards are turned over one by one: the land, the sea and the gods. On each card two of your council propose what to do, one cautious and one bold, and you see the odds of each before you choose. When all three are decided, three dice are thrown together: opal for the land, aquamarine for the sea, onyx for the gods. Then one more order of your own, to make good the losses or make the most of a success.</p>
       <p class="voice" style="margin-top:8px">Letters from Rome arrive on their true dates: the fall of Sejanus, the death of Tiberius, Caligula, Claudius. Beyond your fields live the Illyrian tribes; their land can be won with gifts or with the sword. Your governorship ends in the winter of AD 42.</p>
       <p class="sum">Feed the people first: a town at peace grows every season, and more people pay more taxes. Things take time. A harbour takes two years to build and a temple three; vines give their first wine a year after planting. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
       <div class="row"><button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;
@@ -1361,8 +1424,8 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
 
   // ---------- options, new game, boot ----------
   function opts() {
-    $("opts").innerHTML = `Sound <button type="button" id="snd" aria-pressed="${sound}">${sound ? "on" : "off"}</button> · Die ` +
-      Object.keys(D.dice).map((k) => `<button type="button" data-stone="${k}" aria-pressed="${k === stone}">${k}</button>`).join("");
+    $("opts").innerHTML = `Sound <button type="button" id="snd" aria-pressed="${sound}">${sound ? "on" : "off"}</button> · Die for ships and battles ` +
+      ["obsidian", "amber", "malachite"].filter((k) => D.dice[k]).map((k) => `<button type="button" data-stone="${k}" aria-pressed="${k === stone}">${k}</button>`).join("");
     $("snd").onclick = () => { sound = !sound; store.set(SOUND_KEY, sound ? "on" : "off"); opts(); if (sound) rustle(); };
     $("opts").querySelectorAll("[data-stone]").forEach((b) => (b.onclick = () => { stone = b.dataset.stone; store.set(STONE_KEY, stone); opts(); cornerDie(); }));
   }
