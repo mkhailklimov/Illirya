@@ -112,7 +112,7 @@ if __name__ == "__main__":
         "numbers": read_csv("numbers.csv"), "decrees": read_csv("decrees.csv"),
         "seasons": read_csv("seasons.csv"), "advisors": read_csv("advisors.csv"),
         "winds": read_csv("winds.csv"), "buildings": read_csv("buildings.csv"),
-        "goods": read_csv("goods.csv"), "towns": read_csv("towns.csv"),
+        "goods": read_csv("goods.csv"), "towns": read_csv("towns.csv"), "tribes": read_csv("tribes.csv"),
         "cards": cards(), "dice": dice(), "emblems": emblems(), "map": dict(MAP, land=coastline()),
     }
     with open(os.path.join(HERE, "data.js"), "w", encoding="utf-8") as f:

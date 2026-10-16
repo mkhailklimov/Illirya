@@ -129,6 +129,21 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v4 (16 October 2026): what changed
+
+The browser game (`web/engine.js`) plays by these rules; where they differ from the sections below, v4 wins.
+
+- **Taxes:** low 0.25 denarii a person a season (+1 loyalty a season), normal 0.40 (0), high 0.55 (−2). Raising taxes still costs −6 loyalty at once.
+- **Peace and bread:** in a season with no calamity and no hunger, grain 3+ and loyalty below 50, loyalty recovers by 1.
+- **Growth in peace:** every season with no calamity (no quake, raid lost, battle or deaths on a card), grain 2+ and loyalty 40+, the people grow by 1.5% (2% at loyalty 60+), up to the housing. More people eat more grain and pay more tax.
+- **Gambles:** a *risky* proposal on a card is a d20 + the advisor's talent − 3 (+1 if his mood is 4+), need 10: Antistius uses strategy, Epicadus experience, Felix logic, Nikandros and Tertius persuasion. Win or lose changes the order: a building in half the time or half again the price and a season late; a convoy +30% or half its cargo lost; 75 recruits or 25; a festival or sacrifice twice the effect or none; and so on (`GAMBLE_TEXT` in the engine).
+- **Earthquake:** about 1% of the land deck, never twice within 16 seasons; kills 50–100 people, costs 600 denarii, 10 timber and 5 loyalty, and throws down one finished building in town (two seasons to rebuild). A card effect can now be a range, `people: [-100, -50]`, rolled when the card is turned.
+- **Letters from Rome** (`events/h01`–`h07`, `date:` field): they come as the sea card on their date and never by chance. Autumn 31 Sejanus falls; Summer 33 the credit crisis; Spring 37 Tiberius dies, Gaius (Caligula) succeeds; Summer 39 Gaius wants gold; Summer 40 Gaius demands worship; Winter 40 Gaius murdered, Claudius; Spring 42 Scribonianus, governor of Dalmatia, rebels. The decree honouring the Emperor follows the reigning emperor.
+- **The tribes** (`rules/tribes.csv`): the Docleatae (4 field plots), the Ardiaei (3) and the Pirustae (3) hold the land beyond the fields. *Treat with them*: their gifts in denarii and goods, d20 + the better talker's persuasion − 3 − the tribe's strength (+1 for every failed try, −3 if hostile), need 11; success makes them allies and opens their land. *March against them*: 200 denarii, at least 150 soldiers, not in winter; d20 + soldiers/50 + battle bonus + Antistius's strategy − 3 − strength, need 12 (Antistius may lead the charge); victory takes the land and loot (−5 to −20 men), defeat costs 25–50 men; either way the tribe is hostile for 12 seasons, and raids are three times as likely while any tribe is hostile.
+- **The end:** the governorship ends after Winter AD 42 (turn 52). The score: people/100 + loyalty + Roman favour + 3 a building + treasury/500 + 12 an allied tribe (8 a conquered one) + seasons governed.
+
+Bot simulation (40 games per style, to AD 42): economy first, army late: 24 finish, score 426, about 6,250 people, almost all tribes won; always cautious: 19 finish, 367; random: 2, 213; army first: 0 (all starve), 218.
+
 ## Rules v2 (13 October 2026): what changed
 
 The browser game (`web/engine.js`) plays by these rules; where they differ from the sections below, v2 wins. The terminal game `play.py` stays at v1.

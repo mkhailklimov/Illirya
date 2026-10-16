@@ -106,6 +106,14 @@ The owner's view of the long-term strategy the game should reward. The rules and
 - **Rome and the gods still press from the start** (tribute, favour, omens), so the governor cannot ignore stage 4 entirely. That tension is the game.
 - **In the prototype today:** stage 1 exists (wheat, vineyard, olives, pasture, fishery, salt pans); stage 2 only partly (weavers, woodcutters, mine; no mill, smithy, armoury, tannery or pithoi yet); stage 3 partly (market, ships, convoys, merchants; no roads); stage 4 exists (temple, barracks, recruit). Next balance passes should fill in stage 2 and add roads, and check with the bot simulation that the four-stage order beats the alternatives.
 
+## 4b. Rules v4: dice, history, the tribes (added 16 October 2026)
+
+- **Risky advice is a gamble** on the d20 with the advisor's talent; the stakes are written on the proposal.
+- **Letters from Rome** come on their real dates (Sejanus 31, the credit crisis 33, Tiberius and Caligula 37, Caligula's demands 39–40, Claudius 41, Scribonianus 42); the game ends after Winter AD 42 with a score.
+- **The tribes beyond the fields** (Docleatae, Ardiaei, Pirustae): their land is won with gifts or with the sword; war makes them raid for years. This is the late-game military path of §4a: the economy first, then the army to grow.
+- **Peace grows the town** every season; calamities stop the growth.
+- The free order is three prepared choices and an AI scribe who also answers questions.
+
 ## 5. Trade (from the "Merchant of the Adriatic" idea)
 
 - Send a **convoy** by sea or land to a real town. Starting map, nearest first: Risinium, Butua (Budva), Epidaurum (Cavtat), Scodra, Lissus, Narona, Dyrrachium; further away Salona, Brundisium, Aquileia.

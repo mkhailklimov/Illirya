@@ -1,4 +1,4 @@
-// Illyria: AD 30 — the rules engine (rules v3, 15 Oct 2026: a decision on every card, then one free order).
+// Illyria: AD 30 — the rules engine (rules v4, 16 Oct 2026: gambles on risky advice, letters from Rome, the tribes, growth in peace).
 // The web game is now the main playtest tool; rules/play.py is frozen at the v1 rules.
 // The rules data (numbers, goods, towns, decrees, seasons, advisors, winds, buildings, cards)
 // comes from data.js, built by web/build.py from rules/*.csv and events/*.yaml.
@@ -9,7 +9,7 @@
   // --- Formula constants (formulas.md) ---
   const MAX_ORDERS = 12;                 // most orders validate() accepts in one go
   const FREE_ORDERS = 1;                 // after the three card decisions, the governor gives one order of his own
-  const TAX_RATES = { low: [0.25, +2], normal: [0.5, 0], high: [0.75, -4] };
+  const TAX_RATES = { low: [0.25, +1], normal: [0.4, 0], high: [0.55, -2] };   // denarii a person a season, loyalty a season (v4)
   const TAX_STEPS = ["low", "normal", "high"];
   const ARMY_PAY = 4, TRIBUTE = 3000, TRIBUTE_PAID_FAVOUR = 5, TRIBUTE_MISSED_FAVOUR = -20, TRIBUTE_DEBT_PENALTY = 1.5;
   const GRAIN_EATEN = 3, GRAIN_BASE_EATERS = 4000, GRAIN_PRICE = 500;
@@ -24,7 +24,15 @@
   const COUNCIL_ORDER = ["treasurer", "economist", "general", "fleet", "priest"];
   const FESTIVAL_WINE_KEEP = 4;
   const MERCHANT_LOAD = 20, MERCHANT_MARKUP = 1.5;   // passing merchants: up to 20 loads at half again the base price
-  const FIELD_PLOTS_MAX = 16, CLEAR_SEASONS = 2;     // clearing new fields
+  const FIELD_PLOTS_MAX = 16, CLEAR_SEASONS = 2;     // clearing new fields (the tribes' land comes on top)
+  // Rules v4
+  const GROWTH_BASE = 0.015, GROWTH_HAPPY = 0.005;   // people per season in peace; +0.5% when loyalty is 60 or more
+  const GROWTH_MIN_LOYALTY = 40, GROWTH_MIN_GRAIN = 2;
+  const GAMBLE_DIE = 20, GAMBLE_TARGET = 10;          // a risky proposal is a d20 + the advisor's talent
+  const GAMBLE_STAT = { general: "strategy", fleet: "experience", treasurer: "logic", economist: "persuasion", priest: "persuasion" };
+  const TREATY_TARGET = 11, BATTLE_TARGET = 12, MARCH_MIN_ARMY = 150, HOSTILE_SEASONS = 12, RAID_WEIGHT = 3;
+  const END_TURN = 52;                               // Winter AD 42: Claudius sends a successor
+  const EMPERORS = [[1, "Tiberius"], [29, "Gaius"], [44, "Claudius"]];   // from turn: Spring 37, Winter 40
 
   const num = (v, d = 0) => { if (v === null || v === undefined) return d; if (typeof v === "number") return v; v = String(v).trim(); return v ? parseFloat(v) : d; };
   const byId = (rows) => Object.fromEntries(rows.map((r) => [r.id, r]));
@@ -39,6 +47,8 @@
   const TOWNS = D.towns.map((t) => ({ ...t, sellsTo: parseList(t.sells), buysFrom: parseList(t.buys), seasons: num(t.seasons, 1) }));
   const TOWN = byId(TOWNS);
   const CARDS = D.cards;
+  const TRIBES = (D.tribes || []).map((t) => ({ ...t, plots: num(t.plots), strength: num(t.strength) }));
+  const TRIBE = byId(TRIBES);
   const DECK_LABEL = Object.fromEntries(DECKS);
   const nameOf = (n) => (RULES[n] ? RULES[n].name : GOOD[n] ? GOOD[n].name : n);
   const unitOf = (n) => (RULES[n] ? RULES[n].unit : GOOD[n] ? GOOD[n].unit : "");
@@ -61,7 +71,8 @@
   function newGame() {
     const s = Object.fromEntries(CORE.map((n) => [n, num(RULES[n].start)]));
     for (const g of GOODS_LIST) s[g.id] = num(g.start);
-    Object.assign(s, { version: 2, turn: 1, tax: "normal", buildings: startBuildings(), shipyard: [], convoys: [], tribute_debt: 0,
+    Object.assign(s, { version: 4, turn: 1, card_last: {}, calamity_turn: 0,
+      tribes: Object.fromEntries(TRIBES.map((t) => [t.id, { state: "free", tries: 0, hostile_until: 0 }])), tax: "normal", buildings: startBuildings(), shipyard: [], convoys: [], tribute_debt: 0,
       field_plots: FIELD_PLOTS, clearing: [], wind: "E", current: 1, weather_turn: 0, forecast: null, hunger_streak: 0, last_festival: -9, once_fired: [], over: null,
       council: newCouncil(), last_roll: null });
     return s;
@@ -78,7 +89,15 @@
   const built = (s, kind) => s.buildings.filter((b) => b.kind === kind && isDone(s, b)).length;
   const stat = (s, field) => s.buildings.filter((b) => isDone(s, b)).reduce((t, b) => t + num(BLD[b.kind][field]), 0);
   const plotsUsed = (s, zone) => s.buildings.filter((b) => BLD[b.kind].zone === zone).length;
-  const fieldPlots = (s) => s.field_plots ?? FIELD_PLOTS;
+  const clearedPlots = (s) => s.field_plots ?? FIELD_PLOTS;
+  const tribeState = (s, id) => (s.tribes || {})[id] || { state: "free", tries: 0, hostile_until: 0 };
+  const tribeWon = (s, id) => ["ally", "conquered"].includes(tribeState(s, id).state);
+  const tribalPlots = (s) => TRIBES.filter((t) => tribeWon(s, t.id)).reduce((a, t) => a + t.plots, 0);
+  const hostile = (s, id) => tribeState(s, id).hostile_until > s.turn;
+  const anyHostile = (s) => TRIBES.some((t) => hostile(s, t.id));
+  /** Field plots open now: the twelve, the cleared hillside, and the land won from the tribes. */
+  const fieldPlots = (s) => clearedPlots(s) + tribalPlots(s);
+  const emperorOf = (turn) => EMPERORS.filter(([t]) => turn >= t).pop()[1];
   const zonePlots = (s, zone) => (zone === "town" ? TOWN_PLOTS : fieldPlots(s));
   /** Goods the passing merchants sell (no luxuries), and their price at the quay. */
   const MERCHANT_GOODS = ["grain"].concat(GOODS_LIST.filter((g) => g.origin !== "luxury").map((g) => g.id));
@@ -118,7 +137,9 @@
       if (!m) continue;
       const [, name, op, k] = m;
       let v;
-      if (/^-?\d+$/.test(name)) v = parseInt(name, 10);
+      const talent = name.match(/^(\w+?)_(experience|decisions|strategy|administration|persuasion|logic)$/);
+      if (talent && ADVISORS[talent[1]]) v = num(ADVISORS[talent[1]][talent[2]], 3) - 3;
+      else if (/^-?\d+$/.test(name)) v = parseInt(name, 10);
       else if (typeof s[name] === "number") v = s[name];
       else if (BUILDING_LIST.length && name in BUILDING_LIST[0]) v = stat(s, name);
       else v = 0;
@@ -232,7 +253,7 @@
     else if (south > north) { say.fleet = `The wind is with us for a voyage south (${pct(south)} on prices).`; wants.fleet = toward("south"); }
     else say.fleet = "The sea is open; wind and current favour neither course.";
     if (s.loyalty < 40) { say.priest = "The people murmur against you. A festival would please the gods and men alike."; wants.priest = decreeIs("hold_festival"); }
-    else if (s.favour < 40) { say.priest = "The omens from Rome are cold. Honour Tiberius, or send gifts."; wants.priest = decreeIs("honour_rome", "honour_tiberius"); }
+    else if (s.favour < 40) { say.priest = `The omens from Rome are cold. Honour ${emperorOf(s.turn)}, or send gifts.`; wants.priest = decreeIs("honour_rome", "honour_tiberius"); }
     else say.priest = "The omens are calm. Still, the gods like to see the governor at the altar.";
     return { wants, say };
   }
@@ -246,6 +267,10 @@
     let c = num(d.cost_treasury);
     if (o.id === "send_convoy" && o.town) c += buyCost(s, o);
     if (o.id === "merchants") c += merchantCost(o);
+    if (o.id === "treat_tribe" && TRIBE[o.tribe]) {
+      const t = TRIBE[o.tribe], k = hostile(s, t.id) ? 1.5 : 1;
+      return [Math.round(num(t.gifts_treasury) * k), Object.fromEntries(Object.entries(parseList(t.gifts)).map(([g, q]) => [g, Math.round(q * k)]))];
+    }
     return [c, parseList(d.cost)];
   }
   function describe(s, o) {
@@ -253,6 +278,9 @@
     if (!d) return o.id;
     if (o.id === "build") { const b = BLD[o.building]; return b ? (b.zone === "field" && ["vineyard", "olives", "wheat"].includes(b.id) ? `Plant ${b.name.toLowerCase()}` : `Build ${b.name.toLowerCase()}`) : "Build (what?)"; }
     if (o.id === "merchants") return Object.keys(o.buy || {}).length ? `Buy from the merchants at the quay: ${listText(o.buy)}` : d.name;
+    if (o.id === "honour_tiberius") return `Decree honouring ${emperorOf(s.turn)}`;
+    if (o.id === "treat_tribe") return `Treat with the ${TRIBE[o.tribe] ? TRIBE[o.tribe].name : "tribes"}`;
+    if (o.id === "march_tribe") return `March against the ${TRIBE[o.tribe] ? TRIBE[o.tribe].name : "tribes"}`;
     if (o.id !== "send_convoy") return d.name;
     const t = TOWN[o.town];
     const parts = [];
@@ -282,13 +310,20 @@
         if (have >= Math.trunc(num(b.max, 99))) { problems.push(`Acruvium already has as many ${b.name.toLowerCase()} as it can hold (${Math.trunc(num(b.max))}).`); return; }
       }
       if (o.id === "build_ship" && Math.trunc(s.ships) + s.shipyard.length + newShips >= berths(s)) { problems.push(`Epicadus: no free berth for another ship (berths for ${berths(s)}); a second harbour first.`); return; }
-      if (o.id === "clear_land" && fieldPlots(s) + (s.clearing || []).length + clears >= FIELD_PLOTS_MAX) { problems.push(`The hillside is used up: at most ${FIELD_PLOTS_MAX} field plots.`); return; }
+      if (o.id === "clear_land" && clearedPlots(s) + (s.clearing || []).length + clears >= FIELD_PLOTS_MAX) { problems.push(`The hillside is used up: at most ${FIELD_PLOTS_MAX} field plots.`); return; }
       if (o.id === "merchants") {
         if (season.sailing === "no") { problems.push("No merchant ships call in winter (mare clausum)."); return; }
         const bad = Object.keys(o.buy || {}).filter((g) => !MERCHANT_GOODS.includes(g));
         if (bad.length) { problems.push(`The merchants do not carry ${bad.map((g) => nameOf(g).toLowerCase()).join(", ")}.`); return; }
         if (!loads(o)) { problems.push("The merchants ask: what will you buy?"); return; }
         if (loads(o) > MERCHANT_LOAD) { problems.push(`The merchants can spare ${MERCHANT_LOAD} loads a season (a month of grain is ${GRAIN_LOAD}); this is ${loads(o)}.`); return; }
+      }
+      if (o.id === "treat_tribe" || o.id === "march_tribe") {
+        const t = TRIBE[o.tribe];
+        if (!t) { problems.push("Which tribe? The Docleatae, the Ardiaei or the Pirustae."); return; }
+        if (tribeWon(s, t.id)) { problems.push(`The land of the ${t.name} is already ours.`); return; }
+        if (o.id === "march_tribe" && army < MARCH_MIN_ARMY) { problems.push(`Antistius: ${MARCH_MIN_ARMY} soldiers at least to march into the hills; we have ${Math.trunc(army)}.`); return; }
+        if (o.id === "march_tribe" && season.season === "Winter") { problems.push("Antistius: no one marches into the mountains in winter."); return; }
       }
       if (o.id === "dismiss" && army < 50) { problems.push("There are not 50 soldiers left to dismiss."); return; }
       if (o.id === "send_convoy") {
@@ -443,6 +478,79 @@
     return "Governor, the town is quiet and the accounts are in order.";
   }
 
+  // --- Gambles (rules v4): a risky proposal is decided by a d20 + the advisor's talent ---
+  const GAMBLE_TEXT = {
+    build: ["built in half the time", "half again the price, and a season late"],
+    send_convoy: ["+30% on what she sells", "a storm on the way out: half the cargo lost"],
+    recruit: ["75 men instead of 50", "half the recruits run off; loyalty −2"],
+    hang_brigands: ["the town cheers: loyalty +3", "a riot at the gallows: loyalty −4"],
+    raise_taxes: ["the people pay without a murmur", "they pay, and curse you: loyalty −6 more"],
+    build_ship: ["ready next season", "the keel cracks: 150 denarii more"],
+    hold_festival: ["the best games in memory: twice the effect", "rain and a brawl: no effect"],
+    visit_temple: ["a perfect sacrifice: twice the effect", "the liver is malformed: no effect"],
+    honour_tiberius: ["the Emperor hears of it: twice the effect", "nobody in Rome notices"],
+    honour_rome: ["the gifts are praised: twice the effect", "the gifts are thought mean: no effect"],
+    merchants: ["the merchants throw in a fifth more", "they cheat on the measure: a fifth less"],
+    clear_land: ["cleared in one season", "rocks everywhere: a season more"],
+  };
+  const DEFAULT_GAMBLE = ["fortune smiles: +150 denarii", "it goes badly: −150 denarii"];
+  function gambleOf(s, who, o) {
+    const a = ADVISORS[who] || {}, stat = GAMBLE_STAT[who] || "experience";
+    const bonus = num(a[stat], 3) - 3 + (s.council[who] && s.council[who].mood >= 4 ? 1 : 0);
+    const [win, lose] = GAMBLE_TEXT[o.id] || DEFAULT_GAMBLE;
+    return { who, die: GAMBLE_DIE, bonus, target: GAMBLE_TARGET, stat, win, lose };
+  }
+
+  // --- The tribes beyond the fields (rules v4): diplomacy and gold, or sword and fire ---
+  /** The dice for each way to a tribe's land, for the page to show before you choose. */
+  function tribeOdds(s, id) {
+    const t = TRIBE[id], st = tribeState(s, id);
+    const talker = num(ADVISORS.economist.persuasion, 3) >= num(ADVISORS.priest.persuasion, 3) ? "economist" : "priest";
+    const treat = Math.max(-6, Math.min(6, num(ADVISORS[talker].persuasion, 3) - 3 + st.tries - t.strength - (hostile(s, id) ? 3 : 0)));
+    const march = Math.max(-6, Math.min(6, Math.floor(s.army / 50) + Math.trunc(stat(s, "battle_bonus")) + num(ADVISORS.general.strategy, 3) - 3 - t.strength));
+    const chance = (bonus, target) => Math.max(5, Math.min(95, Math.round(100 * (21 - Math.max(2, Math.min(20, target - bonus))) / 20)));
+    const [tc, tm] = costOf(s, order("treat_tribe", { tribe: id }));
+    return { talker, treat: { bonus: treat, target: TREATY_TARGET, chance: chance(treat, TREATY_TARGET), cost: tc, mats: tm },
+      march: { bonus: march, target: BATTLE_TARGET, chance: chance(march, BATTLE_TARGET), cost: num(DECREE.march_tribe.cost_treasury), army: MARCH_MIN_ARMY } };
+  }
+  async function treatTribe(s, o, notes) {
+    const t = TRIBE[o.tribe], st = ((s.tribes = s.tribes || {})[t.id] = { ...tribeState(s, t.id) });
+    const talker = num(ADVISORS.economist.persuasion, 3) >= num(ADVISORS.priest.persuasion, 3) ? "economist" : "priest";
+    const bonus = Math.max(-6, Math.min(6, num(ADVISORS[talker].persuasion, 3) - 3 + st.tries - t.strength - (hostile(s, t.id) ? 3 : 0)));
+    const r = await roll(20, bonus, TREATY_TARGET, `${ADVISORS[talker].name} treats with the ${t.name}`);
+    if (r.ok) {
+      st.state = "ally"; st.hostile_until = 0;
+      s.loyalty += 2;
+      notes.push(`The chiefs of the ${t.name} accept the gifts and swear friendship: ${t.land} is open to us (${t.plots} new field plots).`);
+    } else {
+      st.tries += 1;
+      notes.push(`The ${t.name} take the gifts and ask for more. Their chiefs will listen better next time (+1 on the die).`);
+    }
+  }
+  async function marchTribe(s, o, notes) {
+    const t = TRIBE[o.tribe], st = ((s.tribes = s.tribes || {})[t.id] = { ...tribeState(s, t.id) });
+    const bonus = Math.max(-6, Math.min(6, Math.floor(s.army / 50) + Math.trunc(stat(s, "battle_bonus")) + num(ADVISORS.general.strategy, 3) - 3 - t.strength));
+    const res = await roll(20, bonus, BATTLE_TARGET, `Antistius marches against the ${t.name}`);
+    let ok = res.ok;
+    if (!ok && res.r !== 1 && res.total + LEAD_CHARGE_BONUS >= BATTLE_TARGET &&
+        await offerAbility(s, "general", `Let me lead the charge myself: +${LEAD_CHARGE_BONUS} turns this into a victory.`)) {
+      ok = true; notes.push("Marcus Antistius led the charge himself and turned the day.");
+    }
+    s.calamity_turn = s.turn;
+    if (ok) {
+      const dead = rint(5, 20), loot = parseList(t.loot);
+      st.state = "conquered"; st.hostile_until = s.turn + HOSTILE_SEASONS;
+      s.army -= dead; s.treasury += num(t.loot_treasury); for (const [g, q] of Object.entries(loot)) s[g] += q;
+      s.favour += 3; s.loyalty += 2;
+      notes.push(`Victory in the hills: ${t.land} is ours (${t.plots} new field plots), with ${intc(num(t.loot_treasury))} denarii and ${listText(loot)} in loot; ${dead} of our men fell. The ${t.name} will raid us for years.`);
+    } else {
+      const dead = rint(25, 50);
+      st.hostile_until = s.turn + HOSTILE_SEASONS;
+      s.army -= dead; s.loyalty -= 4; s.favour -= 2;
+      notes.push(`Defeat among the rocks: the ${t.name} ambush the column and ${dead} of our men do not come back. The tribe is now hostile.`);
+    }
+  }
+
   // --- Applying orders and resolving the season (formulas.md, in order) ---
   async function applyDecrees(s, orders, notes) {
     for (const o of orders) {
@@ -451,24 +559,38 @@
       s.treasury -= c;
       for (const [g, q] of Object.entries(mats)) s[g] -= q;
       const eff = effectsOf(d);
+      const win = o.boost === "win", lose = o.boost === "lose";
+      if (o.id === "merchants" && o.boost) for (const g of Object.keys(o.buy || {})) o.buy[g] = Math.max(0, Math.round(o.buy[g] * (win ? 1.2 : 0.8) * 10) / 10);
+      if (["hold_festival", "visit_temple", "honour_tiberius", "honour_rome"].includes(o.id) && o.boost) for (const n of Object.keys(eff)) eff[n] = win ? eff[n] * 2 : 0;
+      if (o.id === "raise_taxes" && o.boost) eff.loyalty = win ? 0 : (eff.loyalty || 0) * 2;
+      if (o.id === "hang_brigands" && o.boost) eff.loyalty = win ? 3 : -4;
+      if (o.id === "recruit" && win) eff.army = 75;
+      if (o.id === "recruit" && lose) { eff.army = 25; eff.loyalty = (eff.loyalty || 0) - 2; }
+      if (o.id === "build_ship" && lose) s.treasury -= 150;
+      if (!GAMBLE_TEXT[o.id] && o.boost && !["treat_tribe", "march_tribe"].includes(o.id)) s.treasury += win ? 150 : -150;
+      if (o.id === "treat_tribe") await treatTribe(s, o, notes);
+      else if (o.id === "march_tribe") await marchTribe(s, o, notes);
       if (d.id === "raise_taxes") s.tax = TAX_STEPS[TAX_STEPS.indexOf(s.tax) + 1];
       else if (d.id === "lower_taxes") s.tax = TAX_STEPS[TAX_STEPS.indexOf(s.tax) - 1];
       else if (d.id === "hold_festival") {
         if (s.last_festival === s.turn - 1) { eff.loyalty = (eff.loyalty || 0) / 2; notes.push("A second festival in a row pleases the people less."); }
         s.last_festival = s.turn;
       } else if (d.id === "build") {
-        const B = BLD[o.building], wait = Math.trunc(num(B.seasons_to_build));
+        const B = BLD[o.building], base = Math.trunc(num(B.seasons_to_build));
+        const wait = win ? Math.max(1, Math.ceil(base / 2)) : lose ? base + 1 : base;
+        if (lose) s.treasury -= Math.round(c / 2);
         s.buildings.push({ kind: B.id, done: s.turn + wait });
         notes.push(`Work begins on ${B.name.toLowerCase()}; ready in turn ${s.turn + wait}${num(B.matures) ? `, first yield ${num(B.matures)} seasons later` : ""}.`);
       } else if (d.id === "build_ship") {
-        s.shipyard.push(s.turn + 2);
-        notes.push("The keel of a new ship is laid on the slipway; she will be ready in two seasons.");
+        s.shipyard.push(s.turn + (win ? 1 : 2));
+        notes.push(`The keel of a new ship is laid on the slipway; she will be ready in ${win ? "one season" : "two seasons"}.`);
       } else if (d.id === "merchants") {
         for (const [g, q] of Object.entries(o.buy || {})) s[g] += q;
         notes.push(`Merchants at the quay sell you ${listText(o.buy)} for ${intc(merchantCost(o))} denarii.`);
       } else if (d.id === "clear_land") {
-        s.clearing = (s.clearing || []).concat([s.turn + CLEAR_SEASONS]);
-        notes.push(`Labourers start clearing the scrub for a new field; ready in turn ${s.turn + CLEAR_SEASONS}.`);
+        const wait = CLEAR_SEASONS + (win ? -1 : lose ? 1 : 0);
+        s.clearing = (s.clearing || []).concat([s.turn + wait]);
+        notes.push(`Labourers start clearing the scrub for a new field; ready in turn ${s.turn + wait}.`);
       } else if (d.id === "send_convoy") {
         if (seasonOf(s.turn)[0].sailing === "no") { useAbility(s, "fleet"); notes.push("Epicadus takes a ship out in winter, when no one else dares: his winter run is spent."); }
         await convoy(s, notes, o);
@@ -492,7 +614,9 @@
     }
     // goods leave the stores now; the money for purchases was paid with the order (costOf)
     for (const [g, q] of Object.entries(o.sell || {})) s[g] -= q;
-    const revenue = Object.entries(o.sell || {}).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "sell", deal), 0);
+    let revenue = Object.entries(o.sell || {}).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "sell", deal), 0);
+    if (o.boost === "win") revenue = Math.round(revenue * 1.3);
+    if (o.boost === "lose") { revenue = Math.round(revenue / 2); for (const g of Object.keys(o.buy || {})) o.buy[g] = Math.floor(o.buy[g] / 2); }
     if (deal) s.treasury += buyCost(s, o) - Object.entries(o.buy || {}).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "buy", deal), 0);
     if (delay) notes.push("Dead calm: the convoy waits a season in harbour before it can sail.");
     s.convoys.push({ town: t.id, out: s.turn, arrive: s.turn + t.seasons + delay, revenue, cargo: { ...(o.buy || {}) }, sold: { ...(o.sell || {}) } });
@@ -522,7 +646,7 @@
     for (const b of s.buildings) if (b.done === s.turn) notes.push(`${BLD[b.kind].name} finished.`);
     const ready = s.shipyard.filter((t) => t <= s.turn);
     const cleared = (s.clearing || []).filter((t) => t <= s.turn);
-    if (cleared.length) { s.field_plots = fieldPlots(s) + cleared.length; s.clearing = s.clearing.filter((t) => t > s.turn); notes.push(`New field${cleared.length > 1 ? "s are" : " is"} cleared: ${s.field_plots} field plots now.`); }
+    if (cleared.length) { s.field_plots = clearedPlots(s) + cleared.length; s.clearing = s.clearing.filter((t) => t > s.turn); notes.push(`New field${cleared.length > 1 ? "s are" : " is"} cleared: ${s.field_plots} field plots now.`); }
     if (ready.length) { s.ships += ready.length; s.shipyard = s.shipyard.filter((t) => t > s.turn); notes.push(`${ready.length} new ship${ready.length > 1 ? "s slide" : " slides"} into the harbour.`); }
     // income
     const [rate, rateLoyalty] = TAX_RATES[s.tax];
@@ -583,14 +707,19 @@
     }
     // people
     if (hunger) s.people = Math.round(s.people * 0.95);
-    else if (s.grain >= 3 && s.loyalty >= 50) {
-      const room = housing(s);
-      if (s.people < room) s.people = Math.min(room, Math.round(s.people * 1.01));
-      else notes.push("The town is full: newcomers have nowhere to live. Build a residential district.");
+    else if (s.calamity_turn === s.turn) notes.push("No newcomers this season: word of the troubles has spread along the coast.");
+    else if (s.grain >= GROWTH_MIN_GRAIN && s.loyalty >= GROWTH_MIN_LOYALTY) {
+      const room = housing(s), rate = GROWTH_BASE + (s.loyalty >= 60 ? GROWTH_HAPPY : 0);
+      if (s.people < room) {
+        const before = s.people;
+        s.people = Math.min(room, Math.round(s.people * (1 + rate)));
+        if (s.people > before) notes.push(`${intc(s.people - before)} newcomers settle in Acruvium: a peaceful town draws people from the hills and the islands.`);
+      } else notes.push("The town is full: newcomers have nowhere to live. Build a residential district.");
     }
     // loyalty and favour
     s.loyalty += rateLoyalty + (hunger ? LOYALTY_HUNGER : s.grain < 3 ? LOYALTY_LOW_FOOD : 0);
     s.loyalty += stat(s, "loyalty");
+    if (!hunger && s.calamity_turn !== s.turn && s.grain >= 3 && s.loyalty < 50) s.loyalty += 1;   // peace and bread (v4)
     s.favour += stat(s, "favour");
     if (s.loyalty < UNREST_BELOW) { s.favour += UNREST_FAVOUR; notes.push("Unrest in the streets; Rome hears of it."); }
     if (s.army < ORDER_ARMY) s.favour += ORDER_FAVOUR;
@@ -607,7 +736,13 @@
     const a = s[m[1]], bb = parseFloat(m[3]);
     return { "<": a < bb, "<=": a <= bb, ">": a > bb, ">=": a >= bb, "==": a === bb }[m[2]];
   }
+  const SEASON_IDX = { Spring: 1, Summer: 2, Autumn: 3, Winter: 4 };
+  /** "Autumn 31" -> the turn of that season. */
+  const dateTurn = (d) => { const m = String(d || "").match(/(Spring|Summer|Autumn|Winter)\s+(\d+)/); return m ? (+m[2] - 30) * 4 + SEASON_IDX[m[1]] : null; };
   function cardFits(s, c) {
+    if (c.date) return false;                                   // letters come on their own date, never by chance
+    const last = (s.card_last || {})[c.id];
+    if (c.cooldown && last && s.turn - last < num(c.cooldown)) return false;
     const [season, year] = seasonOf(s.turn);
     const seasons = c.seasons ?? "any";
     if (seasons !== "any" && !seasons.includes(season.season)) return false;
@@ -615,17 +750,35 @@
     if (!(lo <= year && year <= hi) || (c.once && s.once_fired.includes(c.id))) return false;
     return triggerHolds(s, c.trigger);
   }
-  const weight = (c) => parseFloat(c.chance ?? 0.1);
+  let weightState = null;   // raids are three times as likely while a tribe is hostile
+  const weight = (c) => parseFloat(c.chance ?? 0.1) * (weightState && c.category === "raiders" && anyHostile(weightState) ? RAID_WEIGHT : 1);
   function drawSeasonCards(s) {
+    weightState = s;
     const drawn = [];
     for (const [deck] of DECKS) {
+      const letter = deck === "sea" && CARDS.find((c) => c.date && dateTurn(c.date) === s.turn && !(s.once_fired || []).includes(c.id));
+      if (letter) { drawn.push(letter); continue; }
       const pool = CARDS.filter((c) => c.deck === deck && cardFits(s, c));
       if (pool.length) drawn.push(choices(pool, pool.map(weight)));
     }
     return drawn;
   }
+  /** Effects with ranges ({people: [-100, -50]}) rolled to numbers. */
+  const concrete = (eff) => Object.fromEntries(Object.entries(eff || {}).map(([n, v]) => [n, Array.isArray(v) ? rint(Math.min(v[0], v[1]), Math.max(v[0], v[1])) : v]));
+  /** A card that kills people or soldiers, or says so, stops growth for the season. */
+  const isCalamity = (c, eff) => !!c.calamity || (eff.people || 0) < 0 || (eff.army || 0) < 0;
+  /** An earthquake throws down a finished building in town; it must be rebuilt. */
+  function damage(s, c, notes) {
+    for (let k = 0; k < num(c.damage); k++) {
+      const pool = s.buildings.filter((b) => BLD[b.kind].zone === "town" && b.kind !== "forum" && isDone(s, b));
+      if (!pool.length) return;
+      const b = pool[rint(0, pool.length - 1)];
+      b.done = s.turn + 2;
+      notes.push(`The ${BLD[b.kind].name.toLowerCase()} is thrown down and must be rebuilt (two seasons).`);
+    }
+  }
   const effectsText = (eff) => Object.entries(eff || {}).filter(([n]) => NUMBERS.includes(n))
-    .map(([n, v]) => `${nameOf(n).toLowerCase()} ${v > 0 ? "+" : ""}${v}`).join(", ") || "no effect";
+    .map(([n, v]) => Array.isArray(v) ? `${nameOf(n).toLowerCase()} ${Math.min(...v)} to ${Math.max(...v)}` : `${nameOf(n).toLowerCase()} ${v > 0 ? "+" : ""}${v}`).join(", ") || "no effect";
   const applyEffects = (s, eff) => { for (const [n, v] of Object.entries(eff || {})) if (NUMBERS.includes(n)) s[n] += v; };
   const darkOmen = (c) => !!c.choice || Object.values(c.effects || {}).some((v) => v < 0);
 
@@ -634,7 +787,7 @@
     const opts = ch.options.map((o) => ({ label: o.label, sub: o.roll ? `d${o.roll.die || 20} + ${rollBonus(s, o.roll.bonus)}, need ${o.roll.target}` : effectsText(o.effects), roll: !!o.roll }));
     const pick = await ui.cardChoice(c, opts);
     const opt = ch.options[pick];
-    const eff = { ...(opt.effects || {}) };
+    const eff = concrete(opt.effects);
     const r = opt.roll;
     if (r) {
       const bonus = rollBonus(s, r.bonus), target = Math.trunc(r.target);
@@ -645,10 +798,11 @@
           await offerAbility(s, "general", `Let me lead the men myself: +${LEAD_CHARGE_BONUS} turns this into a success.`)) {
         ok = true; notes.push("Marcus Antistius led the charge himself and turned the day.");
       }
-      for (const [n, v] of Object.entries(r[ok ? "success" : "failure"] || {})) eff[n] = (eff[n] || 0) + v;
+      for (const [n, v] of Object.entries(concrete(r[ok ? "success" : "failure"]))) eff[n] = (eff[n] || 0) + v;
       notes.push(`${c.title}: you chose '${opt.label}' and the die says ${ok ? "success" : "failure"} (${effectsText(eff)}).`);
     } else notes.push(`${c.title}: you chose '${opt.label}' (${effectsText(eff)}).`);
     applyEffects(s, eff);
+    if (isCalamity({}, eff)) s.calamity_turn = s.turn;
   }
   async function revealCards(s, notes) {
     const cards = drawSeasonCards(s);
@@ -695,22 +849,26 @@
   function wishes(s, who, tone) {
     const hungry = s.grain < 3;
     const food = [hungry ? merchantOrder(s, { grain: 2 }) : null, s.grain < 4.5 ? grainConvoy(s, 3) : null];
+    const nextTribe = TRIBES.find((t) => !tribeWon(s, t.id));
+    const crowded = fieldsFull(s) && clearedPlots(s) + (s.clearing || []).length >= FIELD_PLOTS_MAX && nextTribe;
+    const houses = s.people > housing(s) * 0.9 ? b("houses") : null;   // more room, more taxpayers
     if (who === "economist") return tone === "bad"
       ? food.concat([b("fishery"), b("wheat"), b("saltpans")])
-      : food.concat([fieldsFull(s) && fieldPlots(s) < FIELD_PLOTS_MAX ? order("clear_land") : null, s.fleece >= 6 && !built(s, "weavers") ? b("weavers") : null,
+      : food.concat([houses, crowded ? order("treat_tribe", { tribe: nextTribe.id }) : null, fieldsFull(s) && fieldPlots(s) < FIELD_PLOTS_MAX ? order("clear_land") : null, s.fleece >= 6 && !built(s, "weavers") ? b("weavers") : null,
         tone === "good" ? b("wheat") : b("vineyard"), b("olives"), b("vineyard"), b("wheat"), b("pasture"), sellConvoy(s, ["wine", "oil"], { wine: FESTIVAL_WINE_KEEP })]);
     if (who === "general") return tone === "bad"
       ? [s.army < 250 ? order("recruit") : null, order("hang_brigands"), b("walls"), b("barracks")]
-      : [b("walls"), b("barracks"), s.army < 300 ? order("recruit") : null, s.iron < 8 ? b("mine") : null, order("hang_brigands")];
+      : [crowded && s.army >= MARCH_MIN_ARMY ? order("march_tribe", { tribe: nextTribe.id }) : null, b("walls"), b("barracks"), s.army < 300 ? order("recruit") : null, s.iron < 8 ? b("mine") : null, order("hang_brigands")];
     if (who === "fleet") return tone === "bad"
       ? [order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null, sellConvoy(s, ["fish", "wine", "oil", "timber", "fleece", "cloth"], { wine: FESTIVAL_WINE_KEEP, timber: 20 })]
       : [sellConvoy(s, ["wine", "oil", "fish", "cloth", "timber", "fleece"], { wine: FESTIVAL_WINE_KEEP, timber: 20 }), order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null];
-    if (who === "treasurer") return [tone === "good" && s.tax !== "high" && s.loyalty >= 55 ? order("raise_taxes") : null, order("hear_petitions"), b("market"),
+    if (who === "treasurer") return [houses, tone === "good" && s.tax !== "high" && s.loyalty >= 60 ? order("raise_taxes") : null, order("hear_petitions"), b("market"),
       sellConvoy(s, ["wine", "oil", "fish", "cloth"], { wine: FESTIVAL_WINE_KEEP }), s.army > 200 ? order("dismiss") : null];
     // priest
+    const easeTaxes = s.tax === "high" && s.loyalty < 45 ? order("lower_taxes") : null;
     return tone === "bad"
-      ? [order("visit_temple"), s.loyalty < 55 && s.last_festival !== s.turn - 1 ? order("hold_festival") : null, s.favour < 45 ? order("honour_rome") : null, order("honour_tiberius")]
-      : [tone === "quiet" ? order("listen_sages") : null, order("honour_tiberius"), order("visit_temple"), !s.buildings.some((x) => x.kind === "temple") ? b("temple") : null, order("listen_sages")];
+      ? [easeTaxes, order("visit_temple"), s.loyalty < 55 && s.last_festival !== s.turn - 1 ? order("hold_festival") : null, s.favour < 45 ? order("honour_rome") : null, order("honour_tiberius")]
+      : [easeTaxes, tone === "quiet" ? order("listen_sages") : null, order("honour_tiberius"), order("visit_temple"), !s.buildings.some((x) => x.kind === "temple") ? b("temple") : null, order("listen_sages")];
   }
   const sameOrder = (a, x) => a && x && a.id === x.id && (a.building || "none") === (x.building || "none") && a.town === x.town;
   /** What the advisor says when he proposes it. */
@@ -734,7 +892,7 @@
     const out = [];
     for (const [who, risk] of [[mod, "moderate"], [risky, "risky"]]) {
       const o = wishes(s, who, tone).find((x) => x && !canDo(s, x) && !out.some((p) => sameOrder(p.order, x)));
-      if (o) out.push({ who, risk, order: o, say: pitch(s, who, tone, o, c) });
+      if (o) out.push({ who, risk, order: o, say: pitch(s, who, tone, o, c), gamble: risk === "risky" && !["treat_tribe", "march_tribe"].includes(o.id) ? gambleOf(s, who, o) : null });
     }
     return { tone, list: out };
   }
@@ -772,14 +930,20 @@
         }
       }
     }
+    s.card_last = s.card_last || {};
+    for (const c of cards) s.card_last[c.id] = s.turn;
     await ui.lay(cards);
     for (let i = 0; i < cards.length; i++) {
       const c = cards[i];
       await ui.turn(c, i);
       if (c.once) s.once_fired.push(c.id);
       if (c.choice) { await answerCard(s, c, notes); await ui.decided(c, i, null); continue; }
-      applyEffects(s, c.effects);
-      if (!c.quiet) notes.push(`${c.title}: ${effectsText(c.effects)}.`);
+      const eff = concrete(c.effects);
+      applyEffects(s, eff);
+      if (!c.quiet) notes.push(`${c.title}: ${effectsText(eff)}.`);
+      if (isCalamity(c, eff)) s.calamity_turn = s.turn;
+      if (c.damage) damage(s, c, notes);
+      c.rolled = eff;
       const { tone, list } = proposals(s, c);
       const pick = await ui.decide(c, i, list, tone);
       const spoke = list.map((p) => p.who);
@@ -787,7 +951,13 @@
         const p = list[pick.i];
         notes.push(`${c.title}: you take ${ADVISORS[p.who].name}'s advice (${describe(s, p.order).replace(/^./, (m) => m.toLowerCase())}).`);
         heed(s, p.who, spoke, notes);
-        await giveOrder(s, p.order, notes);
+        const o = { ...p.order };
+        if (p.risk === "risky" && p.gamble) {
+          const g = p.gamble, r = await roll(g.die, g.bonus, g.target, `${ADVISORS[p.who].name}'s gamble: ${describe(s, o).replace(/^./, (m) => m.toLowerCase())}`);
+          o.boost = r.ok ? "win" : "lose";
+          notes.push(`The gamble ${r.ok ? "pays off" : "fails"} (d20: ${r.r}${g.bonus ? (g.bonus > 0 ? " + " : " − ") + Math.abs(g.bonus) : ""}): ${r.ok ? g.win : g.lose}.`);
+        }
+        await giveOrder(s, o, notes);
       } else if (pick.kind === "order") {
         notes.push(`${c.title}: you give your own order (${describe(s, pick.order).replace(/^./, (m) => m.toLowerCase())}).`);
         heed(s, null, spoke, notes);
@@ -807,6 +977,62 @@
     if (s.favour <= 0) s.over = "Recalled to Rome in disgrace: Roman favour reached 0.";
     else if (s.loyalty <= 0 && s.army < ORDER_ARMY) s.over = "Overthrown: the town rose up and the army was too weak to stop it.";
     else if (s.hunger_streak >= 2) s.over = "Replaced for famine: two hungry seasons in a row.";
+    else if (s.turn >= END_TURN) { s.over = "Your governorship ends in the winter of AD 42: Claudius sends a successor, and you sail for Rome."; s.finished = true; }
+  }
+  /** The governorship's score: what a successor would find. */
+  function score(s) {
+    const builtCount = s.buildings.filter((b) => isDone(s, b) && b.kind !== "forum").length;
+    const parts = [["people", Math.round(s.people / 100)], ["loyalty", Math.round(s.loyalty)], ["Roman favour", Math.round(s.favour)],
+      ["buildings", builtCount * 3], ["treasury", Math.round(s.treasury / 500)],
+      ["the tribes", TRIBES.reduce((a, t) => a + (tribeState(s, t.id).state === "ally" ? 12 : tribeState(s, t.id).state === "conquered" ? 8 : 0), 0)],
+      ["seasons governed", s.turn]];
+    return { total: parts.reduce((a, [, v]) => a + v, 0), parts };
+  }
+
+  // --- The fourth order (rules v4): three prepared choices from the council ---
+  function suggestions(s) {
+    const order3 = s.grain < 4 ? ["economist", "treasurer", "general"] : s.army < ORDER_ARMY ? ["general", "economist", "priest"]
+      : s.loyalty < 45 ? ["priest", "economist", "treasurer"] : s.favour < 45 ? ["priest", "treasurer", "economist"]
+      : [["economist", "fleet", "general"], ["treasurer", "economist", "priest"], ["fleet", "general", "economist"]][s.turn % 3];
+    const out = [];
+    if (s.tax === "high" && s.loyalty < 45 && !canDo(s, order("lower_taxes"))) out.push({ who: "priest", order: order("lower_taxes"), say: "The people cannot carry these taxes much longer, Governor. Ease them." });
+    for (const who of order3) {
+      if (out.length >= 3) break;
+      for (const tone of ["good", "quiet", "bad"]) {
+        const o = wishes(s, who, tone).find((x) => x && !canDo(s, x) && !out.some((p) => sameOrder(p.order, x)));
+        if (o) { out.push({ who, order: o, say: pitch(s, who, tone, o) }); break; }
+      }
+    }
+    return out;
+  }
+
+  // --- For the AI scribe: the town in a few lines, and an order checked against the rules ---
+  function stateText(s) {
+    const [season, year] = seasonOf(s.turn), w = WINDS[s.wind];
+    const blds = BUILDING_LIST.map((B) => { const n = s.buildings.filter((b) => b.kind === B.id).length; return n ? `${B.id} x${n}` : ""; }).filter(Boolean).join(", ");
+    const goods = GOODS.filter((g) => s[g] > 0).map((g) => `${g} ${Math.trunc(s[g])}`).join(", ");
+    const tribes = TRIBES.map((t) => `${t.id} (${t.name}): ${tribeState(s, t.id).state}${hostile(s, t.id) ? ", hostile" : ""}`).join("; ");
+    return [`Season: ${season.season} AD ${year} (turn ${s.turn} of ${END_TURN}); emperor ${emperorOf(s.turn)}; sailing ${season.sailing === "yes" ? "open" : "closed (winter)"}; wind ${w.latin} from the ${w.from}.`,
+      `Numbers: grain ${s.grain.toFixed(1)} months, treasury ${Math.trunc(s.treasury)} denarii, people ${Math.trunc(s.people)} (housing ${housing(s)}), loyalty ${Math.round(s.loyalty)}/100, Roman favour ${Math.round(s.favour)}/100, army ${Math.trunc(s.army)}, ships ${Math.trunc(s.ships)} (${Math.trunc(s.ships) - shipsAtSea(s)} in harbour, berths ${berths(s)}), tax ${s.tax}, tribute ${TRIBUTE} due each Summer${s.tribute_debt ? `, debt ${s.tribute_debt}` : ""}.`,
+      `Stores: ${goods || "empty"}.`, `Buildings: ${blds}. Plots: town ${plotsUsed(s, "town")}/${TOWN_PLOTS}, fields ${plotsUsed(s, "field")}/${fieldPlots(s)}.`,
+      `Tribes beyond the fields: ${tribes}.`].join("\n");
+  }
+  function rulesText(s) {
+    const dec = DECREES.map((d) => `- ${d.id}: ${d.id === "honour_tiberius" ? `Decree honouring ${emperorOf(s.turn)}` : d.name}; ${num(d.cost_treasury) ? num(d.cost_treasury) + " den" : "no denarii"}${d.cost ? ", " + d.cost : ""}. ${String(d.notes).replace("DRAFT. ", "")}`).join("\n");
+    const blds = BUILDING_LIST.filter((b) => b.id !== "forum").map((b) => `- ${b.id} (${b.zone}): ${num(b.cost_treasury)} den${b.cost ? ", " + b.cost : ""}; ${num(b.seasons_to_build)} seasons; ${String(b.notes).replace("DRAFT. ", "")}`).join("\n");
+    const towns = TOWNS.map((t) => `- ${t.id}: sells ${t.sells}; buys ${t.buys}; ${t.direction}, back in ${t.seasons} season(s)`).join("\n");
+    return `DECREES:\n${dec}\nBUILDINGS (for "build"):\n${blds}\nTOWNS (for "send_convoy"):\n${towns}`;
+  }
+  /** Keep only the fields an order may have, with sane values. */
+  function sanitizeOrder(o) {
+    if (!o || !DECREE[o.id]) return null;
+    const out = order(String(o.id));
+    if (o.id === "build") out.building = BLD[o.building] ? o.building : "none";
+    if (o.id === "send_convoy") { out.town = TOWN[o.town] ? o.town : null; out.sell = {}; out.buy = {}; }
+    if (o.id === "merchants") out.buy = {};
+    for (const side of ["sell", "buy"]) if (out[side]) for (const [g, q] of Object.entries(o[side] || {})) if ((GOOD[g] || g === "grain") && +q > 0) out[side][g] = Math.min(40, Math.trunc(+q));
+    if (o.id === "treat_tribe" || o.id === "march_tribe") out.tribe = TRIBE[o.tribe] ? o.tribe : null;
+    return out;
   }
 
   // --- The scribe's word matcher (offline): the governor's own words into orders ---
@@ -819,7 +1045,9 @@
     ["hear_petitions", /\b(petitions?|hear the people|judge\w*|judgement|court|assizes)\b/],
     ["build_ship", /\b(keel|(build|lay down|construct|new)\b[^.,;]*\b(ship|galley|boat)s?)\b/],
     ["listen_sages", /\b(sages?|elders?|wise men|philosoph\w*|astrolog\w*|soothsay\w*)\b/],
-    ["honour_tiberius", /\b(tiberius|inscription|statue|decree\b[^.,;]*\bemperor)\b/],
+    ["march_tribe", /\b(march|attack|war|conquer|invade|burn)\b[^.,;]*\b(docleatae|ardiaei|pirustae|tribes?|hills)\b/],
+    ["treat_tribe", /\b(treat|treaty|talk|negotiat\w*|gifts? to|envoys?|peace)\b[^.,;]*\b(docleatae|ardiaei|pirustae|tribes?|chiefs?)\b/],
+    ["honour_tiberius", /\b(tiberius|gaius|caligula|claudius|inscription|statue|decree\b[^.,;]*\bemperor)\b/],
     ["honour_rome", /\b(gifts?|send\b[^.,;]*\bto rome)\b/],
     ["visit_temple", /\b(sacrific\w*|pray\w*|offering|visit\b[^.,;]*\btemple|go to the temple)\b/],
     ["hold_festival", /\b(festival|games|feast|celebrat\w*|holiday)\b/],
@@ -876,7 +1104,8 @@
     for (let clause of t.split(/\band then\b|\bthen\b|\band\b|[,;.]/)) {
       clause = clause.trim();
       if (!clause) continue;
-      const hit = BUILD_WORDS.find(([, rx]) => rx.test(clause));
+      const tribal = /\b(docleatae|ardiaei|pirustae|tribes?)\b/.test(clause);
+      const hit = !tribal && BUILD_WORDS.find(([, rx]) => rx.test(clause));
       const trade = /\b(sell|buy|export|import|convoy)\b/.test(clause);
       if (hit && !trade && (BUILD_VERB.test(clause) || !PATTERNS.some(([, rx]) => rx.test(clause)))) {
         const n = /\b(two|three|four|\d+)\b/.test(clause) ? Math.max(1, numIn(clause)) : 1;
@@ -888,10 +1117,13 @@
         const o = order("merchants", { buy: {} });
         for (const [g, rx] of GOOD_WORDS) if (rx.test(clause) && MERCHANT_GOODS.includes(g)) o.buy[g] = numIn(clause.replace(/\bmerchants?\b/, "")) || (g === "grain" ? 1 : 5);
         if (Object.keys(o.buy).length) orders.push(o);
+      } else if (p && (p[0] === "march_tribe" || p[0] === "treat_tribe")) {
+        const t = TRIBES.find((x) => clause.includes(x.id) || clause.includes(x.name.toLowerCase())) || TRIBES.find((x) => !tribeWon(s, x.id));
+        orders.push(order(p[0], { tribe: t ? t.id : null }));
       } else if (p) orders.push(p[0] === "send_convoy" ? parseConvoy(s, clause, t) : order(p[0]));
     }
     return { orders: orders.slice(0, MAX_ORDERS), reply: orders.length ? "As you command, Governor."
-      : "Forgive me, Governor, I could not make a decree of that. Speak of taxes, soldiers, brigands, petitions, a building or planting, a ship's keel, a convoy to a town, a festival, the temple, Tiberius, gifts to Rome or the sages." };
+      : "Forgive me, Governor, I could not make a decree of that. Speak of taxes, soldiers, brigands, petitions, a building or planting, a ship's keel, a convoy to a town, a festival, the temple, the Emperor, gifts to Rome, the sages, or the tribes (treat with them or march against them)." };
   }
 
   let ui = null;
@@ -901,5 +1133,7 @@
     newGame, seasonOf, rollWeather, revealCards, council, plans, situation, validate, totals, describe, order, costOf, priceAt, loads,
     sailing, abilityState, updateMoods, applyDecrees, resolve, clampAndCheck, wordParse, fmt, intc, pct, housing, berths, shipsAtSea,
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
+    TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
+    stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS,
   };
 })();

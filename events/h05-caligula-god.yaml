@@ -1,0 +1,33 @@
+id: h05-caligula-god
+deck: sea
+letter: true
+date: Summer 40          # Caligula's demand for divine honours, AD 40
+title: "Letter from Rome: Gaius is a god"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The Emperor commands that he be worshipped as a living god. His statue is
+    to stand in every temple of the empire, and sacrifices are to be made to
+    it. Tertius Volusius is white with fear; the Illyrians mutter that their
+    gods will not share a roof.
+  options:
+    - label: Set up the statue and sacrifice to it
+      effects: {treasury: -400, bronze: -4, favour: 10, loyalty: -6}   # DRAFT
+    - label: Delay with excuses, as the governor of Syria did
+      effects: {}
+      roll:
+        die: 20
+        bonus: treasurer_persuasion
+        target: 11
+        success: {favour: 0}                       # the letters cross; nobody notices
+        failure: {favour: -15}                     # Rome notices the delay
+    - label: Refuse
+      effects: {favour: -25, loyalty: 6}
+scribe_hint: A bronze head of the Emperor arrives with the letter, packed in straw, waiting for a body.
+historical_note: >-
+  In AD 40 Caligula ordered his statue set up in the Temple at Jerusalem.
+  Petronius, governor of Syria, delayed for months with excuses; only the
+  Emperor's death saved him from the order to kill himself.
+source: "Philo, Embassy to Gaius; Josephus, Jewish Antiquities 18.261-309 - check before publishing"

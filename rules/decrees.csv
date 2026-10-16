@@ -15,3 +15,5 @@ honour_rome,Send gifts to Rome,rome,400,,no,,,,,8,,DRAFT. On top of the regular 
 listen_sages,Listen to the sages,council,0,,yes,,,,,,,DRAFT. The old men read the sky: you learn next season's wind before it comes.
 merchants,Buy from passing merchants,sea,0,,yes,,,,,,,"DRAFT. Greek and Italian ships call at the quay in the sailing season. Buy up to 20 loads at once, no ship of ours needed, at half again the base price (grain 750 a month). No luxuries."
 clear_land,Clear new fields,land,600,iron 2,no,,,,,,,"DRAFT. Cut the scrub and build terraces on the hillside: one more field plot, ready in two seasons. At most 16 field plots."
+treat_tribe,Treat with a tribe,frontier,0,,yes,,,,,,,DRAFT. Diplomacy and gold: gifts to the chiefs and a d20 with your best talker. Success: they cede land (new field plots) and keep the peace.
+march_tribe,March against a tribe,frontier,200,,yes,,,,,,,"DRAFT. Sword and fire: needs 150 soldiers; a d20 battle. Victory: their land and loot, but the tribe stays hostile and raids. Defeat: men lost."

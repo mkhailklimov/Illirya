@@ -1,0 +1,34 @@
+id: h01-sejanus
+deck: sea
+letter: true
+date: Autumn 31          # Sejanus was arrested and strangled on 18 October AD 31
+title: "Letter from Rome: Sejanus has fallen"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    Lucius Aelius Sejanus, prefect of the guard and the most powerful man in
+    Rome, has been strangled on the Emperor's order. His friends are being
+    hunted. A merchant of Salona who once dined with him begs you for a
+    ship out of the province.
+  options:
+    - label: Write to Tiberius at once, swear loyalty and hand the man over
+      effects: {favour: 8, loyalty: -2}            # DRAFT
+    - label: Say nothing and keep your head down
+      effects: {favour: -2}
+    - label: Hide him and take his gold
+      effects: {}
+      roll:
+        die: 20
+        bonus: treasurer_persuasion
+        target: 13
+        success: {treasury: 1200}                  # nobody finds out
+        failure: {favour: -18, treasury: 400}      # an informer writes to Rome
+scribe_hint: The courier rode the last miles at night. The seal on the letter is black.
+historical_note: >-
+  Sejanus, prefect of the Praetorian Guard, ruled Rome for years while
+  Tiberius stayed on Capri. On 18 October AD 31 a letter from the Emperor was
+  read in the Senate; Sejanus was arrested and executed the same day, and
+  a long purge of his friends followed.
+source: "Tacitus, Annals 5-6; Suetonius, Tiberius 65; Cassius Dio 58 - check before publishing"

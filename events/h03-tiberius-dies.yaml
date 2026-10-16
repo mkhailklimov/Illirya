@@ -1,0 +1,25 @@
+id: h03-tiberius-dies
+deck: sea
+letter: true
+date: Spring 37          # Tiberius died at Misenum on 16 March AD 37
+title: "Letter from Rome: Tiberius is dead"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The Emperor Tiberius is dead at Misenum, in his seventy-eighth year. The
+    Senate has given all his power to young Gaius Caesar, the son of
+    Germanicus, whom the soldiers call Caligula, Little Boot. The people of
+    Rome cheer in the streets.
+  options:
+    - label: Hold games and sacrifices for the new Emperor
+      effects: {treasury: -500, favour: 9, loyalty: 4}   # DRAFT
+    - label: Send the oath of loyalty and nothing more
+      effects: {favour: 2}
+scribe_hint: The courier brings two letters, one sealed with Tiberius's ring, broken, and one with a new seal.
+historical_note: >-
+  Tiberius died on 16 March AD 37. Gaius, called Caligula, the son of the
+  much-loved Germanicus, was welcomed with joy; for a few months Rome
+  thought a golden age had begun.
+source: "Suetonius, Tiberius 73 and Caligula 13-14; Tacitus, Annals 6.50 - check before publishing"

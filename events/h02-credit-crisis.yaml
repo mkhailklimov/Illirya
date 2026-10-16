@@ -1,0 +1,27 @@
+id: h02-credit-crisis
+deck: sea
+letter: true
+date: Summer 33          # the credit crisis of AD 33
+title: "Letter from Rome: money is short"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    A law against usury is being enforced in Rome: lenders call in their loans,
+    land is sold for nothing, and there is no coin anywhere. The merchants of
+    Acruvium cannot pay their debts. What does the governor do?
+  options:
+    - label: Call in what the town owes the treasury
+      effects: {treasury: 900, loyalty: -7}        # DRAFT
+    - label: Lend from the chest without interest, as Tiberius does
+      effects: {treasury: -600, loyalty: 6, favour: 3}
+    - label: Do nothing and wait for the storm to pass
+      effects: {loyalty: -2, people: -40}
+scribe_hint: Ships come in with letters instead of cargo. Nobody will lend a denarius.
+historical_note: >-
+  In AD 33 the old law limiting lending was enforced, lenders called in
+  their money and land prices collapsed. Tiberius ended the panic by
+  lending 100 million sesterces through the banks, interest-free for three
+  years.
+source: "Tacitus, Annals 6.16-17; Suetonius, Tiberius 48 - check before publishing"

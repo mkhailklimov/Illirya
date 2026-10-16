@@ -1,0 +1,26 @@
+id: h04-caligula-money
+deck: sea
+letter: true
+date: Summer 39          # Caligula had spent Tiberius's treasure and raised new taxes
+title: "Letter from Rome: the Emperor needs gold"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    In two years Gaius has spent the treasure Tiberius left: games, ships,
+    palaces, a bridge of boats across the bay of Baiae. Now he writes to every
+    province for gifts beyond the tribute. Acruvium is asked for 2,000 denarii.
+  options:
+    - label: Pay the 2,000
+      effects: {treasury: -2000, favour: 8}         # DRAFT
+    - label: Pay half and plead a poor harvest
+      effects: {treasury: -1000, favour: -2}
+    - label: Plead poverty and pay nothing
+      effects: {favour: -12, loyalty: 3}
+scribe_hint: The letter is written in the Emperor's own hand. The scribe reads it twice before he believes it.
+historical_note: >-
+  Caligula is said to have spent the 2,700 million sesterces Tiberius left
+  in less than a year, and then looked for money everywhere: new taxes,
+  forced legacies, auctions of the palace furniture.
+source: "Suetonius, Caligula 37-42; Cassius Dio 59 - check before publishing"

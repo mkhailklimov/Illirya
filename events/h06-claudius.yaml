@@ -1,0 +1,25 @@
+id: h06-claudius
+deck: sea
+letter: true
+date: Winter 40          # Caligula was murdered on 24 January AD 41
+title: "Letter from Rome: Gaius murdered"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    Gaius has been cut down by officers of his own guard in a passage of the
+    palace. The guard found his uncle Claudius hiding behind a curtain and
+    hailed him Emperor. The Senate talked of a republic for two days, then
+    gave way. Whom does Acruvium swear to?
+  options:
+    - label: Swear to Claudius at once
+      effects: {favour: 8}                         # DRAFT
+    - label: Wait and see what the legions of Dalmatia do
+      effects: {favour: -6, loyalty: 2}
+scribe_hint: The courier is a guardsman, still in his cloak. He will not say what he saw.
+historical_note: >-
+  Caligula was murdered on 24 January AD 41 by Cassius Chaerea and other
+  officers of the Praetorian Guard. The guard made his uncle Claudius
+  Emperor while the Senate was still debating.
+source: "Suetonius, Caligula 56-58 and Claudius 10; Josephus, Jewish Antiquities 19 - check before publishing"

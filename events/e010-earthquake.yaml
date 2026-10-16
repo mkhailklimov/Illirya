@@ -5,10 +5,14 @@ category: nature
 seasons: any
 years: [30, 42]
 trigger: random
-chance: 0.04
+chance: 0.012              # DRAFT: about once in a governorship, never twice within four years
+cooldown: 16               # seasons before it can come again
 once: false
-effects: {treasury: -400, timber: -8, loyalty: -2}   # DRAFT: walls and houses to rebuild
-scribe_hint: Roof tiles in the streets, a crack across the forum; the people camp outside for fear of more.
+calamity: true             # no growth this season
+shake: true                # the card shakes when turned over
+damage: 1                  # one finished building in town is thrown down and must be rebuilt
+effects: {people: [-100, -50], treasury: -600, timber: -10, loyalty: -5}   # DRAFT: a range is rolled
+scribe_hint: A roar from under the mountain. Houses fold like wax tablets; the dust hangs over the bay for a day. The dead are carried to the shore.
 historical_note: >-
   This coast lies on an active fault: a great earthquake in 1667 ruined
   Ragusa (Dubrovnik) and Kotor, and another struck Montenegro in 1979.

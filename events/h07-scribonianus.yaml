@@ -1,0 +1,41 @@
+id: h07-scribonianus
+deck: sea
+letter: true
+date: Spring 42          # the revolt of Scribonianus, governor of Dalmatia, AD 42
+title: "Letter from Salona: the governor rebels"
+category: rome
+once: true
+finale: true
+effects: {}
+choice:
+  prompt: >-
+    Furius Camillus Scribonianus, governor of Dalmatia, has proclaimed himself
+    against Claudius and calls the legions to march on Rome. His letter asks
+    you to bring your garrison and your ships. His agents are already in the
+    forum of Acruvium.
+  options:
+    - label: Stay loyal to Claudius and arrest his agents
+      effects: {favour: 12}                        # DRAFT
+      roll:
+        die: 20
+        bonus: army / 50 + battle_bonus
+        target: 11
+        success: {loyalty: 4, favour: 6}           # the town holds
+        failure: {loyalty: -8, army: -40}          # street fighting
+    - label: Join Scribonianus with your men
+      effects: {}
+      roll:
+        die: 20
+        bonus: general_strategy
+        target: 19                                 # history says no
+        success: {favour: 30, treasury: 2000}
+        failure: {favour: -60}
+    - label: Wait behind your walls
+      effects: {favour: -10}
+scribe_hint: The letter is sealed with the eagle of the legion at Burnum. The agents are smiling.
+historical_note: >-
+  In AD 42 Scribonianus, governor of Dalmatia, rose against Claudius. After
+  five days his two legions, VII and XI, refused to follow him; he fled to
+  the island of Issa and died there. Claudius gave the legions the title
+  Claudia Pia Fidelis, "loyal and faithful to Claudius".
+source: "Suetonius, Claudius 13 and 35; Cassius Dio 60.15 - check before publishing"
