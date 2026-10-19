@@ -15,7 +15,7 @@ choice:
       effects: {treasury: -200}                         # DRAFT: cost of the expedition
       roll:                                             # d20 + 1 per 50 soldiers; need 12
         die: 20
-        bonus: army / 50
+        bonus: army / 50 + home_defence
         target: 12
         success: {favour: 3, loyalty: 2}                # the coves are cleared
         failure: {army: -20, loyalty: -2}               # an ambush among the rocks

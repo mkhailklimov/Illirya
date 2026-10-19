@@ -18,7 +18,7 @@ choice:
       effects: {favour: 12}                        # DRAFT
       roll:
         die: 20
-        bonus: army / 50 + battle_bonus
+        bonus: army / 50 + battle_bonus + home_defence
         target: 11
         success: {loyalty: 4, favour: 6}           # the town holds
         failure: {loyalty: -8, army: -40}          # street fighting

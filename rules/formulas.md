@@ -129,6 +129,15 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v6 (19 October 2026): battles and the city
+
+- **A conflict once a year:** in Spring the rules pick the season (Spring to Autumn) and the enemy: pirates (weight 3, +1 with 3+ ships, +2 with 8,000+ denarii), brigands (2, +3 at loyalty below 45, +2 with fewer than 100 soldiers), tribes (1, +5 while a tribe is hostile). Marches against a tribe are battles too.
+- **Enemy size:** pirates 110–200 + treasury/250 (at most +80), brigands 70–130 (+50 at loyalty below 40), tribes 150–260 + 60 × strength (+60 if hostile, +60 on their own ground), all +6% a year after AD 30. Spread over three lanes: pirates on one wing (55/35/10), brigands uneven, tribes 25/50/25.
+- **A lane:** our strength = cohorts × men each × (1.75 for a shield line, 1 for slingers); slingers cut the enemy in front 15% each (at most 45%). Bonus = 4 × log2(ours/theirs) (−6 to +6) + 2 discipline − the enemy's fury (pirates 1, tribes 2 at home, 1 on a march) + home defence at home (walls 2 each, citadel 5) + barracks 1 + the leader (yourself +3; Antistius strategy −3, Epicadus experience −3). d20 + bonus against DC 10 (a 1 fails, a 20 wins). An empty lane at home is held by the walls: home defence + 1 − fury. An empty lane on a march is lost.
+- **The day:** two lanes of three win; a cohort in reserve rolls again (+1) for the first lost lane. Our dead: 3–9% in a lane that holds, 20–35% in one that breaks.
+- **Victory:** favour +4, loyalty +3, plunder (pirates 300–800, brigands 150–400); led in person +3 favour, +2 loyalty more. **Defeat:** favour −4, loyalty −5, at home a fifth of the chest and a burnt field; delegated, the commander's mood −2; **led in person, the game ends** (fallen or taken).
+- **The city** (`rules/cities.csv`): Acruvium has 8 field plots, 12 at most with the hillside terraces, and the citadel site on the crag.
+
 ## Rules v4 (16 October 2026): what changed
 
 The browser game (`web/engine.js`) plays by these rules; where they differ from the sections below, v4 wins.

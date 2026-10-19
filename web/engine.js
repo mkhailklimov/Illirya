@@ -1,4 +1,4 @@
-// Illyria: AD 30 — the rules engine (rules v5, 16 Oct 2026: three decisions, then three dice thrown together; letters from Rome, the tribes, growth in peace).
+// Illyria: AD 30 — the rules engine (rules v6, 19 Oct 2026: a battle once a year; the city's own character; three dice a season; letters from Rome; the tribes).
 // The web game is now the main playtest tool; rules/play.py is frozen at the v1 rules.
 // The rules data (numbers, goods, towns, decrees, seasons, advisors, winds, buildings, cards)
 // comes from data.js, built by web/build.py from rules/*.csv and events/*.yaml.
@@ -13,7 +13,8 @@
   const TAX_STEPS = ["low", "normal", "high"];
   const ARMY_PAY = 4, TRIBUTE = 3000, TRIBUTE_PAID_FAVOUR = 5, TRIBUTE_MISSED_FAVOUR = -20, TRIBUTE_DEBT_PENALTY = 1.5;
   const GRAIN_EATEN = 3, GRAIN_BASE_EATERS = 4600, GRAIN_PRICE = 500;
-  const TOWN_PLOTS = 12, FIELD_PLOTS = 12, BASE_WHEAT = 4;
+  const CITY = (D.cities || [{ id: "acruvium", name: "Acruvium", field_plots: 12, field_plots_max: 16, traits: "" }])[0];
+  const TOWN_PLOTS = 12, FIELD_PLOTS = +CITY.field_plots || 12, BASE_WHEAT = 4;
   const SHIP_LOAD = 40, GRAIN_LOAD = 10;  // a ship carries 40 loads; a month of grain is 10 of them
   const VOYAGE_DIE = 20, VOYAGE_TARGET = 5; // d20 + sailing advantage when a convoy comes home
   const LOYALTY_LOW_FOOD = -3, LOYALTY_HUNGER = -10, UNREST_BELOW = 30, UNREST_FAVOUR = -3, UPRISING_BELOW = 20;
@@ -24,7 +25,7 @@
   const COUNCIL_ORDER = ["treasurer", "economist", "general", "fleet", "priest"];
   const FESTIVAL_WINE_KEEP = 4;
   const MERCHANT_LOAD = 20, MERCHANT_MARKUP = 1.5;   // passing merchants: up to 20 loads at half again the base price
-  const FIELD_PLOTS_MAX = 16, CLEAR_SEASONS = 2;     // clearing new fields (the tribes' land comes on top)
+  const FIELD_PLOTS_MAX = +CITY.field_plots_max || 16, CLEAR_SEASONS = 2;     // clearing new fields (the tribes' land comes on top)
   // Rules v4
   const GROWTH_BASE = 0.015, GROWTH_HAPPY = 0.005;   // people per season in peace; +0.5% when loyalty is 60 or more
   const GROWTH_MIN_LOYALTY = 40, GROWTH_MIN_GRAIN = 2;
@@ -103,7 +104,7 @@
   /** Field plots open now: the twelve, the cleared hillside, and the land won from the tribes. */
   const fieldPlots = (s) => clearedPlots(s) + tribalPlots(s);
   const emperorOf = (turn) => EMPERORS.filter(([t]) => turn >= t).pop()[1];
-  const zonePlots = (s, zone) => (zone === "town" ? TOWN_PLOTS : fieldPlots(s));
+  const zonePlots = (s, zone) => (zone === "town" ? TOWN_PLOTS : zone === "hill" ? 1 : fieldPlots(s));
   /** Goods the passing merchants sell (no luxuries), and their price at the quay. */
   const MERCHANT_GOODS = ["grain"].concat(GOODS_LIST.filter((g) => g.origin !== "luxury").map((g) => g.id));
   const merchantPrice = (g) => Math.round((g === "grain" ? GRAIN_PRICE : num(GOOD[g].price)) * MERCHANT_MARKUP);
@@ -310,7 +311,8 @@
       if (o.id === "build") {
         const b = BLD[o.building];
         if (!b || b.id === "forum") { problems.push("The architect asks: build what?"); return; }
-        if (plotsUsed(s, b.zone) + newPlots[b.zone] >= zonePlots(s, b.zone)) { problems.push(`No free plot ${b.zone === "town" ? "inside the walls" : "in the fields"} for ${b.name.toLowerCase()}.`); return; }
+        newPlots[b.zone] = newPlots[b.zone] || 0;
+        if (plotsUsed(s, b.zone) + newPlots[b.zone] >= zonePlots(s, b.zone)) { problems.push(b.zone === "hill" ? "The crag above the town has room for one citadel." : `No free plot ${b.zone === "town" ? "inside the walls" : "in the fields"} for ${b.name.toLowerCase()}.`); return; }
         const have = s.buildings.filter((x) => x.kind === b.id).length + (newKinds[b.id] || 0);
         if (have >= Math.trunc(num(b.max, 99))) { problems.push(`Acruvium already has as many ${b.name.toLowerCase()} as it can hold (${Math.trunc(num(b.max))}).`); return; }
       }
@@ -534,26 +536,153 @@
   }
   async function marchTribe(s, o, notes) {
     const t = TRIBE[o.tribe], st = ((s.tribes = s.tribes || {})[t.id] = { ...tribeState(s, t.id) });
-    const bonus = Math.max(-6, Math.min(6, Math.floor(s.army / 50) + Math.trunc(stat(s, "battle_bonus")) + num(ADVISORS.general.strategy, 3) - 3 - t.strength));
-    const res = o.preRoll || await roll(20, bonus, BATTLE_TARGET, `Antistius marches against the ${t.name}`);
-    let ok = res.ok;
-    if (!ok && res.r !== 1 && res.total + LEAD_CHARGE_BONUS >= BATTLE_TARGET &&
-        await offerAbility(s, "general", `Let me lead the charge myself: +${LEAD_CHARGE_BONUS} turns this into a victory.`)) {
-      ok = true; notes.push("Marcus Antistius led the charge himself and turned the day.");
+    const won = await battle(s, makeEnemy(s, "march", t.id), notes);
+    st.hostile_until = s.turn + HOSTILE_SEASONS;
+    if (won) {
+      const loot = parseList(t.loot);
+      st.state = "conquered";
+      s.treasury += num(t.loot_treasury); for (const [g, q] of Object.entries(loot)) s[g] += q;
+      notes.push(`${t.land} is ours (${t.plots} new field plots), with ${intc(num(t.loot_treasury))} denarii and ${listText(loot)} in loot. The ${t.name} will raid us for years.`);
+    } else notes.push(`The ${t.name} are now hostile.`);
+  }
+
+
+  // --- Battles (rules v6): once a year a conflict; you send your commander or lead yourself ---
+  const UNIT = 50, ORDER_MULT = 1.75, SLING_CLASH = 1, SLING_CUT = 0.15, SLING_CUT_MAX = 0.45, BATTLE_DC = 10, ROMAN_ORDER = 2, SELF_LEAD = 3, GROWTH_OF_RAIDERS = 0.06, GLORY = [3, 2], WALLS_ALONE = 1;
+  const LANES = ["left", "centre", "right"];
+  const ENEMIES = {
+    pirates: { name: "Pirates", who: "fleet", fury: 1, home: true, terrain: "shore", where: "at the mouth of the river, below the Sea Gate",
+      say: "Liburnian sails in the gulf: they beach their ships at dawn and come up the shingle with axes." },
+    brigands: { name: "Brigands", who: "general", fury: 0, home: true, terrain: "gorge", where: "in the gorge above the town",
+      say: "Runaway slaves and hill men, led by a deserter: they hold the pass road and raid the terraces at night." },
+    tribes: { name: "Warriors of the tribes", who: "general", fury: 2, home: true, terrain: "fields", where: "in the fields below the walls",
+      say: "Men from beyond the mountains come down in a howling mass, shields painted, to burn the harvest." },
+    march: { name: "Warriors of the tribes", who: "general", fury: 1, home: false, terrain: "valley", where: "in their own valley",
+      say: "Their whole people stands across the valley, on ground they know." },
+  };
+  /** The year's conflict: at the first season of each year, decide whether and when it comes, and from where. */
+  function planConflict(s) {
+    const [season, year] = seasonOf(s.turn);
+    if (season.season !== "Spring" || s.conflict_year === year) return;
+    s.conflict_year = year;
+    const w = { pirates: 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
+    const kind = choices(Object.keys(w), Object.values(w));
+    s.conflict = { turn: s.turn + rint(0, 2), kind };
+  }
+  /** The enemy force: how many, and how they stand across the three lanes. */
+  function makeEnemy(s, kind, tribe) {
+    const E0 = ENEMIES[kind];
+    let men, share;
+    if (kind === "pirates") { men = rint(110, 200) + Math.min(80, Math.floor(s.treasury / 250)); const wing = rint(0, 1) ? 0 : 2; share = [0, 0, 0]; share[wing] = .55; share[1] = .35; share[2 - wing] = .1; }
+    else if (kind === "brigands") { men = rint(70, 130) + (s.loyalty < 40 ? 50 : 0); const a = rint(15, 35) / 100, c = rint(20, 40) / 100; share = rint(0, 1) ? [a, c, 1 - a - c] : [1 - a - c, c, a]; }
+    else { const t = TRIBE[tribe] || TRIBES[rint(0, TRIBES.length - 1)]; tribe = t.id; men = rint(150, 260) + t.strength * 60 + (hostile(s, t.id) ? 60 : 0) + (kind === "march" ? 60 : 0); share = [.25, .5, .25]; }
+    men = Math.round(men * (1 + GROWTH_OF_RAIDERS * (seasonOf(s.turn)[1] - 30)));   // word of a rich town spreads
+    const name = kind === "tribes" || kind === "march" ? `${E0.name}: the ${TRIBE[tribe].name}` : E0.name;
+    return { kind, tribe, name, men, share, fury: E0.fury, home: E0.home, terrain: E0.terrain, where: E0.where, say: E0.say, who: E0.who };
+  }
+  const unitsOf = (s) => Math.max(1, Math.floor(s.army / UNIT));
+  /** A sensible order of battle: units where the enemy is thickest, slingers in front of the biggest crowd, one in reserve if there are four or more. */
+  function defaultPlan(s, enemy) {
+    const n = unitsOf(s), plan = [];
+    let free = n;
+    if (n >= 4) { plan.push({ lane: "reserve", role: "line" }); free--; }
+    const want = enemy.share.map((x) => x * free);
+    const give = want.map((x) => Math.floor(x));
+    let left = free - give.reduce((a, b) => a + b, 0);
+    const order = want.map((x, i) => [x - Math.floor(x), i]).sort((a, b) => b[0] - a[0]);
+    for (let k = 0; k < left; k++) give[order[k % 3][1]]++;
+    give.forEach((g, i) => { if (enemy.share[i] > .05 && g === 0 && free > 0) { const j = give.indexOf(Math.max(...give)); if (give[j] > 1) { give[j]--; give[i]++; } } });
+    const big = enemy.share.indexOf(Math.max(...enemy.share));
+    give.forEach((g, i) => { for (let k = 0; k < g; k++) plan.push({ lane: LANES[i], role: i === big && k === 0 && g >= 2 ? "sling" : "line" }); });
+    return plan;
+  }
+  /** The odds of each lane and of the battle for a given order of battle. lead = "self" or the advisor's id. */
+  function battleOdds(s, enemy, plan, lead) {
+    const men = Math.trunc(s.army), per = plan.length ? men / plan.length : 0;   // the garrison shared out among the units
+    const common = [["the discipline of Rome", ROMAN_ORDER]];
+    if (enemy.fury) common.push(["their first wild charge", -enemy.fury]);
+    if (enemy.home) { const hd = Math.trunc(stat(s, "home_defence")); if (hd) common.push([built(s, "arx") ? "the walls and the citadel" : "the walls", hd]); }
+    const bb = Math.trunc(stat(s, "battle_bonus")); if (bb) common.push(["drilled in the barracks", bb]);
+    if (lead === "self") common.push(["the governor at their head", SELF_LEAD]);
+    else if (ADVISORS[lead]) { const st = lead === "fleet" ? "experience" : "strategy"; common.push([`${ADVISORS[lead].name.split(" ")[0]}'s ${st}`, num(ADVISORS[lead][st], 3) - 3]); }
+    const laneOf = (i, extra = 0) => {
+      const here = plan.filter((u) => u.lane === LANES[i]), line = here.filter((u) => u.role === "line").length, sling = here.filter((u) => u.role === "sling").length;
+      const foe = Math.round(enemy.men * enemy.share[i] * (1 - Math.min(SLING_CUT_MAX, SLING_CUT * sling)));
+      const ours = Math.round((line * ORDER_MULT + sling * SLING_CLASH) * per + extra * per * ORDER_MULT);
+      if (foe < 5) return { lane: LANES[i], line, sling, ours, foe, bonus: 0, parts: [], chance: 100, empty: true };
+      if (!ours) {
+        const hd = enemy.home ? Math.trunc(stat(s, "home_defence")) : 0;
+        if (!hd) return { lane: LANES[i], line, sling, ours, foe, bonus: -99, parts: [["nobody holds this flank", -99]], chance: 0 };
+        // at home an empty flank is held by the walls and the townsmen on them
+        const parts = [[built(s, "arx") ? "only the walls and the citadel" : "only the walls and the townsmen", hd + WALLS_ALONE]].concat(enemy.fury ? [["their first wild charge", -enemy.fury]] : []);
+        const bonus = parts.reduce((a, [, v]) => a + v, 0);
+        return { lane: LANES[i], line, sling, ours, foe, bonus, parts, chance: chanceOf(bonus, BATTLE_DC), walls: true };
+      }
+      const ratio = ours / foe, rb = Math.max(-6, Math.min(6, Math.round(4 * Math.log2(ratio))));
+      const parts = [[ratio >= 1 ? `${Math.round(ratio * 10) / 10} to 1 in our favour` : `${Math.round(10 / ratio) / 10} to 1 against us`, rb]].concat(common, extra ? [["fresh troops from the reserve", 1]] : []);
+      const bonus = Math.max(-BONUS_CAP, Math.min(BONUS_CAP, parts.reduce((a, [, v]) => a + v, 0)));
+      return { lane: LANES[i], line, sling, ours, foe, bonus, parts, chance: chanceOf(bonus, BATTLE_DC) };
+    };
+    const lanes = [0, 1, 2].map((i) => laneOf(i));
+    const reserve = plan.filter((u) => u.lane === "reserve").length;
+    // P(at least two lanes) with one reserve unit that can rescue the first lost lane
+    const p = lanes.map((l) => l.chance / 100), pr = [0, 1, 2].map((i) => laneOf(i, reserve).chance / 100);
+    let win = 0;
+    for (let m = 0; m < 8; m++) {
+      let pm = 1, wins = 0, firstLost = -1;
+      for (let i = 0; i < 3; i++) { const w = (m >> i) & 1; pm *= w ? p[i] : 1 - p[i]; if (w) wins++; else if (firstLost < 0) firstLost = i; }
+      if (wins >= 2) win += pm;
+      else if (wins === 1 && reserve && firstLost >= 0) win += pm * pr[firstLost];
     }
-    s.calamity_turn = s.turn;
-    if (ok) {
-      const dead = rint(5, 20), loot = parseList(t.loot);
-      st.state = "conquered"; st.hostile_until = s.turn + HOSTILE_SEASONS;
-      s.army -= dead; s.treasury += num(t.loot_treasury); for (const [g, q] of Object.entries(loot)) s[g] += q;
-      s.favour += 3; s.loyalty += 2;
-      notes.push(`Victory in the hills: ${t.land} is ours (${t.plots} new field plots), with ${intc(num(t.loot_treasury))} denarii and ${listText(loot)} in loot; ${dead} of our men fell. The ${t.name} will raid us for years.`);
+    return { lanes, reserve, chance: Math.round(win * 100), per: Math.round(per) };
+  }
+  /** Fight the battle. Returns true for a victory. A governor who leads and loses falls or is taken: the game ends. */
+  async function battle(s, enemy, notes) {
+    const lead = await ui.battleCall(enemy, battleOdds(s, enemy, defaultPlan(s, enemy), enemy.who).chance);   // "self" or the advisor's id
+    const plan = lead === "self" ? await ui.battlePlan(enemy, defaultPlan(s, enemy), (pl) => battleOdds(s, enemy, pl, "self")) : defaultPlan(s, enemy);
+    const odds = battleOdds(s, enemy, plan, lead);
+    const rolls = odds.lanes.map((l) => { if (l.empty) return { r: 0, total: 0, ok: true, skip: true }; const r = rint(1, 20); return { r, total: r + l.bonus, ok: l.chance > 0 && (r === 20 || (r !== 1 && r + l.bonus >= BATTLE_DC)) }; });
+    let rescue = null;
+    const lost = rolls.findIndex((x) => !x.ok);
+    if (rolls.filter((x) => x.ok).length === 1 && odds.reserve && lost >= 0) {
+      const again = battleOdds(s, enemy, plan.concat([]), lead), l = again.lanes[lost];
+      const withR = { ...l, bonus: l.bonus + 1 };
+      const r = rint(1, 20); rescue = { lane: lost, r, total: r + withR.bonus, ok: r === 20 || (r !== 1 && r + withR.bonus >= BATTLE_DC) };
+      if (rescue.ok) rolls[lost] = { ...rolls[lost], rescued: true, ok: true };
+    }
+    const won = rolls.filter((x) => x.ok).length >= 2;
+    await ui.battleDice(enemy, odds, rolls, rescue, won, lead);
+    // the cost in men
+    let dead = 0;
+    odds.lanes.forEach((l, i) => { if (!l.empty) dead += Math.round((l.line + l.sling) * odds.per * (rolls[i].ok && !rolls[i].rescued ? rint(3, 9) : rint(20, 35)) / 100); });
+    if (rescue) dead += Math.round(odds.reserve * odds.per * rint(5, 15) / 100);
+    dead = Math.min(Math.trunc(s.army), dead);
+    s.army -= dead; s.calamity_turn = s.turn;
+    const leader = lead === "self" ? "you led them yourself" : `${ADVISORS[lead].name} led them`;
+    if (won) {
+      const loot = enemy.kind === "pirates" ? rint(300, 800) : enemy.kind === "brigands" ? rint(150, 400) : 0;
+      s.treasury += loot; s.favour += 4; s.loyalty += 3;
+      if (lead === "self") { s.favour += GLORY[0]; s.loyalty += GLORY[1]; notes.push("The town cheers the governor who fought in the front rank; the story reaches Rome."); }
+      notes.push(`Victory ${enemy.where} against ${enemy.name.toLowerCase()} (${enemy.men} men): ${leader}; ${dead} of ours fell.${loot ? ` Their plunder brings ${intc(loot)} denarii.` : ""}`);
     } else {
-      const dead = rint(25, 50);
-      st.hostile_until = s.turn + HOSTILE_SEASONS;
-      s.army -= dead; s.loyalty -= 4; s.favour -= 2;
-      notes.push(`Defeat among the rocks: the ${t.name} ambush the column and ${dead} of our men do not come back. The tribe is now hostile.`);
+      s.favour -= 4; s.loyalty -= 5;
+      if (lead === "self") { s.over = rint(1, 2) === 1 ? `You fell ${enemy.where}, sword in hand, against ${enemy.name.toLowerCase()}. Rome sends a new governor.` : `Taken prisoner ${enemy.where} by ${enemy.name.toLowerCase()}. Your governorship ends in chains.`; }
+      else { s.council[lead].mood = Math.max(0, s.council[lead].mood - 2); notes.push(`${ADVISORS[lead].name} comes back wounded and ashamed (mood ${s.council[lead].mood}/${MOOD_MAX}).`); }
+      const take = enemy.home ? Math.round(s.treasury * .2) : 0;
+      s.treasury -= take;
+      if (enemy.home && enemy.kind !== "pirates") { const f = s.buildings.filter((b) => BLD[b.kind].zone === "field" && isDone(s, b)); if (f.length) { const b = f[rint(0, f.length - 1)]; b.done = s.turn + 2; notes.push(`They burn the ${BLD[b.kind].name.toLowerCase()} (two seasons to restore).`); } }
+      notes.push(`Defeat ${enemy.where} against ${enemy.name.toLowerCase()} (${enemy.men} men): ${leader}; ${dead} of ours fell${take ? `, and ${intc(take)} denarii were carried off` : ""}.`);
     }
+    s.last_battle = { turn: s.turn, enemy, plan, odds: odds.chance, rolls, won, lead };
+    return won;
+  }
+  /** The season's battle, if the year's conflict falls now. */
+  async function conflictPhase(s, notes) {
+    planConflict(s);
+    if (!s.conflict || s.conflict.turn !== s.turn || s.over) return null;
+    const enemy = makeEnemy(s, s.conflict.kind);
+    s.conflict = null;
+    return battle(s, enemy, notes);
   }
 
   // --- Applying orders and resolving the season (formulas.md, in order) ---
@@ -957,6 +1086,8 @@
       const o = pick.order, who = pick.kind === "advice" ? pick.who : null;
       if (o.id === "treat_tribe" || o.id === "march_tribe") {
         const od = tribeOdds(s, o.tribe), w = o.id === "treat_tribe" ? od.treat : od.march;
+        if (o.id === "march_tribe") { const en = makeEnemy(s, "march", o.tribe), bo = battleOdds(s, en, defaultPlan(s, en), "general");
+          return { die, dc: BATTLE_DC, parts: [["a battle: see the battlefield", 0]], bonus: 0, chance: bo.chance, win: "their land and loot", lose: "men lost; they turn hostile" }; }
         return { die, dc: w.target, parts: [[o.id === "treat_tribe" ? "the chiefs' mood" : "our strength against theirs", w.bonus]], bonus: w.bonus, chance: chanceOf(w.bonus, w.target),
           win: o.id === "treat_tribe" ? "their land and their friendship" : "their land and loot", lose: o.id === "treat_tribe" ? "the gifts are wasted" : "men lost; they turn hostile" };
       }
@@ -992,7 +1123,8 @@
     const said = { disaster: "disaster", setback: "a setback", success: "success", triumph: "a triumph" }[tier];
     if (d.pick.kind === "advice" || d.pick.kind === "order") {
       const o = { ...d.pick.order };
-      if (o.id === "treat_tribe" || o.id === "march_tribe") o.preRoll = { r: res.r, total: res.total, ok: tier === "success" || tier === "triumph", tag: res.tag };
+      if (o.id === "treat_tribe") o.preRoll = { r: res.r, total: res.total, ok: tier === "success" || tier === "triumph", tag: res.tag };
+      else if (o.id === "march_tribe") { /* the battle decides */ }
       else if (tier === "disaster") o.boost = "lost";
       else if (tier === "triumph") o.boost = "win";
       else if (d.pick.risk === "risky") o.boost = tier === "success" ? "win" : "lose";
@@ -1111,6 +1243,7 @@
     for (const n of CORE) s[n] = Math.min(Math.max(s[n], num(RULES[n].min, 0)), num(RULES[n].max, Infinity));
     for (const g of GOODS) s[g] = Math.max(0, s[g]);
     if (s.loyalty < UPRISING_BELOW) notes.push("Warning: loyalty is so low that an uprising is near.");
+    if (s.over) return;
     if (s.favour <= 0) s.over = "Recalled to Rome in disgrace: Roman favour reached 0.";
     else if (s.loyalty <= 0 && s.army < ORDER_ARMY) s.over = "Overthrown: the town rose up and the army was too weak to stop it.";
     else if (s.hunger_streak >= 2) s.over = "Replaced for famine: two hungry seasons in a row.";
@@ -1152,7 +1285,7 @@
     return [`Season: ${season.season} AD ${year} (turn ${s.turn} of ${END_TURN}); emperor ${emperorOf(s.turn)}; sailing ${season.sailing === "yes" ? "open" : "closed (winter)"}; wind ${w.latin} from the ${w.from}.`,
       `Numbers: grain ${s.grain.toFixed(1)} months, treasury ${Math.trunc(s.treasury)} denarii, people ${Math.trunc(s.people)} (housing ${housing(s)}), loyalty ${Math.round(s.loyalty)}/100, Roman favour ${Math.round(s.favour)}/100, army ${Math.trunc(s.army)}, ships ${Math.trunc(s.ships)} (${Math.trunc(s.ships) - shipsAtSea(s)} in harbour, berths ${berths(s)}), tax ${s.tax}, tribute ${TRIBUTE} due each Summer${s.tribute_debt ? `, debt ${s.tribute_debt}` : ""}.`,
       `Stores: ${goods || "empty"}.`, `Buildings: ${blds}. Plots: town ${plotsUsed(s, "town")}/${TOWN_PLOTS}, fields ${plotsUsed(s, "field")}/${fieldPlots(s)}.`,
-      `Tribes beyond the fields: ${tribes}.`].join("\n");
+      `Tribes beyond the fields: ${tribes}.`, `The city: ${CITY.traits}${built(s, "arx") ? " The citadel stands." : ""}`].join("\n");
   }
   function rulesText(s) {
     const dec = DECREES.map((d) => `- ${d.id}: ${d.id === "honour_tiberius" ? `Decree honouring ${emperorOf(s.turn)}` : d.name}; ${num(d.cost_treasury) ? num(d.cost_treasury) + " den" : "no denarii"}${d.cost ? ", " + d.cost : ""}. ${String(d.notes).replace("DRAFT. ", "")}`).join("\n");
@@ -1272,5 +1405,6 @@
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
     TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
+    CITY, conflictPhase, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC,
   };
 })();

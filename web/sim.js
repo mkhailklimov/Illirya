@@ -5,7 +5,7 @@ const ctx = { window: {}, console, Math, JSON };
 vm.createContext(ctx);
 for (const f of ["data.js", "engine.js"]) vm.runInContext(fs.readFileSync(require("path").join(__dirname, f), "utf8"), ctx);
 const E = ctx.window.Engine;
-let style = "econ", s = null, log = { quakes: 0, letters: 0, gambles: 0, wins: 0, rolls: 0 }, tiers = {};
+let style = "econ", s = null, log = { quakes: 0, letters: 0, gambles: 0, wins: 0, rolls: 0 }, tiers = {}, war = {};
 const ECON = ["economist", "treasurer", "fleet", "priest"];
 const ui = {
   lay: async () => {}, turn: async (c) => { if (c.id === "e010-earthquake") log.quakes++; if (c.letter) log.letters++; },
@@ -17,7 +17,7 @@ const ui = {
     if (style === "random") k = Math.floor(Math.random() * (list.length + 1));
     else if (style === "careful") k = list.findIndex((p) => p.risk === "moderate");
     else if (style === "army") k = list.findIndex((p) => p.who === "general" || p.risk === "risky");
-    else { // econ first, army late
+    else { // econ first, army late (also the commander)
       const late = s.turn > 28;
       k = late ? list.findIndex((p) => p.who === "general") : list.findIndex((p) => ECON.includes(p.who));
       if (k < 0) k = list.findIndex((p) => p.risk === "moderate");
@@ -27,14 +27,17 @@ const ui = {
     return { kind: "advice", i: k };
   },
   roll: async (r) => { log.rolls++; if (r.ok) log.wins++; },
+  battleCall: async (enemy, chance) => { war.n = (war.n || 0) + 1; war.chance = (war.chance || 0) + (+chance || 0); return style === "commander" ? "self" : enemy.who; },
+  battlePlan: async (enemy, plan) => plan,
+  battleDice: async (enemy, odds, rolls, rescue, won, lead) => { if (won) war.won = (war.won || 0) + 1; if (lead === "self") { war.self = (war.self || 0) + 1; if (!won) war.fell = (war.fell || 0) + 1; } },
   throwDice: async (ds, rs) => { for (const r of rs) { tiers[r.tier] = (tiers[r.tier] || 0) + 1; log.rolls++; if (r.ok) log.wins++; } }, ability: async () => true, choose: async () => 0, number: async (t, lo, hi) => hi,
 };
 E.setUI(ui);
 (async () => {
   const N = +(process.argv[2] || 20);
-  for (style of ["econ", "army", "careful", "random"]) {
+  for (style of ["econ", "commander", "army", "careful", "random"]) {
     const res = [];
-    log = { quakes: 0, letters: 0, gambles: 0, wins: 0, rolls: 0 }; tiers = {};
+    log = { quakes: 0, letters: 0, gambles: 0, wins: 0, rolls: 0 }; tiers = {}; war = {};
     for (let g = 0; g < N; g++) {
       s = E.newGame();
       const peopleAt = {};
@@ -43,9 +46,11 @@ E.setUI(ui);
         s.before = Object.fromEntries(E.NUMBERS.map((n) => [n, s[n]]));
         const notes = [];
         await E.playCards(s, notes);
+        await E.conflictPhase(s, notes);
+        if (s.over) break;
         const sug = E.suggestions(s);
         let free = [];
-        if (style === "econ") free = sug.filter((p) => s.turn > 28 ? true : ECON.includes(p.who)).slice(0, 1);
+        if (style === "econ" || style === "commander") free = sug.filter((p) => s.turn > 28 ? true : ECON.includes(p.who)).slice(0, 1);
         else if (style === "army") free = sug.filter((p) => p.who === "general").slice(0, 1);
         else if (style === "careful") free = sug.slice(0, 1);
         else free = Math.random() < .7 && sug.length ? [sug[Math.floor(Math.random() * sug.length)]] : [];
@@ -68,5 +73,6 @@ E.setUI(ui);
     const won = res.reduce((a, r) => a + (r.tribes.match(/[ac]/g) || []).length, 0);
     console.log(`${style.padEnd(8)} finished ${fin}/${N}  score ${avg("score")}  people ${avg("people")} (t12 ${avg("p12")}, t24 ${avg("p24")}, t36 ${avg("p36")})  treasury ${avg("treasury")}  loyalty ${avg("loy")}  favour ${avg("fav")}  army ${avg("army")}  tribes won ${won}  lost: ${JSON.stringify(why)}`);
     console.log(`         per game: quakes ${(log.quakes / N).toFixed(2)}, letters ${(log.letters / N).toFixed(1)}, gambles ${(log.gambles / N).toFixed(1)}, dice ${(log.rolls / N).toFixed(1)} (won ${Math.round(100 * log.wins / Math.max(1, log.rolls))}%), card dice ${JSON.stringify(tiers)}`);
+    console.log(`         battles: ${war.n || 0} (${((war.n || 0) / N).toFixed(1)} a game), won ${Math.round(100 * (war.won || 0) / Math.max(1, war.n || 0))}%, expected ${Math.round((war.chance || 0) / Math.max(1, war.n || 0))}%${war.self ? `; led in person ${war.self}, fell or taken ${war.fell || 0}` : ""}`);
   }
 })();

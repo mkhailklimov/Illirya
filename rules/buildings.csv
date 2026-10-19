@@ -1,18 +1,19 @@
-id,name,short,zone,start,max,cost_treasury,cost,seasons_to_build,matures,ramp,yields_in,produces,uses,grain,treasury,loyalty,favour,housing,ships_cap,battle_bonus,army_pay_discount,trade_bonus,notes
-forum,Forum,Forum,town,1,1,0,,0,0,0,,,,,,,,,,,,,Seat of the governor and the town council. Already there.
-houses,Residential district,Houses,town,3,8,400,timber 10,2,0,0,,,,,,,,1500,,,,,"DRAFT. Houses 1,500 people."
-harbour,Harbour,Harbour,town,1,2,1500,timber 30; iron 6,8,0,0,,,,,,,,,3,,,,DRAFT. Two years to build. Berths for 3 ships.
-walls,Walls and towers,Walls,town,1,2,800,timber 10; iron 4,6,0,0,,,,,,,,,,2,,,DRAFT. +2 to defence rolls.
-weavers,Weavers' workshop,Weavers,town,0,4,500,timber 6,2,0,1,any,cloth 3,fleece 3,,,,,,,,,,DRAFT. Turns 3 fleece into 3 cloth every season.
-market,Trading district,Traders,town,0,1,900,timber 12,4,0,0,,,,,100,,,,,,,0.1,DRAFT. Stall fees +100 denarii a season; convoys trade 10% better.
-temple,Temple,Temple,town,0,1,2000,marble 20; timber 15; bronze 4,12,0,0,,,,,,1,1,,,,,,DRAFT. Three years to build. +1 loyalty and +1 Roman favour every season.
-barracks,Barracks,Barracks,town,0,1,600,timber 15; iron 5,3,0,0,,,,,,,,,,1,1,,DRAFT. Soldiers cost 1 denarius less; +1 to battle rolls.
-baths,Baths,Baths,town,0,1,1200,marble 10; bronze 6; timber 10,8,0,0,,,,,,2,,,,,,,DRAFT. Two years to build. +2 loyalty every season.
-wheat,Wheat terraces,Wheat,field,4,12,600,timber 2,2,0,0,,,,,,,,,,,,,DRAFT. First harvest after two seasons. The 4 at the start give the 8 months a year in seasons.csv.
-vineyard,Vineyard,Vines,field,1,6,400,timber 2,1,3,4,Autumn,wine 12,,,,,,,,,,,"DRAFT. First vintage a year after planting, full after two. 12 amphorae each Autumn."
-olives,Olive grove,Olives,field,1,6,300,,1,7,4,Winter,oil 10,,,,,,,,,,,"DRAFT. Grafted trees: first oil after two years, full after three. 10 amphorae each Winter."
-pasture,Sheep pasture,Sheep,field,1,4,300,,1,0,1,Spring,fleece 8,,,,,,,,,,,DRAFT. 8 bales of fleece at the Spring shearing.
-fishery,Fishery,Fish,field,0,3,350,timber 6,1,0,0,any,fish 2,salt 1,0.5,,,,,,,,,"DRAFT. +0.5 months of food every season; with salt, 2 jars of salted fish."
-saltpans,Salt pans,Salt,field,0,2,300,,2,0,0,Summer,salt 10,,,,,,,,,,,DRAFT. Sea water dries in the summer sun: 10 sacks.
-woodcutters,Woodcutters' camp,Wood,field,1,3,250,iron 1,1,0,2,any,timber 4,,,,,,,,,,,DRAFT. 4 loads of timber a season once the paths are cut.
-mine,Iron mine,Mine,field,0,2,900,timber 10,4,0,2,any,iron 3,,,,,,,,,,,DRAFT. 3 bars of iron a season. Two shafts at most.
+id,name,short,zone,start,max,cost_treasury,cost,seasons_to_build,matures,ramp,yields_in,produces,uses,grain,treasury,loyalty,favour,housing,ships_cap,battle_bonus,home_defence,army_pay_discount,trade_bonus,notes
+forum,Forum,Forum,town,1,1,0,,0,0,0,,,,,,,,,,,,,,Seat of the governor and the town council. Already there.
+houses,Residential district,Houses,town,3,8,400,timber 10,2,0,0,,,,,,,,1500,,,,,,"DRAFT. Houses 1,500 people."
+harbour,Harbour,Harbour,town,1,2,1500,timber 30; iron 6,8,0,0,,,,,,,,,3,,,,,DRAFT. Two years to build. Berths for 3 ships.
+walls,Walls and towers,Walls,town,1,2,800,timber 10; iron 4,6,0,0,,,,,,,,,,,2,,,DRAFT. +2 to every battle fought at home (not on a march).
+weavers,Weavers' workshop,Weavers,town,0,4,500,timber 6,2,0,1,any,cloth 3,fleece 3,,,,,,,,,,,DRAFT. Turns 3 fleece into 3 cloth every season.
+market,Trading district,Traders,town,0,1,900,timber 12,4,0,0,,,,,100,,,,,,,,0.1,DRAFT. Stall fees +100 denarii a season; convoys trade 10% better.
+temple,Temple,Temple,town,0,1,2000,marble 20; timber 15; bronze 4,12,0,0,,,,,,1,1,,,,,,,DRAFT. Three years to build. +1 loyalty and +1 Roman favour every season.
+barracks,Barracks,Barracks,town,0,1,600,timber 15; iron 5,3,0,0,,,,,,,,,,1,,1,,DRAFT. Soldiers cost 1 denarius less; +1 to battle rolls.
+baths,Baths,Baths,town,0,1,1200,marble 10; bronze 6; timber 10,8,0,0,,,,,,2,,,,,,,,DRAFT. Two years to build. +2 loyalty every season.
+wheat,Wheat terraces,Wheat,field,4,12,600,timber 2,2,0,0,,,,,,,,,,,,,,DRAFT. First harvest after two seasons. The 4 at the start give the 8 months a year in seasons.csv.
+vineyard,Vineyard,Vines,field,1,6,400,timber 2,1,3,4,Autumn,wine 12,,,,,,,,,,,,"DRAFT. First vintage a year after planting, full after two. 12 amphorae each Autumn."
+olives,Olive grove,Olives,field,1,6,300,,1,7,4,Winter,oil 10,,,,,,,,,,,,"DRAFT. Grafted trees: first oil after two years, full after three. 10 amphorae each Winter."
+pasture,Sheep pasture,Sheep,field,1,4,300,,1,0,1,Spring,fleece 8,,,,,,,,,,,,DRAFT. 8 bales of fleece at the Spring shearing.
+fishery,Fishery,Fish,field,0,3,350,timber 6,1,0,0,any,fish 2,salt 1,0.5,,,,,,,,,,"DRAFT. +0.5 months of food every season; with salt, 2 jars of salted fish."
+saltpans,Salt pans,Salt,field,0,2,300,,2,0,0,Summer,salt 10,,,,,,,,,,,,DRAFT. Sea water dries in the summer sun: 10 sacks.
+woodcutters,Woodcutters' camp,Wood,field,1,3,250,iron 1,1,0,2,any,timber 4,,,,,,,,,,,,DRAFT. 4 loads of timber a season once the paths are cut.
+mine,Iron mine,Mine,field,0,2,900,timber 10,4,0,2,any,iron 3,,,,,,,,,,,,DRAFT. 3 bars of iron a season. Two shafts at most.
+arx,Citadel on the hill,Citadel,hill,0,1,2500,timber 30; iron 10,12,,,,,,,,,1,,,,5,,,"DRAFT. A fortress on the crag above the town, joined to the walls. +5 to every battle at home: the town can hardly be taken. Three years to build."

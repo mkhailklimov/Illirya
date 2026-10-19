@@ -17,7 +17,7 @@ choice:
       effects: {}
       roll:                                   # d20 + 1 per 50 soldiers + walls (2 each) + barracks (1); need 13
         die: 20
-        bonus: army / 50 + battle_bonus
+        bonus: army / 50 + battle_bonus + home_defence
         target: 13
         success: {favour: 4, loyalty: 3, fleece: 6}        # DRAFT: spoils and glory
         failure: {army: -30, people: -100, loyalty: -4}   # DRAFT: a costly defeat

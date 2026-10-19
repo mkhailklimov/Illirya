@@ -17,7 +17,7 @@ from make import HEAD, TAIL, OUT
 
 W = H = 360
 CX, CY, R = 180, 186, 150
-STONES = ("obsidian", "amber", "malachite", "opal", "aquamarine", "onyx")   # the last three: the land, sea and omen dice of rules v5
+STONES = ("obsidian", "amber", "malachite", "opal", "aquamarine", "onyx", "bloodstone")   # bloodstone: the battle dice (rules v6)   # the last three: the land, sea and omen dice of rules v5
 
 # per stone: base gradient (light, dark), edge colour, numeral fill and outline, small-numeral colour
 LOOK = {
@@ -26,6 +26,7 @@ LOOK = {
     "malachite": {"gloss": 1, "light": "#4fd39a", "dark": "#06402a", "edge": "#b8f0d4", "ink": "url(#inlay)", "rim": "#06301f", "small": "#f6e3a1"},
     "opal": {"gloss": .7, "light": "#fbf8ff", "dark": "#c3cde4", "edge": "#ffffff", "ink": "#3a2a55", "rim": "#fdfbff", "small": "#5a4a78"},
     "aquamarine": {"gloss": 1, "light": "#bff3f0", "dark": "#2b7f93", "edge": "#e4fffd", "ink": "#0c3442", "rim": "#e8fffe", "small": "#0f4a5a"},
+    "bloodstone": {"gloss": .6, "light": "#1f4a3a", "dark": "#061a12", "edge": "#9fd0b8", "ink": "url(#inlay)", "rim": "#140608", "small": "#e8c0a0"},
     "onyx": {"gloss": .5, "light": "#26222a", "dark": "#050406", "edge": "#d8d2c8", "ink": "url(#inlay)", "rim": "#1a0f12", "small": "#e8e0d0"},
 }
 # facets: light (+) or shadow (-) laid over the stone, light from the upper left
@@ -82,6 +83,10 @@ def material(stone, uid):
         for i in range(9):
             x = CX - 120 + i * 30 + rnd.uniform(-8, 8)
             out.append(f'<path d="M{x:.1f},{CY - 150} l{rnd.uniform(-30, 30):.1f},300" stroke="#ffffff" stroke-width="{rnd.uniform(1, 3):.1f}" opacity="{rnd.uniform(.12, .3):.2f}"/>')
+    elif stone == "bloodstone":   # heliotrope: deep green with spots of red, the stone of soldiers
+        for _ in range(55):
+            x, y = CX + rnd.uniform(-135, 135), CY + rnd.uniform(-135, 135)
+            out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{rnd.uniform(1.5, 6):.1f}" fill="{rnd.choice(("#b8202e", "#d4383f", "#8e1622"))}" opacity="{rnd.uniform(.5, .9):.2f}"/>')
     elif stone == "onyx":         # black stone with fine white bands
         ox, oy = CX + 160, CY + 190
         for i in range(26):
