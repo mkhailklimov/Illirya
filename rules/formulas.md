@@ -129,6 +129,14 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v7 (19 October 2026): the mixed army
+
+- **Troops:** infantry in cohorts of 50 (`army`); slingers (groups of 25), archers (groups of 30, raised from the townsmen), horsemen (a troop from 5 riders), scorpions (up to 4) in `s.troops`; kit `pila` and `gladius` in `s.kit`. Pay a season: infantry and slingers 4 each (barracks −1), archers 2, horsemen 10, scorpions 10 upkeep. All soldiers eat.
+- **Before the clash** a lane loses 12% per slinger group, 8% per archer group, 5% per cohort with pila, 10% per scorpion, and 4% per archer group on the walls (at home, every lane); 60% at most.
+- **In the clash** a shield line counts 1.75 (2.1 with gladii) of theirs per man; slingers and archers in the lane count 0.6.
+- **Bonuses added to every lane:** experience +1 per two victories (up to +3), morale (−2 to +2), +1 for engines on a march, +2 on the lane the horsemen strike.
+- **After the battle:** wounded = 1.5 × fallen, 6 denarii each (a third of the unpaid die); replacements for fallen infantry (10+) at 5 denarii each (+1 with pila), 1 iron and 1 cloth per 10. Victory: experience +1, morale +1. Defeat: experience −1, morale −2, every advisor's mood −1; leading in person, the horse guard saves you 60% of the time (favour −6, loyalty −4 more), otherwise the game ends.
+
 ## Rules v6 (19 October 2026): battles and the city
 
 - **A conflict once a year:** in Spring the rules pick the season (Spring to Autumn) and the enemy: pirates (weight 3, +1 with 3+ ships, +2 with 8,000+ denarii), brigands (2, +3 at loyalty below 45, +2 with fewer than 100 soldiers), tribes (1, +5 while a tribe is hostile). Marches against a tribe are battles too.
