@@ -29,7 +29,7 @@ const ui = {
   roll: async (r) => { log.rolls++; if (r.ok) log.wins++; },
   battleCall: async (enemy, chance) => { war.n = (war.n || 0) + 1; war.chance = (war.chance || 0) + (+chance || 0); return style === "commander" ? "self" : enemy.who; },
   battlePlan: async (enemy, plan) => plan,
-  battleDice: async (enemy, odds, rolls, rescue, won, lead) => { if (won) war.won = (war.won || 0) + 1; if (lead === "self") { war.self = (war.self || 0) + 1; if (!won) war.fell = (war.fell || 0) + 1; } },
+  battleDice: async (enemy, st, result, won, lead) => { if (won) war.won = (war.won || 0) + 1; if (lead === "self") { war.self = (war.self || 0) + 1; if (!won) war.fell = (war.fell || 0) + 1; } },
   throwDice: async (ds, rs) => { for (const r of rs) { tiers[r.tier] = (tiers[r.tier] || 0) + 1; log.rolls++; if (r.ok) log.wins++; } }, ability: async () => true, choose: async () => 0, number: async (t, lo, hi) => hi,
 };
 E.setUI(ui);

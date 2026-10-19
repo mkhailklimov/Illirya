@@ -129,6 +129,15 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v8 (19 October 2026): battles in rounds
+
+- **Deployment by position** (x 0–900, y 250–450): x < 300 left, < 600 centre, else right; y < 300 front (missiles), < 362 the line, else the second line; at home with walls, missile troops at y 362–388 stand on the walls (half their effect on every lane). Horsemen: x < 90 or > 810 strike that flank; at the rear near the standard they guard the governor; elsewhere at the rear they wait to pursue.
+- **Missiles** (before the clash, 60% at most per lane): slingers 12%, archers 8%, village slingers 8%, village bowmen 6%, scorpions 10%, ballistae 15%, pila 5% per cohort in the line.
+- **The clash** in up to 3 rounds per lane. Strength per man: shield line 1.75 (2.1 with gladii), horse 2.5, allied warriors 1.2, slingers and archers 0.6, militia 0.45. Bonus: 4 × log2(ours/theirs) (−6 to +6, recomputed each round) + discipline 1 + walls/citadel at home + barracks + experience + morale + the leader; first round only: their charge −fury, our horse strike +2; a neighbouring lane broken: +2 (flank). d20 + bonus against DC 10.
+- **Morale:** ours starts at 100 (+10 per point of army morale), theirs at 100 + 10 × fury − 0.8 × missile %. Their charge costs us 8 × fury. A won round: they lose 12–32% of their men and 20 + 3 × margin morale (+20 on a 20); we lose 3%. A lost round: we lose 8–26% and 25 + 3 × margin morale (+20 on a 1); they lose 3%. The second line joins when our morale falls below 50 (+30). A lane is decided when one side's morale reaches 0; after three rounds the higher morale holds it. Two lanes of three win the day.
+- **Village militia** (home battles): 80 denarii, loyalty −1; d20 + loyalty/20 ≥ 8 (a 1 fails, a 20 succeeds): 20–40 slingers and 15–30 bowmen for this battle. **Allies**: each allied tribe sends 30–60 warriors to a home battle.
+- **Ballista:** 600 denarii, 15 timber, 8 iron; upkeep 15; two at most.
+
 ## Rules v7 (19 October 2026): the mixed army
 
 - **Troops:** infantry in cohorts of 50 (`army`); slingers (groups of 25), archers (groups of 30, raised from the townsmen), horsemen (a troop from 5 riders), scorpions (up to 4) in `s.troops`; kit `pila` and `gladius` in `s.kit`. Pay a season: infantry and slingers 4 each (barracks −1), archers 2, horsemen 10, scorpions 10 upkeep. All soldiers eat.
