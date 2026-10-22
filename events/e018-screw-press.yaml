@@ -15,6 +15,7 @@ choice:
   options:
     - label: Pay him to build one
       effects: {treasury: -400, timber: -5, oil: 10}   # DRAFT
+      invention: screw_press                         # v9: oil +30% every harvest, +50 denarii a season
     - label: Our old beam presses will do
       effects: {}
 scribe_hint: He draws the screw on a wax tablet; Nikandros counts the profit in his head.

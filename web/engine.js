@@ -82,6 +82,39 @@
       tribes: Object.fromEntries(TRIBES.map((t) => [t.id, { state: "free", tries: 0, hostile_until: 0 }])), tax: "normal", buildings: startBuildings(), shipyard: [], convoys: [], tribute_debt: 0,
       field_plots: FIELD_PLOTS, clearing: [], wind: "E", current: 1, weather_turn: 0, forecast: null, hunger_streak: 0, last_festival: -9, once_fired: [], over: null,
       council: newCouncil(), last_roll: null });
+    return migrate(s);
+  }
+  // rules v9: ships with names, voyages, inventions, justice, discontent. Older saves get the new fields here.
+  const SHIP_NAMES = ["Fortuna", "Concordia", "Aquila", "Victoria", "Neptunus", "Salus", "Delphinus", "Pax", "Spes", "Minerva", "Castor", "Pollux", "Felicitas", "Triton", "Pietas", "Ister", "Clementia", "Mercurius"];
+  function newShipName(s) {
+    const used = new Set([...(s.fleet || []), ...(s.shipyard || []).map((k) => k.name)]);
+    const free = SHIP_NAMES.filter((n) => !used.has(n));
+    return free.length ? free[0] : `${SHIP_NAMES[(s.fleet || []).length % SHIP_NAMES.length]} ${["II", "III", "IV"][rint(0, 2)]}`;
+  }
+  /** Keep the names of the ships in step with their number (cards and storms may sink one, Rome may send one). */
+  function fleetNames(s) {
+    s.fleet = s.fleet || [];
+    const n = Math.max(0, Math.trunc(s.ships));
+    while (s.fleet.length > n) {   // the lost one is a ship in harbour, not one at sea
+      const atSea = new Set((s.convoys || []).map((c) => c.ship));
+      const k = s.fleet.findIndex((x) => !atSea.has(x));
+      s.fleet.splice(k >= 0 ? k : s.fleet.length - 1, 1);
+    }
+    while (s.fleet.length < n) s.fleet.push(newShipName(s));
+    return s.fleet;
+  }
+  function migrate(s) {
+    s.shipyard = (s.shipyard || []).map((k) => (typeof k === "number" ? { done: k, name: null } : k));
+    fleetNames(s);   // the ships afloat are named first, then the keels
+    for (const k of s.shipyard) if (!k.name) k.name = newShipName(s);
+    if (!("discontent" in s)) s.discontent = num(RULES.discontent.start);
+    s.justice = s.justice || { pardoned: 0, executed: 0 };
+    s.inventions = s.inventions || [];
+    s.voyages = s.voyages || [];
+    s.news = s.news || [];
+    s.army_peak = s.army_peak || Math.max(150, Math.trunc(s.army));
+    fleetNames(s);
+    for (const c of s.convoys || []) if (!c.ship) c.ship = s.fleet.find((n) => !s.convoys.some((x) => x.ship === n)) || "a ship";
     return s;
   }
   const seasonOf = (turn) => [SEASONS[(turn - 1) % SEASONS.length], 30 + Math.floor((turn - 1) / SEASONS.length)];
@@ -280,11 +313,19 @@
     let c = num(d.cost_treasury);
     if (o.id === "send_convoy" && o.town) c += buyCost(s, o);
     if (o.id === "merchants") c += merchantCost(o);
+    if (o.id === "refill_ranks") { const R = refillOf(s); return [R.cost, R.mats]; }
     if (o.id === "treat_tribe" && TRIBE[o.tribe]) {
       const t = TRIBE[o.tribe], k = hostile(s, t.id) ? 1.5 : 1;
       return [Math.round(num(t.gifts_treasury) * k), Object.fromEntries(Object.entries(parseList(t.gifts)).map(([g, q]) => [g, Math.round(q * k)]))];
     }
     return [c, parseList(d.cost)];
+  }
+  /** Refilling the cohorts (rules v9): townsmen take the places of the fallen, up to the army's best strength; each needs a shield (timber), and a sword and javelins if the army carries them (iron). */
+  const REFILL_MAX = 100;
+  function refillOf(s) {
+    const n = Math.max(0, Math.min(REFILL_MAX, Math.trunc((s.army_peak || 150) - s.army)));
+    const k = s.kit || {}, swords = 1 + (k.gladius ? 1 : 0) + (k.pila ? 1 : 0);
+    return { n, cost: n * REPLACE_COST + (k.pila ? n : 0), mats: n ? { timber: Math.ceil(n / 10), iron: Math.ceil(n / 10) * swords } : {} };
   }
   function describe(s, o) {
     const d = DECREE[o.id];
@@ -292,6 +333,7 @@
     if (o.id === "build") { const b = BLD[o.building]; return b ? (b.zone === "field" && ["vineyard", "olives", "wheat"].includes(b.id) ? `Plant ${b.name.toLowerCase()}` : `Build ${b.name.toLowerCase()}`) : "Build (what?)"; }
     if (o.id === "merchants") return Object.keys(o.buy || {}).length ? `Buy from the merchants at the quay: ${listText(o.buy)}` : d.name;
     if (o.id === "honour_tiberius") return `Decree honouring ${emperorOf(s.turn)}`;
+    if (o.id === "refill_ranks") { const R = refillOf(s); return R.n ? `Refill the cohorts: ${R.n} recruits from the town` : d.name; }
     if (o.id === "treat_tribe") return `Treat with the ${TRIBE[o.tribe] ? TRIBE[o.tribe].name : "tribes"}`;
     if (o.id === "march_tribe") return `March against the ${TRIBE[o.tribe] ? TRIBE[o.tribe].name : "tribes"}`;
     if (o.id !== "send_convoy") return d.name;
@@ -324,6 +366,7 @@
         if (have >= Math.trunc(num(b.max, 99))) { problems.push(`Acruvium already has as many ${b.name.toLowerCase()} as it can hold (${Math.trunc(num(b.max))}).`); return; }
       }
       if (o.id === "build_ship" && Math.trunc(s.ships) + s.shipyard.length + newShips >= berths(s)) { problems.push(`Epicadus: no free berth for another ship (berths for ${berths(s)}); a second harbour first.`); return; }
+      if (o.id === "refill_ranks" && refillOf(s).n < 5) { problems.push(`Antistius: the cohorts are at full strength (${Math.trunc(s.army)} of ${Math.trunc(s.army_peak || 150)}); there is nobody to replace.`); return; }
       if (o.id === "clear_land" && clearedPlots(s) + (s.clearing || []).length + clears >= FIELD_PLOTS_MAX) { problems.push(`The hillside is used up: at most ${FIELD_PLOTS_MAX} field plots.`); return; }
       if (o.id === "merchants") {
         if (season.sailing === "no") { problems.push("No merchant ships call in winter (mare clausum)."); return; }
@@ -572,13 +615,22 @@
       say: "Men from beyond the mountains come down in a howling mass, shields painted, to burn the harvest." },
     march: { name: "Warriors of the tribes", who: "general", fury: 1, home: false, terrain: "valley", where: "in their own valley",
       say: "Their whole people stands across the valley, on ground they know." },
+    rebels: { name: "The rebels of Acruvium", who: "general", fury: 2, home: false, terrain: "fields", where: "in the streets and the forum",
+      say: "Thousands of townsmen with clubs, axes and stolen spears: your own people, and some of your militia with them." },
   };
+  // rules v9: how close the enemy stands. Stones from a sling fly far but wide: they do best against a dense crowd.
+  // Arrows are fewer but aimed: the same against any enemy.
+  const DENSITY = { tribes: 1, march: 1, rebels: 1, pirates: .5, brigands: .4 };
+  const missileOf = (type, enemy) => { const d = DENSITY[enemy.kind] ?? .7;
+    return type === "sling" ? .04 + .12 * d : type === "militia_sling" ? .03 + .08 * d : MISSILE[type] || 0; };
+  const MISSILE_TYPES = ["sling", "archer", "militia_sling", "militia_archer"];
+  const SHIELDS = ["cohort", "ally", "horse"];
   /** The year's conflict: at the first season of each year, decide whether and when it comes, and from where. */
   function planConflict(s) {
     const [season, year] = seasonOf(s.turn);
     if (season.season !== "Spring" || s.conflict_year === year) return;
     s.conflict_year = year;
-    const w = { pirates: 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
+    const w = { pirates: 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0) + (reputation(s).id === "weak" ? 3 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
     const kind = choices(Object.keys(w), Object.values(w));
     s.conflict = { turn: s.turn + rint(0, 2), kind };
   }
@@ -610,7 +662,7 @@
   // or, at home, the walls. Horsemen on a flank edge strike that lane; at the rear by the standard they guard you.
   const FIELD = { left: 300, right: 600, front: 300, line: 362, wallTop: 362, wallBottom: 388 };
   const MELEE_ROUNDS = 3, SIMS = 300, DISCIPLINE = 1, HIT_FOE = 20, HIT_US = 25;
-  const MISSILE = { sling: .12, archer: .08, militia_sling: .08, militia_archer: .06, engine: .10, ballista: .15 };
+  const MISSILE = { sling: .12, archer: .10, militia_sling: .08, militia_archer: .07, engine: .10, ballista: .15 };
   const CLASH = { cohort: 1.75, horse: 2.5, ally: 1.2, sling: .6, archer: .6, militia_sling: .45, militia_archer: .45 };
   const laneAt = (x) => (x < FIELD.left ? 0 : x < FIELD.right ? 1 : 2);
   function rowAt(u, enemy, s) {
@@ -641,12 +693,13 @@
     const walls = enemy.home && built(s, "walls");
     const spread = (n, k) => (k - (n - 1) / 2) * 92;   // side by side within a lane
     for (let k = 0; k < f.slingers; k++) units.push({ id: "s" + k, type: "sling", x: LANE_CX[big] + spread(f.slingers, k), y: 272 });
-    for (let k = 0; k < f.archers; k++) units.push({ id: "a" + k, type: "archer", x: walls ? 120 + k * 230 : LANE_CX[(big + 1 + k) % 3], y: walls ? 375 : 272 });
+    const held = [0, 1, 2].filter((i) => give[i] || second === i), cover = (k) => (held.length ? held[k % held.length] : big);   // missiles only where a shield line stands
+    for (let k = 0; k < f.archers; k++) units.push({ id: "a" + k, type: "archer", x: walls ? 120 + k * 230 : LANE_CX[cover(held.indexOf(big) + 1 + k)] + 40, y: walls ? 375 : 272 });
     for (let k = 0; k < f.engines; k++) units.push({ id: "e" + k, type: "engine", x: LANE_CX[big] + 120 + k * 46, y: 418 });
     for (let k = 0; k < f.ballistae; k++) units.push({ id: "b" + k, type: "ballista", x: LANE_CX[big] - 120 - k * 50, y: 418 });
     if (f.cavalry) units.push({ id: "h", type: "horse", x: lead === "self" ? 560 : big === 2 ? 860 : 40, y: lead === "self" ? 432 : 330 });
-    if (f.militiaSling) units.push({ id: "ms", type: "militia_sling", x: LANE_CX[big === 1 ? 0 : 1], y: 272 });
-    if (f.militiaArcher) units.push({ id: "ma", type: "militia_archer", x: walls ? 720 : LANE_CX[big === 2 ? 1 : 2], y: walls ? 375 : 272 });
+    if (f.militiaSling) units.push({ id: "ms", type: "militia_sling", x: LANE_CX[cover(held.indexOf(big) + 2)] - 40, y: 272 });
+    if (f.militiaArcher) units.push({ id: "ma", type: "militia_archer", x: walls ? 720 : LANE_CX[cover(held.indexOf(big) + 3)] + 40, y: walls ? 375 : 272 });
     f.allies.forEach((a, k) => units.push({ id: "al" + k, type: "ally", x: LANE_CX[(big + 1 + k) % 3] + 60, y: 410, name: a.name, men: a.men }));
     return { units };
   }
@@ -673,10 +726,19 @@
     const lanes = [0, 1, 2].map((i) => {
       const here = placed.filter((u) => u.lane === i);
       const front = here.filter((u) => u.row === "front" || u.row === "line"), second = here.filter((u) => u.row === "second" && CLASH[u.type]);
-      let cut = wallsMissile;
-      for (const u of here) { if (MISSILE[u.type] && u.row !== "walls") cut += MISSILE[u.type]; if (u.type === "cohort" && u.row === "line" && kit.pila) cut += CUT.pila; }
-      cut = Math.min(CUT.max, cut);
-      const foe0 = Math.round(enemy.men * enemy.share[i]), foe = Math.round(foe0 * (1 - cut));
+      // the stages before the clash: far (sling stones, ballistae), near (slings again, arrows, scorpions), then the javelins
+      const stage = { far: 0, near: wallsMissile, pila: 0 };
+      for (const u of here) {
+        if (u.row === "walls") continue;
+        const m = MISSILE[u.type] ? missileOf(u.type, enemy) : 0;
+        if (u.type === "sling" || u.type === "militia_sling") { stage.far += m / 2; stage.near += m / 2; }
+        else if (u.type === "ballista") stage.far += m; else if (m) stage.near += m;
+        if (u.type === "cohort" && u.row === "line" && kit.pila) stage.pila += CUT.pila;
+      }
+      const cut = Math.min(CUT.max, stage.far + stage.near + stage.pila);
+      const shielded = here.some((u) => SHIELDS.includes(u.type) && u.row !== "pursue" && u.row !== "guard");
+      const exposed = !shielded && here.some((u) => MISSILE_TYPES.includes(u.type) && u.row !== "walls");
+      const foe0 = Math.round(enemy.men * enemy.share[i]), foe = Math.round(foe0 * (1 - cut) * (enemy.quality || 1));
       const mult = (u) => u.type === "cohort" ? (kit.gladius ? GLADIUS_MULT : CLASH.cohort) : CLASH[u.type] || 0;
       const ours = Math.round(front.reduce((a, u) => a + u.men * mult(u), 0)), reserve = Math.round(second.reduce((a, u) => a + u.men * mult(u), 0));
       const men = Math.round(front.reduce((a, u) => a + u.men, 0));
@@ -684,7 +746,8 @@
         : enemy.home && Math.trunc(stat(s, "home_defence")) ? [[built(s, "arx") ? "only the walls and the citadel" : "only the walls and the townsmen", Math.trunc(stat(s, "home_defence")) + WALLS_ALONE]] : [["nobody holds this flank", -99]];
       if (foe >= 5 && enemy.fury) parts.push(["their first wild charge (first round)", -enemy.fury]);
       if (strikeLane === i && foe >= 5) parts.push(["our horsemen strike their flank (first round)", CAVALRY_STRIKE]);
-      return { lane: LANES[i], i, foe0, foe, cut: Math.round(cut * 100), ours, reserve, men, parts, walls: !ours && foe >= 5 && enemy.home && Math.trunc(stat(s, "home_defence")) > 0,
+      if (exposed && foe >= 5) parts.push(["slingers and archers with no shield line to hide behind", -2]);
+      return { lane: LANES[i], i, foe0, foe, cut: Math.round(cut * 100), stage: Object.fromEntries(Object.entries(stage).map(([k, v]) => [k, Math.round(Math.min(CUT.max, v) * 100)])), exposed: exposed && foe >= 5, ours, reserve, men, parts, walls: !ours && foe >= 5 && enemy.home && Math.trunc(stat(s, "home_defence")) > 0,
         empty: foe < 5, units: here.map((u) => u.type) };
     });
     return { lanes, horse: horse ? horse.row : null, placed, f };
@@ -749,15 +812,22 @@
     await ui.battleDice(enemy, st, result, won, lead);
     // the cost in men, lane by lane: the line loses what the rounds took; missile troops a little; the horse on a defeat
     const f = st.f, t = (s.troops = { ...troopsOf(s) });
-    let deadInf = 0, deadSling = 0, deadArch = 0, deadCav = 0;
+    let deadInf = 0, deadSling = 0, deadArch = 0, deadCav = 0, deadMil = 0;
+    const overrun = [];
     result.lanes.forEach((l, i) => {
       if (l.empty || !l.ours) return;
       const frac = Math.min(.6, (l.lost / Math.max(1, l.ours + (l.relieved ? l.reserve : 0))) * (l.fate === "lost" ? 1.4 : 1));
       st.placed.filter((u) => u.lane === i && (u.row === "line" || u.row === "front" || (u.row === "second" && l.relieved))).forEach((u) => {
-        const d = Math.round(u.men * frac * (u.type === "cohort" ? 1 : .6));
+        // missile troops with no shield line in their lane are caught when the enemy closes (rules v9)
+        const f2 = l.exposed && MISSILE_TYPES.includes(u.type) ? Math.max(frac, l.fate === "lost" ? EXPOSED_LOST : EXPOSED_WON) : frac * (u.type === "cohort" ? 1 : .6);
+        const d = Math.round(u.men * f2);
+        if (l.exposed && MISSILE_TYPES.includes(u.type) && d) overrun.push(LANES[i]);
         if (u.type === "cohort") deadInf += d; else if (u.type === "sling") deadSling += d; else if (u.type === "archer") deadArch += d; else if (u.type === "horse") deadCav += d;
+        else if (u.type === "militia_sling" || u.type === "militia_archer") deadMil += d;
       });
     });
+    if (deadMil) { s.people = Math.max(0, s.people - deadMil); notes.push(`${deadMil} men of the village militia fell: fathers and sons, missed in the fields and on the boats.`); }
+    if (overrun.length) notes.push(`On the ${[...new Set(overrun)].join(" and ")}, our slingers and archers had no shields in front of them: when the enemy closed they were cut down.`);
     if (!won && f.cavalry && st.horse !== "flank") deadCav += rint(1, Math.max(1, Math.round(f.cavalry / 4)));
     deadInf = Math.min(Math.trunc(s.army), deadInf); deadSling = Math.min(t.slingers, deadSling); deadArch = Math.min(t.archers, deadArch); deadCav = Math.min(t.cavalry, deadCav);
     s.army -= deadInf; t.slingers -= deadSling; t.archers -= deadArch; t.cavalry -= deadCav;
@@ -772,6 +842,7 @@
       s.army_xp = Math.min(XP_MAX, (s.army_xp || 0) + 1); s.morale = Math.min(2, (s.morale || 0) + 1);
       if (lead === "self") { s.favour += GLORY[0]; s.loyalty += GLORY[1]; notes.push("The town cheers the governor who fought in the front rank; the story reaches Rome."); }
       else cheer(s, lead, notes, "returns in triumph");
+      spoils(s, enemy, st, notes);
       notes.push(`Victory ${enemy.where} against ${lower(enemy.name)} (${enemy.men} men) after ${result.rounds.length} round${result.rounds.length > 1 ? "s" : ""}: ${leader}${helpers.length ? `, with ${helpers.join(" and ")}` : ""}; ${dead} of ours fell.${loot ? ` Their plunder brings ${intc(loot)} denarii${st.horse === "pursue" ? ", the horsemen running down the stragglers" : ""}.` : ""} The army gains experience (${s.army_xp}/${XP_MAX}).`);
     } else {
       s.favour -= 4; s.loyalty -= 5;
@@ -800,12 +871,102 @@
       }
     }
     if (helpers.length) notes.push(`${helpers.join(" and ").replace(/^./, (m) => m.toUpperCase())} go home.`);
+    if (won && !s.over) await judgement(s, enemy, notes);
     s.last_battle = { turn: s.turn, enemy, plan, odds: null, won, lead, rounds: result.rounds.length, fates: result.lanes.map((l) => l.fate) };
     s.militia = null;
     return won;
   }
-  /** The season's battle, if the year's conflict falls now. */
+  // --- Spoils, judgement and discontent (rules v9) ---
+  const EXPOSED_WON = .45, EXPOSED_LOST = .8, PRIZE_DC = 12, PRIZE_SALE = 500, GROVE_DC = 13;
+  /** What a victory brings besides the plunder: a pirate ship taken, or the tribes' vines and olives on the border. */
+  function spoils(s, enemy, st, notes) {
+    const r = rint(1, 20) + (st.horse === "pursue" ? 4 : 0);
+    if (enemy.kind === "pirates" && r >= PRIZE_DC) {
+      if (Math.trunc(s.ships) + s.shipyard.length < berths(s)) {
+        fleetNames(s); s.ships += 1; const name = newShipName(s); s.fleet.push(name);
+        notes.push(`A pirate liburna is taken on the beach: renamed the ${name}, she joins your ships (${Math.trunc(s.ships)} now).`);
+        news(s, "ship", `Prize taken: the pirate liburna becomes the ${name}.`);
+      } else { s.treasury += PRIZE_SALE; notes.push(`A pirate liburna is taken; no berth is free, so she is sold at the quay for ${intc(PRIZE_SALE)} denarii.`); }
+    }
+    if (enemy.kind === "tribes" && r >= GROVE_DC) {
+      const kind = rint(0, 1) ? "vineyard" : "olives", B = BLD[kind];
+      s.field_plots = clearedPlots(s) + 1;
+      s.buildings.push({ kind, done: s.turn - num(B.matures) - num(B.ramp) });
+      notes.push(`The beaten warriors flee beyond the ridge and leave their ${B.name.toLowerCase()} on the border slope: a new field plot, already bearing, is ours (${fieldPlots(s)} plots).`);
+      news(s, "land", `Land won: the tribes' ${B.name.toLowerCase()} on the border is now yours.`);
+    }
+  }
+  const news = (s, kind, text) => { (s.news = s.news || []).push({ kind, text, turn: s.turn }); };
+  /** The governor's name for justice: pardoned against executed. One pardon in three or four is wise. */
+  function reputation(s) {
+    const J = s.justice || { pardoned: 0, executed: 0 }, n = J.pardoned + J.executed, ratio = n ? J.pardoned / n : .3;
+    const r = n < 3 ? { id: "unknown", text: "the town does not yet know what kind of judge you are", drift: 0 }
+      : ratio < .15 ? { id: "cruel", text: "they call you a cruel tyrant", drift: 2 }
+      : ratio > .5 ? { id: "weak", text: "they call you soft: insolence grows, and brigands grow bold", drift: 2 }
+      : ratio >= .2 && ratio <= .4 ? { id: "just", text: "they call you stern but just", drift: -1 }
+      : { id: "fair", text: "they think you fair enough", drift: 0 };
+    return { ...r, ratio, pardoned: J.pardoned, executed: J.executed };
+  }
+  const CAPTIVES = { pirates: "the pirate captains", brigands: "the brigand leaders", tribes: "the chieftains taken in the field", march: "the chieftains taken in their valley", rebels: "the ringleaders of the revolt" };
+  /** After a victory: execute or pardon the defeated. */
+  async function judgement(s, enemy, notes) {
+    const J = (s.justice = s.justice || { pardoned: 0, executed: 0 }), rep0 = reputation(s), who = CAPTIVES[enemy.kind] || "the prisoners";
+    const pick = await ui.choose(`Judgement on ${who}`,
+      `They stand in chains in the forum. So far you have pardoned ${J.pardoned} and executed ${J.executed}: ${rep0.text}. A wise ruler pardons about one in three or four; never pardoning makes a tyrant, pardoning too often makes a weak one.`,
+      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is cowed (discontent +2)" }, { label: "Pardon them", sub: "loyalty +2, discontent −3; they swear never to return" }]);
+    if (pick === 1) { J.pardoned++; s.loyalty += 2; s.discontent -= 3; notes.push(`You pardon ${who}: they kneel and swear by their gods. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
+    else { J.executed++; s.favour += 1; s.discontent += 2; notes.push(`${who.replace(/^./, (m) => m.toUpperCase())} are executed outside the Sea Gate. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
+  }
+  const REBELLION_AT = 50, DISC_TAX = { low: -2, normal: 0, high: 3 }, PARLEY_DC = 15, REBEL_SHARE = .12;
+  /** How discontent moves this season, part by part (shown in the ledger). */
+  function discontentParts(s, hunger) {
+    const rep0 = reputation(s), parts = [];
+    if (DISC_TAX[s.tax]) parts.push([`${s.tax} taxes`, DISC_TAX[s.tax]]);
+    if (hunger) parts.push(["hunger", 6]); else if (s.grain < 3) parts.push(["little bread", 2]);
+    if (s.loyalty < 40) parts.push(["low loyalty", 2]); else if (s.loyalty >= 60) parts.push(["a loyal town", -2]);
+    if (rep0.drift) parts.push([rep0.id === "just" ? "stern but just" : rep0.id === "cruel" ? "a cruel tyrant" : "a weak ruler", rep0.drift]);
+    if (!hunger && s.grain >= 3 && s.calamity_turn !== s.turn) parts.push(["peace and bread", -1]);
+    return parts;
+  }
+  /** The town rises: talk, or fight your own people. Winning costs half the town. */
+  async function rebellion(s, notes) {
+    const t = (s.troops = { ...troopsOf(s) });
+    const pick = await ui.choose("The town rises in rebellion",
+      `Discontent has reached ${Math.round(s.discontent)} of 100. Thousands of townsmen take up arms in the forum, and the militia you raised from them wavers. You may parley (d20 + loyalty / 10, need ${PARLEY_DC}): taxes fall to low and Rome thinks you weak. Or you may crush them: if you win, half the town is dead and its trade ruined; if you lose, you are finished.`,
+      [{ label: "Parley with the rebels", sub: `d20 + ${Math.floor(s.loyalty / 10)}, need ${PARLEY_DC}; if it fails, they fight` }, { label: "Crush the revolt", sub: "a battle in the streets" }]);
+    if (pick === 0) {
+      const r = await roll(20, Math.floor(s.loyalty / 10), PARLEY_DC, "Parley with the rebels");
+      if (r.ok) {
+        s.tax = "low"; s.discontent = 30; s.favour -= 6; s.loyalty += 4; s.calamity_turn = s.turn;
+        notes.push(`The parley holds (d20: ${r.r}): you lower the taxes and swear to hear the town. The crowds go home; Rome hears that the governor bargained with a mob (favour −6).`);
+        news(s, "rebellion", "The rebellion ends at the parley table: taxes are lowered.");
+        return true;
+      }
+      notes.push(`The parley fails (d20: ${r.r}): stones fly, and it comes to swords.`);
+    }
+    const defect = Math.round(t.slingers / 2) + Math.round(t.archers / 2);
+    t.slingers -= Math.round(t.slingers / 2); t.archers -= Math.round(t.archers / 2);
+    const E0 = ENEMIES.rebels;
+    const enemy = { kind: "rebels", tribe: null, name: E0.name, men: Math.round(s.people * REBEL_SHARE) + defect, share: [.3, .4, .3], fury: E0.fury, home: false, terrain: E0.terrain, where: E0.where, say: E0.say, who: E0.who, quality: .5 };
+    if (defect) notes.push(`${defect} of the town's slingers and archers go over to the rebels.`);
+    s.discontent = 0;   // the battle itself decides now
+    const won = await battle(s, enemy, notes);
+    if (s.over) return won;
+    if (won) {
+      const dead = Math.round(s.people / 2);
+      s.people -= dead;
+      for (const g of GOODS) s[g] = Math.floor(s[g] / 2);
+      s.treasury = Math.floor(s.treasury / 2);
+      damage(s, { damage: 2 }, notes);
+      s.discontent = 20; s.loyalty = Math.min(s.loyalty, 30); s.favour -= 8; s.calamity_turn = s.turn;
+      notes.push(`The revolt is crushed, but at a terrible price: ${intc(dead)} townspeople are dead, the stores and the chest are plundered (half lost), and Rome asks how a governor let it come to this (favour −8).`);
+      news(s, "rebellion", `Rebellion crushed: ${intc(dead)} dead, half the town's wealth gone.`);
+    } else s.over = "Overthrown: the town rose in rebellion and your soldiers could not hold the streets.";
+    return won;
+  }
+  /** The season's battle, if the year's conflict falls now; or the town's own rebellion. */
   async function conflictPhase(s, notes) {
+    if (s.discontent > REBELLION_AT && !s.over) { if (s.conflict && s.conflict.turn === s.turn) s.conflict.turn++; return rebellion(s, notes); }
     planConflict(s);
     if (!s.conflict || s.conflict.turn !== s.turn || s.over) return null;
     const enemy = makeEnemy(s, s.conflict.kind);
@@ -833,7 +994,7 @@
       if (o.boost === "lost" && !["treat_tribe", "march_tribe"].includes(o.id)) {   // a disaster on the die: paid for, and nothing to show
         if (o.id === "send_convoy") {
           for (const [g, q] of Object.entries(o.sell || {})) s[g] -= q;
-          s.ships = Math.max(0, s.ships - 1); s.army = Math.max(0, s.army - 10);
+          s.ships = Math.max(0, s.ships - 1); s.army = Math.max(0, s.army - 10); fleetNames(s);
           notes.push(`Disaster at sea: the ship for ${TOWN[o.town] ? TOWN[o.town].name : "the coast"} goes down with her cargo, the money paid and ten marines.`);
         } else if (o.id === "build") notes.push(`Disaster: the works on the ${BLD[o.building].name.toLowerCase()} collapse; the money and materials are lost.`);
         else if (o.id === "recruit") { s.loyalty -= 4; notes.push("Disaster: the recruits riot in the forum and run off to the hills; nobody is enlisted."); }
@@ -842,6 +1003,11 @@
         continue;
       }
       if (o.dearer) { s.treasury -= o.dearer; notes.push(`A setback: '${describe(s, o)}' costs ${o.dearer} denarii more than planned.`); }
+      if (o.id === "refill_ranks") {
+        const R = refillOf(s), n = Math.round(R.n * (win ? 1 : lose ? .6 : 1));
+        s.army += n; s.people -= n;
+        notes.push(`${n} townsmen take the shields and ${(s.kit || {}).gladius ? "swords" : "spears"} of the fallen: the cohorts stand at ${Math.trunc(s.army)} again.`);
+      }
       if (o.id === "build_ballista") { const t = (s.troops = { ...troopsOf(s) }); t.ballistae += 1; notes.push(`A ballista is built: ${t.ballistae} stone-thrower${t.ballistae > 1 ? "s" : ""}.`); }
       if (["train_slingers", "raise_archers", "raise_cavalry", "build_engine", "arm_pila", "arm_gladius"].includes(o.id)) {
         const t = (s.troops = { ...troopsOf(s) }), k = (s.kit = { ...(s.kit || {}) });
@@ -867,8 +1033,9 @@
         s.buildings.push({ kind: B.id, done: s.turn + wait });
         notes.push(`Work begins on ${B.name.toLowerCase()}; ready in turn ${s.turn + wait}${num(B.matures) ? `, first yield ${num(B.matures)} seasons later` : ""}.`);
       } else if (d.id === "build_ship") {
-        s.shipyard.push(s.turn + (win ? 1 : 2));
-        notes.push(`The keel of a new ship is laid on the slipway; she will be ready in ${win ? "one season" : "two seasons"}.`);
+        const name = newShipName(s);
+        s.shipyard.push({ done: s.turn + (win ? 1 : 2), name });
+        notes.push(`The keel of the ${name} is laid on the slipway; she will be launched in ${win ? "one season" : "two seasons"}.`);
       } else if (d.id === "merchants") {
         for (const [g, q] of Object.entries(o.buy || {})) s[g] += q;
         notes.push(`Merchants at the quay sell you ${listText(o.buy)} for ${intc(merchantCost(o))} denarii.`);
@@ -879,7 +1046,7 @@
       } else if (d.id === "send_convoy") {
         if (seasonOf(s.turn)[0].sailing === "no") { useAbility(s, "fleet"); notes.push("Epicadus takes a ship out in winter, when no one else dares: his winter run is spent."); }
         await convoy(s, notes, o);
-      } else if (d.id === "hang_brigands") cheer(s, "general", notes, "approves of the hangings");
+      } else if (d.id === "hang_brigands") { cheer(s, "general", notes, "approves of the hangings"); s.justice = s.justice || { pardoned: 0, executed: 0 }; s.justice.executed++; }
       else if (d.id === "visit_temple") cheer(s, "priest", notes, "is glad to see the governor at the altar");
       else if (d.id === "hear_petitions") cheer(s, "treasurer", notes, "learns a great deal about who owes what");
       else if (d.id === "listen_sages") {
@@ -893,7 +1060,8 @@
   async function convoy(s, notes, o) {
     const t = TOWN[o.town];
     const [, delay] = sailing(s, t.direction === "north");
-    let deal = 0;
+    const paid0 = buyCost(s, o) + num(DECREE.send_convoy.cost_treasury);   // what the voyage cost at the outset
+    let deal = 0, refund = 0;
     if (await offerAbility(s, "economist", `I know a man in ${t.name} who will give us a better price (+20%).`)) {
       deal = GOOD_DEAL_BONUS; notes.push(`Nikandros strikes a deal in ${t.name}: the convoy trades at a better price.`);
     }
@@ -902,10 +1070,13 @@
     let revenue = Object.entries(o.sell || {}).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "sell", deal), 0);
     if (o.boost === "win") revenue = Math.round(revenue * 1.3);
     if (o.boost === "lose") { revenue = Math.round(revenue / 2); for (const g of Object.keys(o.buy || {})) o.buy[g] = Math.floor(o.buy[g] / 2); }
-    if (deal) s.treasury += buyCost(s, o) - Object.entries(o.buy || {}).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "buy", deal), 0);
+    if (deal) { refund = buyCost(s, o) - Object.entries(o.buy || {}).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "buy", deal), 0); s.treasury += refund; }
     if (delay) notes.push("Dead calm: the convoy waits a season in harbour before it can sail.");
-    s.convoys.push({ town: t.id, out: s.turn, arrive: s.turn + t.seasons + delay, revenue, cargo: { ...(o.buy || {}) }, sold: { ...(o.sell || {}) } });
-    notes.push(`A ship sails for ${t.name}` + (Object.keys(o.sell || {}).length ? ` with ${listText(o.sell)}` : "") +
+    fleetNames(s);
+    const ship = s.fleet.find((n) => !s.convoys.some((c) => c.ship === n)) || "a ship";
+    const paid = paid0 - refund;
+    s.convoys.push({ ship, town: t.id, out: s.turn, arrive: s.turn + t.seasons + delay, revenue, paid, cargo: { ...(o.buy || {}) }, sold: { ...(o.sell || {}) } });
+    notes.push(`The ${ship} sails for ${t.name}` + (Object.keys(o.sell || {}).length ? ` with ${listText(o.sell)}` : "") +
       (Object.keys(o.buy || {}).length ? ` to bring back ${listText(o.buy)}` : "") + `; home in turn ${s.turn + t.seasons + delay}.`);
   }
   async function convoyHome(s, c, notes) {
@@ -921,7 +1092,15 @@
     s.treasury += money;
     const got = Object.fromEntries(Object.entries(c.cargo).map(([g, q]) => [g, g === "grain" ? Math.floor(q * Math.min(share, 1) * 10) / 10 : Math.floor(q * Math.min(share, 1))]));
     for (const [g, q] of Object.entries(got)) s[g] += q;
-    notes.push(`The ship from ${t.name} comes home ${how} (d20: ${r.r}${bonus ? (bonus > 0 ? " + " : " − ") + Math.abs(bonus) : ""})` +
+    // the voyage's ledger: the goods brought home are valued at what they cost there
+    const paid = c.paid ?? 0, brought = Math.round(Object.entries(got).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "buy"), 0));
+    const lost = Math.round(Object.entries(c.cargo).reduce((v, [g, q]) => v + (q - (got[g] || 0)) * priceAt(s, t.id, g, "buy"), 0));
+    const profit = money + brought - paid, ship = c.ship || "a ship";
+    s.voyages = (s.voyages || []).concat([{ ship, town: t.id, turn: s.turn, sold: c.sold || {}, money, cargo: got, brought, paid, lost, profit, how: r.r === 1 ? "pirates" : !r.ok ? "storm" : r.r === VOYAGE_DIE ? "fair wind" : "safe" }]).slice(-12);
+    const verdict = `${profit >= 0 ? "profit" : "loss"} ${profit >= 0 ? "+" : "−"}${intc(Math.abs(profit))} denarii`;
+    notes.push(`The ${ship}'s ledger: ${Object.keys(c.sold || {}).length ? `sold ${listText(c.sold)} for ${intc(money)}` : "nothing to sell"}; ${Object.values(got).some((q) => q > 0) ? `brought ${listText(got)} worth ${intc(brought)}` : "brought nothing back"}${lost ? ` (${intc(lost)} lost on the way)` : ""}; paid ${intc(paid)} at the outset: ${verdict}.`);
+    news(s, "voyage", `The ${ship} is home from ${t.name}: ${verdict}.`);
+    notes.push(`The ${ship} from ${t.name} comes home ${how} (d20: ${r.r}${bonus ? (bonus > 0 ? " + " : " − ") + Math.abs(bonus) : ""})` +
       (money ? `: ${intc(money)} denarii` : "") + (Object.values(got).some((q) => q > 0) ? `${money ? " and " : ": "}${listText(got)}` : "") + ".");
   }
   async function resolve(s, notes) {
@@ -929,14 +1108,19 @@
     const arrived = s.convoys.filter((c) => c.arrive <= s.turn);
     s.convoys = s.convoys.filter((c) => c.arrive > s.turn);
     for (const b of s.buildings) if (b.done === s.turn) notes.push(`${BLD[b.kind].name} finished.`);
-    const ready = s.shipyard.filter((t) => t <= s.turn);
+    const ready = s.shipyard.filter((k) => k.done <= s.turn);
     const cleared = (s.clearing || []).filter((t) => t <= s.turn);
     if (cleared.length) { s.field_plots = clearedPlots(s) + cleared.length; s.clearing = s.clearing.filter((t) => t > s.turn); notes.push(`New field${cleared.length > 1 ? "s are" : " is"} cleared: ${s.field_plots} field plots now.`); }
-    if (ready.length) { s.ships += ready.length; s.shipyard = s.shipyard.filter((t) => t > s.turn); notes.push(`${ready.length} new ship${ready.length > 1 ? "s slide" : " slides"} into the harbour.`); }
+    if (ready.length) {
+      fleetNames(s);
+      s.ships += ready.length; s.fleet.push(...ready.map((k) => k.name)); s.shipyard = s.shipyard.filter((k) => k.done > s.turn);
+      for (const k of ready) { notes.push(`The ${k.name} is launched: she slides into the harbour (${Math.trunc(s.ships)} ships now).`); news(s, "ship", `Launched: the ${k.name} slides into the harbour.`); }
+    }
     // income
     const [rate, rateLoyalty] = TAX_RATES[s.tax];
     s.treasury += Math.round(s.people * rate);
     s.treasury += stat(s, "treasury");
+    for (const v of inventionsOf(s)) if (v.rent) { s.treasury += v.rent; notes.push(`${v.name}: +${v.rent} denarii ${v.rent_text}.`); }
     for (const c of arrived) await convoyHome(s, c, notes);
     // army pay
     const tr = troopsOf(s);
@@ -987,6 +1171,7 @@
       ratio = Math.max(0, Math.min(1, ratio));
       for (const [g, q] of Object.entries(use)) s[g] -= Math.round(q * f * ratio);
       const made = Object.fromEntries(Object.entries(out).map(([g, q]) => [g, Math.round(q * f * ratio)]));
+      for (const v of inventionsOf(s)) for (const [g, m] of Object.entries(v.more || {})) if (made[g]) { const extra = Math.round(made[g] * m); made[g] += extra; notes.push(`${v.name}: +${extra} ${nameOf(g).toLowerCase()} from the same harvest.`); }
       for (const [g, q] of Object.entries(made)) s[g] += q;
       if (Object.values(made).some((q) => q > 0)) notes.push(`${B.name}${built(s, B.id) > 1 ? ` (${built(s, B.id)})` : ""}: +${listText(made)}${f < built(s, B.id) ? ", the young ones not yet at full yield" : ""}.`);
       else if (Object.keys(use).length) notes.push(`${B.name}: idle, no ${Object.keys(use).map((g) => nameOf(g).toLowerCase()).join(" or ")} to work.`);
@@ -1010,7 +1195,21 @@
     if (s.loyalty < UNREST_BELOW) { s.favour += UNREST_FAVOUR; notes.push("Unrest in the streets; Rome hears of it."); }
     if (s.army < ORDER_ARMY) s.favour += ORDER_FAVOUR;
     if (s.morale && s.turn - (s.last_war ?? -9) >= 4 && s.turn % 2 === 0) s.morale += s.morale > 0 ? -1 : 1;   // spirits settle with time
+    // discontent (rules v9)
+    const dparts = discontentParts(s, hunger), dd = dparts.reduce((a, [, v]) => a + v, 0);
+    s.discontent = Math.max(0, Math.min(100, s.discontent + dd));
+    s.discontent_parts = dparts;
+    if (s.discontent > REBELLION_AT) notes.push(`Warning: discontent stands at ${Math.round(s.discontent)}: the town will rise in rebellion next season unless it falls.`);
+    else if (s.discontent >= 35 && dd > 0) notes.push(`Discontent festers (${Math.round(s.discontent)} of 100; above ${REBELLION_AT} the town rises): ${dparts.filter(([, v]) => v > 0).map(([t]) => t).join(", ")}.`);
+    s.army_peak = Math.max(s.army_peak || 150, Math.trunc(s.army));
+    fleetNames(s);
   }
+  // inventions (rules v9): a card may bring a new machine that keeps paying
+  const INVENTIONS = {
+    screw_press: { name: "The screw press", more: { oil: .3 }, rent: 50, rent_text: "from neighbours who press their olives here",
+      text: "Olive oil +30% at every harvest; neighbours pay 50 denarii a season to use it." },
+  };
+  const inventionsOf = (s) => (s.inventions || []).map((id) => INVENTIONS[id]).filter(Boolean);
 
   // --- The season's cards ---
   function triggerHolds(s, trig) {
@@ -1069,6 +1268,15 @@
   const applyEffects = (s, eff) => { for (const [n, v] of Object.entries(eff || {})) if (NUMBERS.includes(n)) s[n] += v; };
   const darkOmen = (c) => !!c.choice || Object.values(c.effects || {}).some((v) => v < 0);
 
+  function invent(s, opt, ok, notes) {
+    const v = INVENTIONS[opt.invention];
+    if (!v) return;
+    if (!ok) { notes.push(`${v.name}: the work fails and the money is wasted; perhaps another time.`); return; }
+    if ((s.inventions = s.inventions || []).includes(opt.invention)) return;
+    s.inventions.push(opt.invention);
+    notes.push(`${v.name} is built and working. ${v.text}`);
+    news(s, "invention", `New in Acruvium: ${v.name.toLowerCase()}. ${v.text}`);
+  }
   async function answerCard(s, c, notes) {
     const ch = c.choice;
     const opts = ch.options.map((o) => ({ label: o.label, sub: o.roll ? `d${o.roll.die || 20} + ${rollBonus(s, o.roll.bonus)}, need ${o.roll.target}` : effectsText(o.effects), roll: !!o.roll }));
@@ -1089,6 +1297,7 @@
       notes.push(`${c.title}: you chose '${opt.label}' and the die says ${ok ? "success" : "failure"} (${effectsText(eff)}).`);
     } else notes.push(`${c.title}: you chose '${opt.label}' (${effectsText(eff)}).`);
     applyEffects(s, eff);
+    invent(s, opt, true, notes);
     if (isCalamity({}, eff)) s.calamity_turn = s.turn;
   }
   async function revealCards(s, notes) {
@@ -1154,7 +1363,7 @@
       : food.concat([houses, crowded ? order("treat_tribe", { tribe: nextTribe.id }) : null, fieldsFull(s) && fieldPlots(s) < FIELD_PLOTS_MAX ? order("clear_land") : null, s.fleece >= 6 && !built(s, "weavers") ? b("weavers") : null,
         tone === "good" ? b("wheat") : b("vineyard"), b("olives"), b("vineyard"), b("wheat"), b("pasture"), sellConvoy(s, ["wine", "oil"], { wine: FESTIVAL_WINE_KEEP })]);
     if (who === "general") return tone === "bad"
-      ? [s.army < 250 ? order("recruit") : null, order("hang_brigands"), b("walls"), b("barracks")]
+      ? [refillOf(s).n >= 30 ? order("refill_ranks") : null, s.army < 250 ? order("recruit") : null, order("hang_brigands"), b("walls"), b("barracks")]
       : [crowded && s.army >= MARCH_MIN_ARMY ? order("march_tribe", { tribe: nextTribe.id }) : null, !(s.kit || {}).pila && s.iron >= 12 ? order("arm_pila") : null,
         troopsOf(s).slingers < 50 ? order("train_slingers") : null, s.buildings.some((x) => x.kind === "walls") && troopsOf(s).archers < 60 ? order("raise_archers") : null,
         anyHostile(s) && troopsOf(s).engines < 2 ? order("build_engine") : null, troopsOf(s).cavalry < 10 && s.treasury > 4000 ? order("raise_cavalry") : null, b("walls"), b("barracks"), s.army < 300 ? order("recruit") : null, s.iron < 8 ? b("mine") : null, order("hang_brigands")];
@@ -1272,8 +1481,9 @@
   }
   const TIER = (r, total, dc) => (r === 1 ? "disaster" : r === 20 ? "triumph" : total >= dc ? "success" : "setback");
   const scale = (eff, k) => Object.fromEntries(Object.entries(eff || {}).map(([n, v]) => [n, typeof v !== "number" ? v : n === "grain" ? Math.round(v * k * 10) / 10 : Math.round(v * k)]));
-  const negatives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([, v]) => typeof v === "number" && v < 0));
-  const positives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([, v]) => typeof v === "number" && v > 0));
+  // good and bad effects; for discontent, up is bad
+  const negatives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([n, v]) => typeof v === "number" && (n === "discontent" ? v > 0 : v < 0)));
+  const positives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([n, v]) => typeof v === "number" && (n === "discontent" ? v < 0 : v > 0)));
   /** Carry out one card's decision with the tier its die gave. */
   async function settle(s, d, res, notes) {
     const c = d.card, tier = res.tier, title = c.title;
@@ -1304,6 +1514,7 @@
       else if (tier === "triumph") eff = { ...scale(positives(eff), 1.5), ...negatives(eff) };
       notes.push(`${title}: you chose '${opt.label}', and the ${d.check.die} die says ${said} (${effectsText(eff)}).`);
       applyEffects(s, eff);
+      invent(s, opt, tier !== "disaster", notes);
       if (isCalamity({}, eff)) s.calamity_turn = s.turn;
     } else {
       const neg = negatives(c.rolled || c.effects), pos = positives(c.rolled || c.effects), bad = cardTone(c) === "bad";
@@ -1399,6 +1610,7 @@
   function clampAndCheck(s, notes) {
     for (const n of CORE) s[n] = Math.min(Math.max(s[n], num(RULES[n].min, 0)), num(RULES[n].max, Infinity));
     for (const g of GOODS) s[g] = Math.max(0, s[g]);
+    fleetNames(s);
     if (s.loyalty < UPRISING_BELOW) notes.push("Warning: loyalty is so low that an uprising is near.");
     if (s.over) return;
     if (s.favour <= 0) s.over = "Recalled to Rome in disgrace: Roman favour reached 0.";
@@ -1562,7 +1774,7 @@
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
     TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
-    CITY, conflictPhase, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
+    CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, REBELLION_AT, discontentParts, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
     tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS,
   };
 })();

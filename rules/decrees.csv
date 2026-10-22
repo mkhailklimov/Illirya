@@ -1,26 +1,27 @@
-id,name,group,cost_treasury,cost,once,grain,treasury,people,loyalty,favour,army,notes
-raise_taxes,Raise taxes,treasury,0,,yes,,,,-6,2,,DRAFT. Tax rate up one step; -4 loyalty every season at the high rate.
-lower_taxes,Lower taxes,treasury,0,,yes,,,,4,-2,,DRAFT. Tax rate down one step.
-hang_brigands,Hang the brigands in the forum,law,50,,yes,,,,-1,2,,DRAFT. Rome likes order; the town is frightened. Pleases the prefect.
-hear_petitions,Hear petitions in the forum,law,0,,yes,,,,2,,,"DRAFT. A day of judgement and favours. Pleases the treasurer, who hears what people owe."
-recruit,Recruit 50 soldiers,army,250,iron 5; cloth 5,no,,,-50,-3,1,50,DRAFT. Arms and tunics for the recruits.
-dismiss,Dismiss 50 soldiers,army,0,,no,,,50,1,-1,-50,DRAFT. Saves pay; Rome likes a strong garrison.
-build,Build or plant,land,0,,no,,,,,,,DRAFT. One building on a free plot; its cost and time come from buildings.csv.
-build_ship,Lay the keel of a ship,sea,300,timber 20; iron 3; cloth 4,no,,,,,,,DRAFT. Ready in two seasons. Needs a free berth.
-send_convoy,Send a trade convoy,sea,100,,no,,,,,,,DRAFT. One ship to one town; sell and buy there. Back next season (Aquileia: in two).
-hold_festival,Hold a festival,gods,300,wine 4,yes,,,,8,,,DRAFT. Games and a feast. Half the effect if held two seasons running.
-visit_temple,Sacrifice at the temple,gods,50,,yes,,,,1,1,,DRAFT. The governor sacrifices in public. Pleases the haruspex.
-honour_tiberius,Decree honouring Tiberius,rome,100,,yes,,,,,4,,DRAFT. An inscription in the forum to the Emperor.
-honour_rome,Send gifts to Rome,rome,400,,no,,,,,8,,DRAFT. On top of the regular tribute.
-listen_sages,Listen to the sages,council,0,,yes,,,,,,,DRAFT. The old men read the sky: you learn next season's wind before it comes.
-merchants,Buy from passing merchants,sea,0,,yes,,,,,,,"DRAFT. Greek and Italian ships call at the quay in the sailing season. Buy up to 20 loads at once, no ship of ours needed, at half again the base price (grain 750 a month). No luxuries."
-clear_land,Clear new fields,land,600,iron 2,no,,,,,,,"DRAFT. Cut the scrub and build terraces on the hillside: one more field plot, ready in two seasons. At most 16 field plots."
-treat_tribe,Treat with a tribe,frontier,0,,yes,,,,,,,DRAFT. Diplomacy and gold: gifts to the chiefs and a d20 with your best talker. Success: they cede land (new field plots) and keep the peace.
-march_tribe,March against a tribe,frontier,200,,yes,,,,,,,"DRAFT. Sword and fire: needs 150 soldiers; a d20 battle. Victory: their land and loot, but the tribe stays hostile and raids. Defeat: men lost."
-train_slingers,Train 25 slingers,army,120,cloth 2,no,,,-25,-1,,,DRAFT. Shepherds of the hills with slings: they thin the enemy before the clash (12% of a lane each group). Pay 4 a season each.
-raise_archers,Raise 30 archers from the townsmen,army,90,timber 4,no,,,-30,-1,,,"DRAFT. A citizen militia with hunting bows: in front of a lane (8% each group) or, at home, on the walls (4% off every lane). Pay 2 a season each."
-raise_cavalry,Raise 10 horsemen,army,500,iron 3; cloth 2,no,,,-10,,1,,"DRAFT. A small mounted troop: guards the commander (if you lose while leading, 60% they carry you off alive) or strikes a flank (+2 on one lane), or pursues (half again the plunder). Pay 10 a season each."
-build_engine,Build a scorpion,army,350,timber 10; iron 4,no,,,,,,,"DRAFT. A bolt-throwing engine: 10% off the lane in front of it, and +1 to every lane on a march against a tribe. Upkeep 10 a season. Four at most."
-arm_pila,Issue javelins (pila) to the infantry,army,250,iron 10,yes,,,,,,,DRAFT. Once for the whole infantry: each cohort's volley thins the crowd in front of it by 5%.
-arm_gladius,Issue short swords (gladii) to the infantry,army,350,iron 15,yes,,,,,1,,DRAFT. Once for the whole infantry: a shield line counts 2.1 men of theirs instead of 1.75.
-build_ballista,Build a ballista,army,600,timber 15; iron 8,no,,,,,,,"DRAFT. A torsion engine that hurls stones: 15% off the lane in front of it before the clash, +2 to every lane on a march (it breaks their stockade). Upkeep 15 a season. Two at most."
+id,name,group,cost_treasury,cost,once,grain,treasury,people,loyalty,favour,army,discontent,notes
+raise_taxes,Raise taxes,treasury,0,,yes,,,,-6,2,,6,DRAFT. Tax rate up one step; -4 loyalty every season at the high rate.
+lower_taxes,Lower taxes,treasury,0,,yes,,,,4,-2,,-6,DRAFT. Tax rate down one step.
+hang_brigands,Hang the brigands in the forum,law,50,,yes,,,,-1,2,,,DRAFT. Rome likes order; the town is frightened. Pleases the prefect.
+hear_petitions,Hear petitions in the forum,law,0,,yes,,,,2,,,-4,"DRAFT. A day of judgement and favours. Pleases the treasurer, who hears what people owe."
+recruit,Recruit 50 soldiers,army,250,iron 5; cloth 5,no,,,-50,-3,1,50,2,DRAFT. Arms and tunics for the recruits.
+refill_ranks,Refill the cohorts,army,0,,no,,,,,,,,"DRAFT (v9). Townsmen take the places of the fallen, up to the army's best strength (at most 100 at once): 5 denarii each (6 with javelins), a shield each (timber 1 per 10 men) and iron for swords and javelins (1 per 10 men per weapon). Fewer townsmen."
+dismiss,Dismiss 50 soldiers,army,0,,no,,,50,1,-1,-50,,DRAFT. Saves pay; Rome likes a strong garrison.
+build,Build or plant,land,0,,no,,,,,,,,DRAFT. One building on a free plot; its cost and time come from buildings.csv.
+build_ship,Lay the keel of a ship,sea,300,timber 20; iron 3; cloth 4,no,,,,,,,,DRAFT. Ready in two seasons. Needs a free berth.
+send_convoy,Send a trade convoy,sea,100,,no,,,,,,,,DRAFT. One ship to one town; sell and buy there. Back next season (Aquileia: in two).
+hold_festival,Hold a festival,gods,300,wine 4,yes,,,,8,,,-8,DRAFT. Games and a feast. Half the effect if held two seasons running.
+visit_temple,Sacrifice at the temple,gods,50,,yes,,,,1,1,,-2,DRAFT. The governor sacrifices in public. Pleases the haruspex.
+honour_tiberius,Decree honouring Tiberius,rome,100,,yes,,,,,4,,,DRAFT. An inscription in the forum to the Emperor.
+honour_rome,Send gifts to Rome,rome,400,,no,,,,,8,,,DRAFT. On top of the regular tribute.
+listen_sages,Listen to the sages,council,0,,yes,,,,,,,,DRAFT. The old men read the sky: you learn next season's wind before it comes.
+merchants,Buy from passing merchants,sea,0,,yes,,,,,,,,"DRAFT. Greek and Italian ships call at the quay in the sailing season. Buy up to 20 loads at once, no ship of ours needed, at half again the base price (grain 750 a month). No luxuries."
+clear_land,Clear new fields,land,600,iron 2,no,,,,,,,,"DRAFT. Cut the scrub and build terraces on the hillside: one more field plot, ready in two seasons. At most 16 field plots."
+treat_tribe,Treat with a tribe,frontier,0,,yes,,,,,,,,DRAFT. Diplomacy and gold: gifts to the chiefs and a d20 with your best talker. Success: they cede land (new field plots) and keep the peace.
+march_tribe,March against a tribe,frontier,200,,yes,,,,,,,,"DRAFT. Sword and fire: needs 150 soldiers; a d20 battle. Victory: their land and loot, but the tribe stays hostile and raids. Defeat: men lost."
+train_slingers,Train 25 slingers,army,120,cloth 2,no,,,-25,-1,,,,DRAFT. Shepherds of the hills with slings: they thin the enemy before the clash (12% of a lane each group). Pay 4 a season each.
+raise_archers,Raise 30 archers from the townsmen,army,90,timber 4,no,,,-30,-1,,,,"DRAFT. A citizen militia with hunting bows: in front of a lane (8% each group) or, at home, on the walls (4% off every lane). Pay 2 a season each."
+raise_cavalry,Raise 10 horsemen,army,500,iron 3; cloth 2,no,,,-10,,1,,,"DRAFT. A small mounted troop: guards the commander (if you lose while leading, 60% they carry you off alive) or strikes a flank (+2 on one lane), or pursues (half again the plunder). Pay 10 a season each."
+build_engine,Build a scorpion,army,350,timber 10; iron 4,no,,,,,,,,"DRAFT. A bolt-throwing engine: 10% off the lane in front of it, and +1 to every lane on a march against a tribe. Upkeep 10 a season. Four at most."
+arm_pila,Issue javelins (pila) to the infantry,army,250,iron 10,yes,,,,,,,,DRAFT. Once for the whole infantry: each cohort's volley thins the crowd in front of it by 5%.
+arm_gladius,Issue short swords (gladii) to the infantry,army,350,iron 15,yes,,,,,1,,,DRAFT. Once for the whole infantry: a shield line counts 2.1 men of theirs instead of 1.75.
+build_ballista,Build a ballista,army,600,timber 15; iron 8,no,,,,,,,,"DRAFT. A torsion engine that hurls stones: 15% off the lane in front of it before the clash, +2 to every lane on a march (it breaks their stockade). Upkeep 15 a season. Two at most."

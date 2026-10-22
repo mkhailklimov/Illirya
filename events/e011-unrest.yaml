@@ -19,12 +19,12 @@ choice:
         die: 20
         bonus: army / 50
         target: 11
-        success: {loyalty: 2}                     # DRAFT: order restored quietly
-        failure: {loyalty: -6, people: -20}       # DRAFT: blood on the stones
+        success: {loyalty: 2, discontent: 4}                     # DRAFT: order restored quietly
+        failure: {loyalty: -6, people: -20, discontent: 10}       # DRAFT: blood on the stones
     - label: Hear their grievances and give alms
-      effects: {treasury: -200, loyalty: 3}       # DRAFT
+      effects: {treasury: -200, loyalty: 3, discontent: -6}       # DRAFT
     - label: Ignore them
-      effects: {loyalty: -4}                      # DRAFT
+      effects: {loyalty: -4, discontent: 5}                      # DRAFT
 scribe_hint: The crowd chants the governor's name, and not kindly.
 historical_note: >-
   The Great Illyrian Revolt of AD 6 began when men gathered for an army

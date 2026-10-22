@@ -129,6 +129,19 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v9 (22 October 2026): spoils, justice, discontent, the fleet
+
+- **Missiles in stages, by how close the enemy stands** (density: tribes and rebels 1, pirates 0.5, brigands 0.4). Slingers throw twice, far and near: 4% + 12% × density (16% against the tribes, 10% against pirates, 9% against brigands), half in each volley; village slingers 3% + 8% × density. Archers shoot once, near, aimed: 10% (village bowmen 7%). Ballistae 15% far; scorpions 10% near; pila 5% at the last moment. 60% at most per lane.
+- **Missiles need a shield line.** In a lane with no cohort, allies or horsemen, slingers and archers (not on the walls) count −2 and are overrun when the enemy closes: they lose at least 45% of their men in a won lane, 80% in a lost one.
+- **Militia losses** come off the town's people.
+- **Spoils of a victory:** against pirates, d20 (+4 if the horsemen pursue) ≥ 12 takes a pirate ship (a free berth: she joins the fleet; no berth: sold for 500). Against the tribes at home, d20 (+4 pursuing) ≥ 13: they leave a vineyard or an olive grove on the border, a new field plot already bearing.
+- **Refill the cohorts** (order): townsmen take the places of the fallen, up to the army's best strength, 100 at most at once; each costs 5 denarii (6 with pila), a shield (1 timber per 10 men) and iron for each weapon the army carries (1 per 10 men for spears, +1 for gladii, +1 for pila); the town loses as many people. Antistius proposes it when 30 or more are missing.
+- **Judgement:** after every victory, execute (favour +1, discontent +2) or pardon (loyalty +2, discontent −3) the defeated; hanging brigands counts as an execution. After three judgements the town names you: pardoned under 15% a cruel tyrant (discontent +2 a season), 20–40% stern but just (−1 a season), over 50% a weak ruler (+2 a season, and brigands three times as likely).
+- **Discontent** (0–100, starts at 10) each season: taxes low −2 / normal 0 / high +3; hunger +6, under 3 months of grain +2; loyalty under 40 +2, 60 or more −2; the judge's name; peace and bread −1. Orders: raise taxes +6, lower taxes −6, festival −8, petitions −4, temple −2, recruiting +2. The angry crowd card moves it too.
+- **Rebellion above 50**, at the next conflict phase: parley (d20 + loyalty/10 ≥ 15: taxes to low, discontent 30, favour −6) or fight. Half the town's slingers and archers defect; the rebels are 12% of the people plus the defectors, fighting at half strength (untrained), fury 2, in the streets (no walls). Lose: overthrown. Win: half the people die, half of every good and of the chest is lost, two buildings are thrown down, favour −8, discontent 20, loyalty at most 30.
+- **The fleet:** every ship has a name (Fortuna, Concordia, Aquila...), given when her keel is laid. A launch, a voyage home (with its ledger: sold for, goods brought valued at their price there, paid at the outset, profit or loss), a prize and an invention are announced.
+- **Inventions:** a card option may carry `invention:`. The screw press (e018): olive oil +30% at every harvest and +50 denarii a season from neighbours who use it.
+
 ## Rules v8 (19 October 2026): battles in rounds
 
 - **Deployment by position** (x 0–900, y 250–450): x < 300 left, < 600 centre, else right; y < 300 front (missiles), < 362 the line, else the second line; at home with walls, missile troops at y 362–388 stand on the walls (half their effect on every lane). Horsemen: x < 90 or > 810 strike that flank; at the rear near the standard they guard the governor; elsewhere at the rear they wait to pursue.
