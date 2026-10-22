@@ -67,10 +67,27 @@ Weeks start on Monday. Each task is a GitHub issue under the "Demo 0" milestone 
 | 11 | 21–27 Dec | 0.11 poll game turn 2; 1.2 hello-world bot online |
 | 12 | 28 Dec – 3 Jan | 0.11 poll game turn 3; **Phase 0 review** against the decision point below |
 
-### Milestones to check progress
+### Milestones and targets
 
-| Milestone | Due | Check |
-|---|---|---|
+Each milestone is a GitHub issue titled "Milestone: …" with its tasks as sub-issues. A milestone is met only when every target on its line is met. Game, audience and business milestones are merged into one timeline (business steps come from the [path to market](#path-to-market)).
+
+| # | Due | Milestone | Targets (all must be met) |
+|---|---|---|---|
+| 1 | 29 Nov 2026 | Rules on paper | A full governorship AD 30–42 plays to the end in the browser prototype · your own 12-turn playtest logged · in the bot simulation the "economy first" style finishes at least half its games · 3 sample dispatches written · 4 history films posted, 100 channel subscribers |
+| 2 | 20 Dec 2026 | Demo 0: Community Governor | illyria30.com live · first weekly dispatch and poll on Telegram and Facebook · 20+ event cards with checked history notes |
+| 3 | 3 Jan 2027 | Phase 0 review | 3 polls run · 30+ votes per poll on average · go / no-go written down for the playable demo |
+| 4 | 31 Mar 2027 | Demo 1a: first playable demo | Public link where anyone plays the first game year (browser or Telegram) · 100 players started, 30 finished the year · a 2-minute gameplay video · 300 channel subscribers, a history film every two weeks since October (12 films) |
+| 5 | 30 Apr 2027 | Business set up | Accountant consulted on double taxation in your country of residence · legal form registered (individual entrepreneur in Georgia, 1% tax) or the decision to skip it · Xsolla accelerator (free tier) application sent · a bank account that can take game payments |
+| 6 | 31 May 2027 | Team found | Expo Gamers Opatija or DevGAMM Belgrade attended · 3–5 candidates met (artist, developer) · contract template ready: paid work, rights to the work assigned to you, share promise in writing as "X% of the future Serbian company" |
+| 7 | 30 Jun 2027 | Demo 1: closed alpha | 20–50 invited players · 40%+ reach turn 16 · AI cost under 0.50 € per player per full game · feedback form answered by 15+ players |
+| 8 | 30 Sep 2027 | Company founded | Serbian company (DOO) registered (about 68 €) with an accountant (100–250 € a month) · code, art, brand, domain and channels moved into the company · team shares issued as promised |
+| 9 | 30 Nov 2027 | Pitch and grants | Pitch given at WN Conference Cyprus · deck, video and real player numbers ready · application sent to Serbia's Innovation Fund · 10+ talks with investors or publishers |
+| 10 | 30 Jun 2028 | Demo 2: public beta and investor pack | Full 48-turn game in public beta · 500+ players started, 25%+ finish · investor pack updated with beta numbers |
+| 11 | 30 Jun 2029 | Demo 3: Season One | One multiplayer season run · 1,000+ players · players trading with each other |
+| 12 | 30 Nov 2029 | Soft launch | Payments (Telegram Stars) live · onboarding tutorial · website, privacy policy and terms · game stable for 10× beta load |
+| 13 | Spring 2030 | Official launch | Launch Season live · press and community push · post-launch season calendar published |
+
+---|---|---|
 | Rules on paper | 29 Nov 2026 | 12 turns played in the spreadsheet |
 | Demo 0: Community Governor | 20 Dec 2026 | First poll live on Telegram and Facebook |
 | Phase 0 review | 3 Jan 2027 | Votes and comments per poll, go / no-go for the bot |
@@ -162,6 +179,21 @@ Deliverables:
 - Post-launch plan: one new season every 2–3 months, then the later-era expansion (Huns, Bulgars, Ragusa/Dubrovnik founded by refugees from Epidaurum).
 
 ---
+
+## Path to market
+
+How the game becomes a business, merged into the milestones above:
+
+1. **Now – March 2027:** build the first playable demo. Grow t.me/Illyria30 with short history films, one every two weeks.
+2. **March 2027:** the demo is out. Count real players; that number is the first thing accelerators ask for.
+3. **April 2027:** register as an individual entrepreneur in Georgia (1% tax). First ask an accountant whether your country of residence taxes that income again. Join the Xsolla accelerator's free tier.
+4. **May 2027:** go to Expo Gamers Opatija or DevGAMM Belgrade to meet future teammates. Pay them by contract, have them sign their work over to you, and promise shares in writing as "X% of the future Serbian company".
+5. **September 2027:** open the Serbian company (DOO), about 68 € plus an accountant at 100–250 € a month. Move the code and art into it and give the team their shares.
+6. **November 2027:** pitch at WN Conference Cyprus and apply for grants from Serbia's Innovation Fund.
+7. **2028–2029:** public beta, then a soft launch in autumn 2029.
+8. **Spring 2030:** official release.
+
+**Simpler alternative:** skip Georgia and open the Serbian company as soon as the team forms. One company then owns all the game's rights from the start. Decide this at milestone 5.
 
 ## AI running cost and scale
 

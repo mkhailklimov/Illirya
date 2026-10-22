@@ -2,6 +2,26 @@
 
 Development plan with phases, demos and backlog to the 2030 launch: [docs/development-plan.md](docs/development-plan.md).
 
+## Milestones
+
+| Due | Milestone |
+|---|---|
+| 29 Nov 2026 | Rules on paper |
+| 20 Dec 2026 | Demo 0: Community Governor |
+| 3 Jan 2027 | Phase 0 review |
+| 31 Mar 2027 | Demo 1a: first playable demo |
+| 30 Apr 2027 | Business set up |
+| 31 May 2027 | Team found |
+| 30 Jun 2027 | Demo 1: closed alpha |
+| 30 Sep 2027 | Company founded (Serbian DOO) |
+| 30 Nov 2027 | Pitch and grants |
+| 30 Jun 2028 | Demo 2: public beta and investor pack |
+| 30 Jun 2029 | Demo 3: Season One |
+| 30 Nov 2029 | Soft launch |
+| Spring 2030 | Official launch |
+
+Targets for each milestone: [development plan, milestones and targets](docs/development-plan.md#milestones-and-targets). Business steps: [path to market](docs/development-plan.md#path-to-market).
+
 ## Priority 1: next development
 
 ### 1. Game concept: "The Governor"
