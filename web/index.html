@@ -74,6 +74,8 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .plot-hit, .town-hit { cursor: pointer; }
 .plot-hit:hover .plot-frame, .plot-hit:focus-visible .plot-frame { stroke: var(--gold-pale); stroke-width: 3; }
 .plot-hit:focus, .town-hit:focus { outline: none; }
+#citymap { background: #ecdcb4; border-color: rgba(61, 43, 26, .55); }
+#citymap .plot-hit:hover .plot-frame, #citymap .plot-hit:focus-visible .plot-frame { stroke: #a8432f; stroke-width: 3; }
 .town-hit:hover .walls, .town-hit:focus-visible .walls { stroke: var(--gold-pale); stroke-width: 3; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--mute); }
 .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
@@ -394,7 +396,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   </div>
   <div class="stage" id="stage"></div>
   <footer>
-    <span>Phase 0 playtest · rules v9 · all numbers DRAFT</span>
+    <span>Phase 0 playtest · rules v10 · all numbers DRAFT</span>
     <span class="opts" id="opts"></span>
   </footer>
 </div>
@@ -548,30 +550,31 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const changed = (n) => lastVals[n] !== undefined && Math.abs(lastVals[n] - s[n]) >= 0.05;
     const html = E.CORE.map((n) => {
       const r = E.RULES[n], v = s[n], d = before ? v - before[n] : 0;
-      const warn = (n === "grain" && v < 3) || ((n === "loyalty" || n === "favour") && v < 30) || (n === "discontent" && v >= 35);
+      const warn = (n === "grain" && v < 3) || (n === "loyalty" && v < E.REBELLION_BELOW + 5) || (n === "favour" && v < 30);
       const delta = Math.abs(d) >= 0.05 ? `<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${E.fmt(n, Math.abs(d))}</span>` : "";
-      const unit = n === "discontent" ? `of 100 · rebellion above ${E.REBELLION_AT}` : n === "loyalty" || n === "favour" ? "of 100" : n === "grain" ? "months of food" : r.unit;
-      if (n === "discontent") return `<button type="button" class="num clickable${warn ? " warn" : ""}${changed(n) ? " changed" : ""}" id="discontent"><span class="k">${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></button>`;
+      const unit = n === "loyalty" ? `of 100 · rebellion below ${E.REBELLION_BELOW}${s.restless ? ` · restless ${s.restless}/2` : ""}` : n === "favour" ? "of 100" : n === "grain" ? "months of food" : r.unit;
+      if (n === "loyalty") return `<button type="button" class="num clickable${warn ? " warn" : ""}${changed(n) ? " changed" : ""}" id="loyalty"><span class="k">${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></button>`;
       return `<div class="num${warn ? " warn" : ""}${changed(n) ? " changed" : ""}"><span class="k">${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></div>`;
     }).join("");
     const T = E.tributeInfo(s);
     $("ledger").innerHTML = html + `<button type="button" class="num tribute${T.short && T.inTurns <= 1 ? " short" : ""}" id="tribute"><span class="k">Tribute to Rome</span><span class="v">${E.intc(T.due)}</span><span class="u">${T.inTurns === 0 ? "due this Summer" : `due in ${T.inTurns} season${T.inTurns > 1 ? "s" : ""} · every Summer`}</span></button>`;
     $("tribute").onclick = tributeDialog;
-    $("discontent").onclick = discontentDialog;
+    $("loyalty").onclick = loyaltyDialog;
     lastVals = Object.fromEntries(E.CORE.map((n) => [n, s[n]]));
     const [season, year] = E.seasonOf(s.turn);
     $("when").innerHTML = `Turn <b>${s.turn}</b> · <b>${season.season}, AD ${year}</b> · taxes <b>${s.tax}</b>`;
   }
-  function discontentDialog() {
-    const R = E.reputation(s), parts = s.discontent_parts || E.discontentParts(s, false);
-    const sign = (v) => `${v > 0 ? "+" : "−"}${Math.abs(v)}`;
-    openVeil(`<div class="dialog" role="dialog" aria-label="Discontent"><p class="eyebrow" style="margin:0">The mood of the streets</p><h2 style="margin:0">Discontent ${Math.round(s.discontent)} of 100</h2>
-      <p style="margin:0">Grievances that fester. Above ${E.REBELLION_AT} the town rises in rebellion: thousands take up arms, half of the militia you raised from the townsmen goes over to them, and even if you win, half the people die and the town's wealth is ruined.</p>
-      <p class="eyebrow" style="margin:0">Last season</p>
-      <ul class="notes" style="margin:0">${parts.length ? parts.map(([t, v]) => `<li><b style="font-weight:400;color:${v > 0 ? "var(--bad)" : "var(--good)"}">${sign(v)}</b> ${esc(t)}</li>`).join("") : "<li>Nothing moved it.</li>"}</ul>
+  function loyaltyDialog() {
+    const R = E.reputation(s), parts = s.loyalty_parts || E.loyaltyParts(s, false), B = E.REBELLION_BELOW;
+    const sign = (v) => `${v > 0 ? "+" : "−"}${Math.abs(v)}`, sum = parts.reduce((a, [, v]) => a + v, 0);
+    const other = s.before ? Math.round(s.loyalty - s.before.loyalty - sum) : 0;
+    openVeil(`<div class="dialog" role="dialog" aria-label="Loyalty"><p class="eyebrow" style="margin:0">The mood of the streets</p><h2 style="margin:0">Loyalty ${Math.round(s.loyalty)} of 100</h2>
+      <p style="margin:0">${s.loyalty < B ? `<b style="font-weight:400;color:var(--bad)">${s.restless >= 2 ? `Below ${B} for two seasons: the town rises in rebellion next season unless loyalty climbs back to ${B}.` : `Below ${B}: the town is restless. If loyalty is still below ${B} at the end of next season, it rises.`}</b>` : `Above ${B} the town obeys. If it falls below ${B} and stays there for two seasons in a row, the town rises in rebellion.`} A rebellion: thousands take up arms, half the slingers and archers you raised from the townsmen go over to them, and even if you win, half the people die and the town's wealth is ruined.</p>
+      <p class="eyebrow" style="margin:0">Last season, on its own</p>
+      <ul class="notes" style="margin:0">${parts.length ? parts.map(([t, v]) => `<li><b style="font-weight:400;color:${v < 0 ? "var(--bad)" : "var(--good)"}">${sign(v)}</b> ${esc(t)}</li>`).join("") : "<li>Nothing moved it.</li>"}${other ? `<li><b style="font-weight:400;color:${other < 0 ? "var(--bad)" : "var(--good)"}">${sign(other)}</b> cards, orders and battles</li>` : ""}</ul>
       <p class="eyebrow" style="margin:0">Your name as a judge</p>
-      <p style="margin:0">Pardoned ${R.pardoned}, executed ${R.executed}: ${esc(R.text)}. After a victory you judge the captives; hanging brigands in the forum counts as an execution. Pardon about one in three or four: never pardoning makes a cruel tyrant (+2 a season), pardoning more than half makes a weak one (+2 a season, and brigands grow bold); between one in five and two in five you are stern but just (−1 a season).</p>
-      <p class="sum" style="margin:0">It falls with a festival (−8), lower taxes (−6), hearing petitions (−4), a sacrifice at the temple (−2), a pardon (−3), peace and bread (−1 a season) and a loyal town (−2 a season). It rises with high taxes (+3 a season, raising them +6), hunger (+6), little bread (+2), low loyalty (+2), an execution (+2) and conscription (+2).</p>
+      <p style="margin:0">Pardoned ${R.pardoned}, executed ${R.executed}: ${esc(R.text)}. After a victory you judge the captives; hanging brigands in the forum counts as an execution. Pardon about one in three or four: never pardoning makes a cruel tyrant (−2 a season), pardoning more than half makes a weak one (−2 a season, and brigands grow bold); between one in five and two in five you are stern but just (+1 a season).</p>
+      <p class="sum" style="margin:0">It rises with a festival (+8), lower taxes (+4), low taxes (+1 a season), hearing petitions, a sacrifice at the temple, a pardon (+3), victories, the temple and the baths, and peace and bread (+2 a season while below 60). It falls with high taxes (−2 a season, raising them −6), hunger (−10), little bread (−3), an execution (−2), defeats (−5), conscription, and shutting the gates on the farmers (−4).</p>
       <div class="row"><button class="btn" type="button" data-close>Close</button></div></div>`);
   }
   function tributeDialog() {
@@ -626,38 +629,42 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
     return out;
   })();
+  // The city sheet as an old map (v10): sepia ink on parchment, carmine roofs and towers, verdigris water.
+  const MAP = { paper: "#ecdcb4", paper2: "#e2cd9c", ink: "#3d2b1a", ink2: "#6b4a2b", red: "#a8432f", sea: "#c3cfbc", seaInk: "#4f6b68", field: "#d9d29c", fieldInk: "#4f5a26", green: "#5d7a3a" };
+  const mapBadge = (n, fill) => `<g transform="translate(67,13)"><circle r="10" fill="${fill}" stroke="${MAP.ink}"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="${MAP.paper}">${n}</text></g>`;
   function roofsSVG() {
     const n = Math.min(ROOFS.length, Math.round(s.people / 120));
-    return ROOFS.slice(0, n).map(([x, y], i) => `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${(i * 37) % 24 - 12})"><rect x="-4.5" y="-3.5" width="9" height="7" rx="1" fill="#8a4a3a" stroke="rgba(246,227,161,.55)" stroke-width=".7"/><path d="M-4.5,0h9" stroke="rgba(246,227,161,.6)" stroke-width=".7"/></g>`).join("");
+    return ROOFS.slice(0, n).map(([x, y], i) => `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${(i * 37) % 24 - 12})"><rect x="-4" y="-3.2" width="8" height="6.4" fill="${MAP.red}" fill-opacity=".72" stroke="${MAP.ink}" stroke-width=".6"/><path d="M-4,0h8" stroke="${MAP.ink}" stroke-width=".5"/></g>`).join("");
   }
   /** A hillside plot not yet cleared (or being cleared): scrub, click to order the clearing. */
   function scrubSVG(x, y, left) {
     const w = 80, h = 66;
     return `<g class="plot-hit" tabindex="0" role="button" aria-label="${left ? `Being cleared, ready in ${left} season${left > 1 ? "s" : ""}` : "Scrub on the hillside: clear it for a new field"}" data-clear="1" transform="translate(${x},${y}) scale(${PS})">
-      <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="rgba(36,26,63,.55)" stroke="rgba(159,220,174,.35)" stroke-dasharray="${left ? "6 4" : "2 5"}"/>
-      <g fill="none" stroke="rgba(159,220,174,.5)" stroke-width="1.6" stroke-linecap="round">${[[18, 40], [36, 30], [54, 42], [66, 28]].map(([a, b]) => `<path d="M${a},${b + 10}v-8m-6,4l6,-10l6,10"/>`).join("")}</g>
-      <text x="${w / 2}" y="${h - 7}" text-anchor="middle" font-family="Marcellus" font-size="11.5" fill="rgba(185,169,143,.85)">${left ? "clearing" : "scrub"}</text>
-      ${left ? `<g transform="translate(${w - 13},13)"><circle r="10" fill="#2c0819" stroke="#e2bd66"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#f6e3a1">${left}</text></g>` : ""}</g>`;
+      <rect class="plot-frame" width="${w}" height="${h}" rx="4" fill="rgba(236,220,180,.6)" stroke="${MAP.ink2}" stroke-width="1.2" stroke-dasharray="${left ? "6 4" : "2 4"}"/>
+      <g fill="none" stroke="${MAP.fieldInk}" stroke-width="1.4" stroke-linecap="round">${[[18, 40], [36, 30], [54, 42], [66, 28]].map(([a, b]) => `<path d="M${a - 6},${b + 6}c0,-8 3,-12 6,-12s6,4 6,12M${a},${b + 6}v5"/>`).join("")}</g>
+      <text x="${w / 2}" y="${h - 7}" text-anchor="middle" font-family="Marcellus" font-size="11.5" fill="${MAP.ink2}">${left ? "clearing" : "scrub"}</text>
+      ${left ? mapBadge(left, MAP.red) : ""}</g>`;
   }
   const sortedPlots = (zone) => s.buildings.filter((b) => E.BLD[b.kind].zone === zone).sort((a, b) => E.BLD_IDS.indexOf(a.kind) - E.BLD_IDS.indexOf(b.kind) || a.done - b.done);
   function plotSVG(b, x, y, zone, i) {
     const w = 80, h = 66;
     if (!b) return `<g class="plot-hit" tabindex="0" role="button" aria-label="Free plot ${zone === "town" ? "inside the walls" : zone === "hill" ? "on the crag: the site for a citadel" : "in the fields"}: build here" data-zone="${zone}" transform="translate(${x},${y}) scale(${PS})">
-      <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="rgba(15,20,48,.35)" stroke="rgba(226,189,102,.4)" stroke-dasharray="5 5"/>
-      <text x="${w / 2}" y="${h / 2 + (zone === "hill" ? 2 : 8)}" text-anchor="middle" font-family="Marcellus" font-size="${zone === "hill" ? 12 : 24}" fill="rgba(226,189,102,.7)">${zone === "hill" ? "citadel site" : "+"}</text></g>`;
+      <rect class="plot-frame" width="${w}" height="${h}" rx="4" fill="rgba(236,220,180,.45)" stroke="${MAP.ink2}" stroke-width="1.2" stroke-dasharray="5 4"/>
+      <text x="${w / 2}" y="${h / 2 + (zone === "hill" ? 2 : 8)}" text-anchor="middle" font-family="Marcellus" font-size="${zone === "hill" ? 12 : 24}" fill="${MAP.ink2}">${zone === "hill" ? "citadel site" : "+"}</text></g>`;
     const st = E.buildingState(s, b), B = E.BLD[b.kind];
     const dim = st.phase === "building" ? .45 : st.phase === "growing" ? .7 : 1;
-    const badge = st.phase === "building" ? `<g transform="translate(${w - 13},13)"><circle r="10" fill="#2c0819" stroke="#e2bd66"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#f6e3a1">${st.left}</text></g>`
-      : st.phase === "growing" ? `<g transform="translate(${w - 13},13)"><circle r="10" fill="#1f3a22" stroke="#9fdcae"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="#9fdcae">${st.left}</text></g>`
-      : st.phase === "young" ? `<g transform="translate(${w - 13},13)"><circle r="9" fill="none" stroke="rgba(159,220,174,.3)" stroke-width="3"/><circle r="9" fill="none" stroke="#9fdcae" stroke-width="3" stroke-dasharray="${(st.f * 56.5).toFixed(1)} 56.5" transform="rotate(-90)"/></g>` : "";
+    const badge = st.phase === "building" ? mapBadge(st.left, MAP.red)
+      : st.phase === "growing" ? mapBadge(st.left, MAP.green)
+      : st.phase === "young" ? `<g transform="translate(${w - 13},13)"><circle r="9" fill="none" stroke="rgba(93,122,58,.3)" stroke-width="3"/><circle r="9" fill="none" stroke="${MAP.green}" stroke-width="3" stroke-dasharray="${(st.f * 56.5).toFixed(1)} 56.5" transform="rotate(-90)"/></g>` : "";
     const fresh = b.done > 0 && s.turn >= b.done && s.turn - b.done <= 1;
     return `<g class="plot-hit" tabindex="0" role="button" aria-label="${esc(B.name)}, ${esc(st.text)}${fresh ? ", newly finished" : ""}" data-plot="${zone}-${i}" transform="translate(${x},${y}) scale(${PS})">
-      ${fresh ? `<rect x="-4" y="-4" width="${w + 8}" height="${h + 8}" rx="11" fill="none" stroke="#fff4c8" stroke-width="3" filter="url(#newglow)"/>` : ""}
-      <rect class="plot-frame" width="${w}" height="${h}" rx="8" fill="${zone === "field" ? "rgba(38,52,30,.82)" : "rgba(44,8,25,.88)"}" stroke="#e2bd66" stroke-width="1.5" ${st.phase === "building" ? 'stroke-dasharray="6 4"' : ""}/>
-      ${st.phase === "building" ? `<rect width="${w}" height="${h}" rx="8" fill="url(#scaff)"/>` : ""}
-      ${fresh ? `<text x="6" y="14" font-family="Marcellus" font-size="10.5" letter-spacing="1.5" fill="#fff4c8">NEW</text>` : ""}
-      <g transform="translate(${w / 2},27) scale(.85)" opacity="${dim}" fill="none" stroke="#e2bd66" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${I[b.kind] || ""}</g>
-      <text x="${w / 2}" y="${h - 7}" text-anchor="middle" font-family="Marcellus" font-size="12.5" fill="#f6e3a1" opacity="${dim}">${esc(B.short)}</text>${badge}</g>`;
+      ${fresh ? `<rect x="-4" y="-4" width="${w + 8}" height="${h + 8}" rx="7" fill="none" stroke="${MAP.red}" stroke-width="3" filter="url(#newglow)"/>` : ""}
+      <rect class="plot-frame" width="${w}" height="${h}" rx="4" fill="${zone === "field" ? MAP.field : MAP.paper2}" stroke="${MAP.ink}" stroke-width="1.6" ${st.phase === "building" ? 'stroke-dasharray="6 4"' : ""}/>
+      <rect x="3.5" y="3.5" width="${w - 7}" height="${h - 7}" rx="2" fill="none" stroke="${MAP.ink}" stroke-width=".6" opacity=".7"/>
+      ${st.phase === "building" ? `<rect width="${w}" height="${h}" rx="4" fill="url(#scaff)"/>` : ""}
+      ${fresh ? `<text x="7" y="15" font-family="Marcellus" font-size="10.5" letter-spacing="1.5" fill="${MAP.red}">NEW</text>` : ""}
+      <g transform="translate(${w / 2},27) scale(.85)" opacity="${dim}" fill="none" stroke="${zone === "field" ? MAP.fieldInk : MAP.ink}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${I[b.kind] || ""}</g>
+      <text x="${w / 2}" y="${h - 8}" text-anchor="middle" font-family="Marcellus" font-size="12.5" fill="${MAP.ink}" opacity="${dim}">${esc(B.short)}</text>${badge}</g>`;
   }
   /** A merchant galley under sail, seen from the side: oars, a square sail with a stripe, the painted eye on the bow, her name. dir 1 = bow to the right. */
   const lower = (t) => String(t).replace(/^./, (m) => m.toLowerCase());
@@ -674,61 +681,116 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       ${name ? `<text x="0" y="${(24 * scale + 10).toFixed(0)}" text-anchor="middle" font-family="Marcellus" font-size="13" fill="#f6e3a1" stroke="#0b2440" stroke-width="3" paint-order="stroke">${esc(name)}</text>` : ""}</g>`;
   }
   function shipSVG(x, y, scale = 1, ghost = false) {
-    return `<g transform="translate(${x},${y}) scale(${scale})" ${ghost ? 'opacity=".6"' : ""}>
-      <path d="M-30,0h60l-10,12h-40Z" fill="${ghost ? "none" : "#5a3a1a"}" stroke="#e2bd66" stroke-width="1.6" ${ghost ? 'stroke-dasharray="4 3"' : ""}/>
-      ${ghost ? "" : `<path d="M0,0V-34" stroke="#e2bd66" stroke-width="2"/><path d="M-1,-32c14,4 18,12 18,22c-8,-2 -14,-2 -18,0Z" fill="#9b2240" stroke="#e2bd66" stroke-width="1.2"/>`}
-      ${Array.from({ length: 5 }, (_, k) => `<path d="M${-20 + k * 9},12l-3,7" stroke="#e2bd66" stroke-width="1.2"/>`).join("")}</g>`;
+    return `<g transform="translate(${x},${y}) scale(${scale})" ${ghost ? 'opacity=".75"' : ""}>
+      <path d="M-30,0h60l-10,12h-40Z" fill="${ghost ? "none" : MAP.paper2}" stroke="${MAP.ink}" stroke-width="1.6" ${ghost ? 'stroke-dasharray="4 3"' : ""}/>
+      ${ghost ? "" : `<path d="M0,0V-34" stroke="${MAP.ink}" stroke-width="2"/><path d="M-1,-32c14,4 18,12 18,22c-8,-2 -14,-2 -18,0Z" fill="${MAP.red}" fill-opacity=".8" stroke="${MAP.ink}" stroke-width="1.2"/>`}
+      ${Array.from({ length: 5 }, (_, k) => `<path d="M${-20 + k * 9},12l-3,7" stroke="${MAP.ink}" stroke-width="1.2"/>`).join("")}</g>`;
   }
+  // the old map's ornaments: little hachured peaks, a compass rose, a sea serpent, a scale of miles
+  function peakSVG([x, y], k) {
+    const h = 20 + (k % 3) * 7, w = 22 + (k % 2) * 7;
+    const hatch = Array.from({ length: 5 }, (_, j) => { const t = (j + 1) / 6, px = x + w * t * .85, py = y - h * (1 - t) * .9;
+      return `M${px.toFixed(1)},${py.toFixed(1)}l${(-2 - 3 * t).toFixed(1)},${(h * (1 - t) * .75).toFixed(1)}`; }).join("");
+    return `<path d="M${x - w},${y} Q${x - w * .45},${y - h * .55} ${x},${y - h} Q${x + w * .4},${y - h * .5} ${x + w},${y}" fill="${MAP.paper}" stroke="${MAP.ink}" stroke-width="1.3"/><path d="${hatch}" stroke="${MAP.ink2}" stroke-width=".9"/>`;
+  }
+  function inkRose(cx, cy, r) {
+    const pt = (a, len, wid, dark) => `<g transform="rotate(${a})"><path d="M0,${-len} L${wid},${-wid} L0,0Z" fill="${dark}"/><path d="M0,${-len} L${-wid},${-wid} L0,0Z" fill="${MAP.paper}"/></g>`;
+    return `<g transform="translate(${cx},${cy})" stroke="${MAP.ink}" stroke-width=".9" stroke-linejoin="round">
+      <circle r="${r * .66}" fill="none"/><circle r="${r * .6}" fill="none" stroke-width=".5"/>
+      ${[45, 135, 225, 315].map((a) => pt(a, r * .66, r * .1, MAP.red)).join("")}${[0, 90, 180, 270].map((a) => pt(a, r, r * .14, MAP.ink)).join("")}
+      <circle r="2.4" fill="${MAP.paper}"/>
+      <text y="${-r - 6}" text-anchor="middle" font-family="Caesar Dressing, Marcellus" font-size="14" fill="${MAP.ink}" stroke="none">N</text></g>`;
+  }
+  const serpentSVG = (x, y) => `<g transform="translate(${x},${y})" fill="none" stroke="${MAP.ink}" stroke-width="1.5" stroke-linecap="round">
+    <path d="M0,0c-2,-14 12,-20 18,-10c3,5 1,10 1,10" fill="${MAP.sea}"/><circle cx="7" cy="-11" r="1.3" fill="${MAP.ink}"/><path d="M-2,-4l-6,2M14,-16l3,-6l2,6"/>
+    <path d="M26,2c4,-14 18,-14 22,0M56,2c4,-10 13,-10 16,0" fill="${MAP.sea}"/><path d="M80,2c3,-6 8,-6 10,-2c2,4 -4,6 -6,2"/>
+    <path d="M-12,3q6,-4 12,0t12,0t12,0t12,0t12,0t12,0t12,0t12,0" stroke="${MAP.seaInk}" stroke-width="1"/></g>`;
+  const scaleSVG = (x, y) => `<g transform="translate(${x},${y})" font-family="Marcellus" font-size="10" fill="${MAP.ink}">
+    ${[0, 1, 2, 3].map((k) => `<rect x="${k * 28}" y="0" width="28" height="5" fill="${k % 2 ? MAP.paper : MAP.ink}" stroke="${MAP.ink}" stroke-width=".8"/>`).join("")}
+    <text x="0" y="17" text-anchor="middle">0</text><text x="112" y="17" text-anchor="middle">M</text><text x="56" y="-5" text-anchor="middle" letter-spacing="2">PASSVS</text></g>`;
   function citySVG() {
     const town = sortedPlots("town"), fields = sortedPlots("field"), hill = sortedPlots("hill");
     const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
     const MOORING = [[290, 222], [290, 262], [230, 318], [230, 356], [290, 412], [290, 450]];
     const ships = MOORING.slice(0, Math.min(free, 6)).map(([x, y]) => shipSVG(x, y, .5)).join("");
     const SLIPS = [110, 170, 230];
-    const keels = s.shipyard.slice(0, 3).map((t, k) => shipSVG(SLIPS[k], 556, .42, true) + `<text x="${SLIPS[k]}" y="592" text-anchor="middle" font-family="Marcellus" font-size="10.5" fill="#f6e3a1">${esc(t.name || "keel")} · ${t.done - s.turn}</text>`).join("");
+    const keels = s.shipyard.slice(0, 3).map((t, k) => shipSVG(SLIPS[k], 556, .42, true) + `<text x="${SLIPS[k]}" y="592" text-anchor="middle" font-family="Marcellus" font-size="10.5" fill="${MAP.ink}">${esc(t.name || "keel")} · ${t.done - s.turn}</text>`).join("");
     const poly = TOWN_POLY.map((p) => p.join(",")).join(" ");
-    const contour = (k) => `<path d="M${690 + k * 26},0 C${700 + k * 26},${90 + k * 4} ${740 + k * 22},${180} ${728 + k * 22},${270} C${724 + k * 20},${350} ${756 + k * 20},${440} ${742 + k * 20},${600}" fill="none" stroke="rgba(246,227,161,.08)" stroke-width="2"/>`;
-    return `<svg viewBox="0 0 1000 ${600 + BAND}" role="img" aria-label="Plan of Acruvium from above, as Kotor: the bay and the Sea Gate to the west, the walled triangle between the river and the spring, the mountain and the crag to the east, the narrow fields, and the tribes' land beyond the mountains">
-      <defs><linearGradient id="bay" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0b2440"/><stop offset="1" stop-color="#1a4a6e"/></linearGradient>
-      <linearGradient id="mount" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a2f5c"/><stop offset="1" stop-color="#241a3f"/></linearGradient>
-      <pattern id="scaff" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0,5H10" stroke="rgba(226,189,102,.28)" stroke-width="1.6"/></pattern>
+    const BAY = "M0,0 H300 C316,50 326,100 330,128 L330,488 C300,522 262,545 200,560 C120,576 60,560 0,566Z";
+    const RIVER = "M770,6 C708,58 656,108 602,138 C522,166 432,142 334,126", SPRING = "M690,412 C622,444 522,470 424,488 C384,496 352,494 332,490";
+    const MOUNT = "M640,0 C662,90 704,180 694,262 C690,334 722,420 704,520 C700,560 712,600 712,600 H1000 V0Z";
+    const ZIG = "M665,300 L702,262 L684,236 L744,212 L724,190 L804,174 L846,170";
+    let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const peaks = [];
+    for (let k = 0; k < 400 && peaks.length < 24; k++) {
+      const x = 718 + rnd() * 262, y = 40 + rnd() * 545;
+      if (Math.hypot(x - 862, y - 172) < 72 || (y > 150 && y < 320 && x < 860) || (y > 330 && y < 520) || (y < 64 && x > 800)) continue;
+      if (peaks.some(([a, b]) => Math.abs(a - x) < 50 && Math.abs(b - y) < 38)) continue;
+      peaks.push([x, y]);
+    }
+    peaks.sort((a, b) => a[1] - b[1]);
+    const waves = [[40, 110], [120, 150], [200, 120], [60, 250], [180, 270], [40, 470], [150, 500], [250, 520], [210, 180]].map(([x, y]) => `<path d="M${x},${y}q5,-5 10,0t10,0" fill="none" stroke="${MAP.seaInk}" stroke-width="1.1"/>`).join("");
+    const lining = [36, 27, 19, 12, 6].map((w) => `<path d="${BAY}" fill="none" stroke="${MAP.seaInk}" stroke-width="${w}" stroke-opacity=".5"/><path d="${BAY}" fill="none" stroke="${MAP.sea}" stroke-width="${w - 1.4}"/>`).join("");
+    const lbl = (x, y, t, o = {}) => `<text x="${x}" y="${y}" ${o.anchor ? `text-anchor="${o.anchor}"` : ""} font-family="${o.font || "Marcellus"}" font-size="${o.size || 11}" letter-spacing="${o.ls ?? 2}" fill="${o.fill || MAP.ink}" ${o.italic ? 'font-style="italic"' : ""} ${o.rot ? `transform="rotate(${o.rot} ${x} ${y})"` : ""}>${t}</text>`;
+    return `<svg viewBox="0 0 1000 ${600 + BAND}" role="img" aria-label="Old map of Acruvium, drawn as Kotor: the bay and the Sea Gate to the west, the walled triangle between the river and the spring, the mountain and the crag to the east, the narrow fields, and the tribes' land beyond the mountains">
+      <defs>
+      <pattern id="scaff" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0,5H10" stroke="rgba(61,43,26,.28)" stroke-width="1.6"/></pattern>
       <filter id="newglow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>
-      <pattern id="furrows" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><path d="M0,7H14" stroke="rgba(159,220,174,.08)" stroke-width="2"/></pattern></defs>
+      <pattern id="stipple" width="16" height="12" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r=".8" fill="${MAP.ink2}" fill-opacity=".35"/><circle cx="11" cy="9" r=".8" fill="${MAP.ink2}" fill-opacity=".3"/></pattern>
+      <pattern id="hachure" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><path d="M0,3.5H7" stroke="${MAP.ink2}" stroke-width=".7" stroke-opacity=".45"/></pattern>
+      <filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 .35  0 0 0 0 .24  0 0 0 0 .1  0 0 0 .11 0"/></filter>
+      <filter id="stain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".006" numOctaves="3" seed="12"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .34  0 0 0 0 .12  0 0 0 .55 -.18"/></filter>
+      <radialGradient id="vign" cx=".5" cy=".5" r=".72"><stop offset=".62" stop-color="#6b4a1f" stop-opacity="0"/><stop offset="1" stop-color="#6b4a1f" stop-opacity=".38"/></radialGradient>
+      <clipPath id="bayclip"><path d="${BAY}"/></clipPath></defs>
+      <rect width="1000" height="${600 + BAND}" fill="${MAP.paper}"/>
       ${bandSVG()}
       <g transform="translate(0,${BAND})">
-      <rect width="1000" height="600" fill="#22193f"/>
-      <rect width="1000" height="600" fill="url(#furrows)"/>
-      <path d="M640,0 C662,90 704,180 694,262 C690,334 722,420 704,520 C700,560 712,600 712,600 H1000 V0Z" fill="url(#mount)"/>
-      ${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(contour).join("")}
-      <path d="M0,0 H300 C316,50 326,100 330,128 L330,488 C300,522 262,545 200,560 C120,576 60,560 0,566Z" fill="url(#bay)"/>
-      ${[[60, 120], [150, 210], [70, 300], [160, 420], [80, 500]].map(([x, y]) => `<path d="M${x},${y} q12,-6 24,0 t24,0" fill="none" stroke="rgba(246,227,161,.16)" stroke-width="1.4"/>`).join("")}
-      <path d="M770,6 C708,58 656,108 602,138 C522,166 432,142 334,126" fill="none" stroke="#3e7fa8" stroke-width="9" stroke-linecap="round"/>
-      <path d="M770,6 C708,58 656,108 602,138 C522,166 432,142 334,126" fill="none" stroke="#7fb6d4" stroke-width="2" stroke-dasharray="6 8"/>
-      <path d="M690,412 C622,444 522,470 424,488 C384,496 352,494 332,490" fill="none" stroke="#3e7fa8" stroke-width="5" stroke-linecap="round"/>
-      <text x="640" y="136" font-family="Marcellus" font-size="11.5" letter-spacing="2" fill="#7fb6d4" transform="rotate(-26 640 136)">${esc((E.CITY.river || "the river").toUpperCase())}</text>
-      <text x="610" y="466" font-family="Marcellus" font-size="11" letter-spacing="2" fill="#7fb6d4" transform="rotate(-14 610 466)">${esc((E.CITY.spring || "the spring").toUpperCase())}</text>
-      <polygon points="${poly}" fill="rgba(15,20,48,.5)" stroke="#e2bd66" stroke-width="5" stroke-linejoin="round"/>
-      ${TOWN_POLY.map(([x, y]) => `<rect x="${x - 10}" y="${y - 10}" width="20" height="20" fill="#2c0819" stroke="#e2bd66" stroke-width="2.5"/>`).join("")}
-      <path d="M665,300 L702,262 L684,236 L744,212 L724,190 L804,174 L846,170" fill="none" stroke="#e2bd66" stroke-width="3.5" stroke-linejoin="round"/>
-      <path d="M665,300 L702,262 L684,236 L744,212 L724,190 L804,174 L846,170" fill="none" stroke="#2c0819" stroke-width="1" stroke-dasharray="3 5"/>
-      <path d="M812,168 C822,130 872,118 906,138 C930,154 922,196 892,206 C860,216 806,204 812,168Z" fill="rgba(246,227,161,.08)" stroke="rgba(246,227,161,.25)"/>
-      <text x="862" y="226" text-anchor="middle" font-family="Marcellus" font-size="11" letter-spacing="3" fill="#b9a98f">THE CRAG</text>
-      <rect x="306" y="170" width="24" height="280" fill="#3a2f5c" stroke="rgba(226,189,102,.5)"/>
-      <path d="M306,326 H232 V384 H252 V346 H306" fill="#5a4c80" stroke="#e2bd66" stroke-width="1.2"/>
-      <text x="318" y="160" text-anchor="middle" font-family="Marcellus" font-size="10.5" letter-spacing="2" fill="#b9a98f">QUAY</text>
-      <g transform="translate(335,300)"><rect x="-9" y="-14" width="18" height="28" fill="#2c0819" stroke="#e2bd66" stroke-width="2"/><path d="M-4,14V4a4,4 0 0 1 8,0v10" fill="#e2bd66"/></g>
-      ${SLIPS.map((x) => `<path d="M${x - 16},600 L${x + 16},600 L${x + 12},540 L${x - 12},540Z" fill="#3a2f5c" stroke="rgba(226,189,102,.5)"/>`).join("")}
-      <text x="170" y="534" text-anchor="middle" font-family="Marcellus" font-size="10.5" letter-spacing="3" fill="#b9a98f">SHIPYARD</text>
-      <text x="22" y="40" font-family="Caesar Dressing, Marcellus" font-size="26" letter-spacing="3" fill="#e2bd66">ACRVVIVM</text>
-      <text x="22" y="470" font-family="Caesar Dressing, Marcellus" font-size="16" letter-spacing="3" fill="rgba(246,227,161,.35)">SINVS RHIZONICVS</text>
-      <text x="960" y="40" text-anchor="end" font-family="Marcellus" font-size="12" letter-spacing="3" fill="rgba(246,227,161,.4)">THE MOUNTAIN</text>
+      <rect width="1000" height="600" fill="url(#stipple)"/>
+      <path d="${MOUNT}" fill="${MAP.paper2}"/><path d="${MOUNT}" fill="url(#hachure)" opacity=".55"/>
+      <path d="${MOUNT}" fill="none" stroke="${MAP.ink2}" stroke-width="1" stroke-dasharray="2 3"/>
+      <path d="${BAY}" fill="${MAP.sea}"/>
+      <g clip-path="url(#bayclip)">${lining}</g>
+      <path d="${BAY}" fill="none" stroke="${MAP.ink}" stroke-width="1.6"/>
+      ${waves}
+      <path d="${RIVER}" fill="none" stroke="${MAP.seaInk}" stroke-width="8" stroke-linecap="round"/><path d="${RIVER}" fill="none" stroke="${MAP.sea}" stroke-width="5" stroke-linecap="round"/>
+      <path d="${SPRING}" fill="none" stroke="${MAP.seaInk}" stroke-width="5.5" stroke-linecap="round"/><path d="${SPRING}" fill="none" stroke="${MAP.sea}" stroke-width="3" stroke-linecap="round"/>
+      ${lbl(640, 136, esc(E.CITY.river || "the river"), { size: 13, fill: MAP.seaInk, italic: 1, ls: 1, rot: -26 })}
+      ${lbl(610, 466, esc(E.CITY.spring || "the spring"), { size: 12, fill: MAP.seaInk, italic: 1, ls: 1, rot: -14 })}
+      ${peaks.map(peakSVG).join("")}
+      <path d="M812,168 C822,130 872,118 906,138 C930,154 922,196 892,206 C860,216 806,204 812,168Z" fill="${MAP.paper2}" stroke="${MAP.ink}" stroke-width="1.3"/>
+      <path d="M812,168 C822,130 872,118 906,138 C930,154 922,196 892,206 C860,216 806,204 812,168Z" fill="url(#hachure)"/>
+      ${lbl(862, 230, "THE CRAG", { anchor: "middle", size: 11, ls: 3 })}
+      <polygon points="${poly}" fill="rgba(168,67,47,.07)"/>
+      <polygon points="${poly}" fill="none" stroke="${MAP.ink}" stroke-width="6.5" stroke-linejoin="round"/>
+      <polygon points="${poly}" fill="none" stroke="${MAP.paper}" stroke-width="2.2" stroke-linejoin="round"/>
+      ${TOWN_POLY.map(([x, y]) => `<rect x="${x - 9}" y="${y - 9}" width="18" height="18" fill="${MAP.red}" stroke="${MAP.ink}" stroke-width="1.6"/><rect x="${x - 5}" y="${y - 5}" width="10" height="10" fill="none" stroke="${MAP.ink}" stroke-width=".7"/>`).join("")}
+      <path d="${ZIG}" fill="none" stroke="${MAP.ink}" stroke-width="4" stroke-linejoin="round"/>
+      <path d="${ZIG}" fill="none" stroke="${MAP.paper}" stroke-width="1.2" stroke-dasharray="3 4"/>
+      <rect x="306" y="170" width="24" height="280" fill="${MAP.paper2}" stroke="${MAP.ink}" stroke-width="1.2"/>
+      <path d="M306,326 H232 V384 H252 V346 H306" fill="${MAP.paper2}" stroke="${MAP.ink}" stroke-width="1.2"/>
+      ${lbl(318, 160, "QUAY", { anchor: "middle", size: 10.5 })}
+      <g transform="translate(335,300)"><rect x="-9" y="-14" width="18" height="28" fill="${MAP.red}" stroke="${MAP.ink}" stroke-width="1.6"/><path d="M-4,14V4a4,4 0 0 1 8,0v10" fill="${MAP.ink}"/></g>
+      ${SLIPS.map((x) => `<path d="M${x - 16},600 L${x + 16},600 L${x + 12},540 L${x - 12},540Z" fill="${MAP.paper2}" stroke="${MAP.ink}" stroke-width="1.1"/>`).join("")}
+      ${lbl(170, 532, "SHIPYARD", { anchor: "middle", size: 10.5, ls: 3 })}
+      <g transform="translate(18,12)"><rect width="250" height="66" fill="${MAP.paper}" stroke="${MAP.ink}" stroke-width="1.6"/><rect x="4" y="4" width="242" height="58" fill="none" stroke="${MAP.ink}" stroke-width=".6"/>
+        ${[[4, 4], [246, 4], [4, 62], [246, 62]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2" fill="${MAP.red}" stroke="${MAP.ink}" stroke-width=".8"/>`).join("")}
+        ${lbl(125, 34, "ACRVVIVM", { anchor: "middle", font: "Caesar Dressing, Marcellus", size: 26, ls: 4 })}
+        ${lbl(125, 53, `${E.intc(s.people)} people`, { anchor: "middle", size: 12.5, ls: 1, fill: MAP.ink2 })}</g>
+      ${inkRose(118, 198, 44)}
+      ${serpentSVG(60, 420)}
+      ${lbl(30, 505, "SINVS RHIZONICVS", { font: "Caesar Dressing, Marcellus", size: 16, ls: 4, fill: MAP.seaInk })}
+      ${lbl(965, 46, "THE MOUNTAIN", { anchor: "end", size: 12, ls: 3, fill: MAP.ink2 })}
+      ${scaleSVG(800, 556)}
       ${roofsSVG()}
-      <text x="24" y="64" font-family="Marcellus" font-size="13" letter-spacing="1" fill="#f6e3a1">${E.intc(s.people)} people</text>
       ${ships}${keels}
       </g>
       ${TOWN_SLOTS.map(down).map(([x, y], i) => plotSVG(town[i], x, y, "town", i)).join("")}
       ${plotSVG(hill[0], HILL_SLOT[0], HILL_SLOT[1] + BAND, "hill", 0)}
       ${fieldLayout().map((p, i) => p.kind === "open" ? plotSVG(fields[p.k], p.x, p.y, "field", p.k) : p.kind === "scrub" ? scrubSVG(p.x, p.y, p.left) : lockedSVG(p.x, p.y, p.tribe)).join("")}
+      <g pointer-events="none"><rect width="1000" height="${600 + BAND}" filter="url(#stain)"/><rect width="1000" height="${600 + BAND}" filter="url(#paper)"/><rect width="1000" height="${600 + BAND}" fill="url(#vign)"/>
+        <rect x="3" y="3" width="994" height="${594 + BAND}" fill="none" stroke="${MAP.ink}" stroke-width="2"/>
+        <rect x="7.5" y="7.5" width="985" height="${585 + BAND}" fill="none" stroke="${MAP.ink}" stroke-width="3.4" stroke-dasharray="24 24"/>
+        <rect x="11" y="11" width="978" height="${578 + BAND}" fill="none" stroke="${MAP.ink}" stroke-width=".8"/></g>
     </svg>`;
   }
   /** Every field slot with what it is now: an open plot (k-th field building), hillside scrub, or tribal land not yet ours. */
@@ -745,22 +807,24 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     return out;
   }
   function lockedSVG(x, y, tribe) {
-    const t = E.TRIBE[tribe], hostile = E.hostile(s, tribe);
+    const t = E.TRIBE[tribe], hostile = E.hostile(s, tribe), col = hostile ? MAP.red : MAP.ink2;
     return `<g class="plot-hit" tabindex="0" role="button" aria-label="Land of the ${esc(t.name)}: not ours yet" data-tribe="${tribe}" transform="translate(${x},${y}) scale(${PS})">
-      <rect class="plot-frame" width="80" height="66" rx="8" fill="rgba(10,8,22,.65)" stroke="${hostile ? "rgba(255,155,155,.6)" : "rgba(185,169,143,.45)"}" stroke-dasharray="3 4"/>
-      <g transform="translate(40,30)" fill="none" stroke="${hostile ? "#ff9b9b" : "rgba(185,169,143,.75)"}" stroke-width="2" stroke-linecap="round"><path d="M-12,12L12,-12M12,12L-12,-12"/><path d="M-12,-12l-2,5 5,-2M12,-12l2,5 -5,-2"/></g>
-      <text x="40" y="59" text-anchor="middle" font-family="Marcellus" font-size="11" fill="rgba(185,169,143,.85)">${hostile ? "hostile" : "theirs"}</text></g>`;
+      <rect class="plot-frame" width="80" height="66" rx="4" fill="rgba(61,43,26,.06)" stroke="${col}" stroke-width="1.2" stroke-dasharray="3 4"/>
+      <g transform="translate(40,30)" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round"><path d="M-12,12L12,-12M12,12L-12,-12"/><path d="M-12,-12l-2,5 5,-2M12,-12l2,5 -5,-2"/></g>
+      <text x="40" y="59" text-anchor="middle" font-family="Marcellus" font-size="11" fill="${col}">${hostile ? "hostile" : "theirs"}</text></g>`;
   }
   /** The band of tribal land above the plan, beyond the mountains: three territories, each with its plots and its state. */
   function bandSVG() {
     const label = { free: "free tribe", ally: "our allies", conquered: "conquered" };
-    return `<rect width="1000" height="${BAND}" fill="#171030"/>
-      <path d="M0,${BAND - 6} C120,${BAND - 22} 220,${BAND - 2} 340,${BAND - 14} C470,${BAND - 26} 560,${BAND - 4} 680,${BAND - 16} C800,${BAND - 26} 900,${BAND - 6} 1000,${BAND - 14} V${BAND} H0Z" fill="#2e2452"/>
-      ${E.TRIBES.map((t, k) => { const [x0, x1] = TRIBE_BOX[k], st = E.tribeState(s, t.id).state, hostile = E.hostile(s, t.id), won = E.tribeWon(s, t.id);
+    const ridge = Array.from({ length: 26 }, (_, k) => { const x = 20 + k * 38, y = BAND - 2, h = 9 + (k % 3) * 3;
+      return `<path d="M${x - 16},${y} Q${x - 6},${y - h * .6} ${x},${y - h} Q${x + 6},${y - h * .5} ${x + 16},${y}" fill="${MAP.paper2}" stroke="${MAP.ink}" stroke-width="1"/>`; }).join("");
+    return `<rect width="1000" height="${BAND}" fill="#dfc996"/>
+      ${ridge}
+      ${E.TRIBES.map((t, k) => { const [x0, x1] = TRIBE_BOX[k], st = E.tribeState(s, t.id).state, hostile = E.hostile(s, t.id), won = E.tribeWon(s, t.id), col = hostile ? MAP.red : won ? MAP.green : MAP.ink;
         return `<g class="plot-hit" tabindex="0" role="button" aria-label="The ${esc(t.name)}: ${esc(label[st])}${hostile ? ", hostile" : ""}" data-tribe="${t.id}">
-          <rect x="${x0}" y="6" width="${x1 - x0}" height="${BAND - 14}" rx="10" fill="${won ? "rgba(38,52,30,.35)" : "rgba(44,8,25,.35)"}" stroke="${hostile ? "rgba(255,155,155,.55)" : won ? "rgba(159,220,174,.5)" : "rgba(226,189,102,.35)"}" stroke-dasharray="${won ? "0" : "6 5"}"/>
-          <text x="${x0 + 12}" y="26" font-family="Caesar Dressing, Marcellus" font-size="17" letter-spacing="1.5" fill="${won ? "#9fdcae" : "#e2bd66"}">${esc(t.name.toUpperCase())}</text>
-          <text x="${x1 - 12}" y="26" text-anchor="end" font-family="Marcellus" font-size="11.5" letter-spacing="1" fill="${hostile ? "#ff9b9b" : won ? "#9fdcae" : "#b9a98f"}">${hostile ? "hostile" : label[st]}</text></g>`; }).join("")}`;
+          <rect x="${x0}" y="16" width="${x1 - x0}" height="${BAND - 32}" rx="4" fill="${won ? "rgba(93,122,58,.12)" : "rgba(236,220,180,.35)"}" stroke="${col}" stroke-width="1.3" stroke-dasharray="${won ? "0" : "9 3 2 3"}"/>
+          <text x="${x0 + 12}" y="36" font-family="Caesar Dressing, Marcellus" font-size="17" letter-spacing="1.5" fill="${col}">${esc(t.name.toUpperCase())}</text>
+          <text x="${x1 - 12}" y="36" text-anchor="end" font-family="Marcellus" font-size="11.5" letter-spacing="1" font-style="italic" fill="${col}">${hostile ? "hostile" : label[st]}</text></g>`; }).join("")}`;
   }
   function cityView(before) {
     const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
@@ -927,12 +991,12 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   function warSVG(enemy, odds, plan, opts = {}) {
     let seed = enemy.men * 7 + 3; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const lanes = odds ? odds.lanes : [0, 1, 2].map((i) => ({ foe: Math.round(enemy.men * enemy.share[i]), chance: null, empty: false }));
-    const loose = (E.DENSITY[enemy.kind] ?? .7) < .8 ? 1.6 : 1;   // pirates and brigands come scattered, the tribes in a dense mass
+    const loose = E.densityOf(enemy) < .8 ? 1.6 : 1;   // pirates and brigands come scattered, the tribes in a dense mass
     const crowd = lanes.map((l, i) => { const n = Math.min(90, Math.round(l.foe / 3)), w = Math.min(140, (60 + Math.sqrt(n) * 14) * loose), gone = opts.fates && opts.fates[i] === "won";
       return Array.from({ length: n }, () => { const x = [150, 450, 750][i] + (rnd() - .5) * w * 2, y = 140 + (rnd() - .5) * 110 + (gone ? -50 : 0);
         return `<g transform="translate(${x.toFixed(0)},${y.toFixed(0)})" opacity="${gone ? .3 : .9}"><circle r="3.4" fill="#9a3b2a"/><path d="M0,-3v-8" stroke="#c9a46a" stroke-width="1"/></g>`; }).join("")
         + `<text x="${[150, 450, 750][i]}" y="${l.foe ? 222 : 160}" text-anchor="middle" font-family="Marcellus" font-size="13" fill="#ffb3a0">${l.foe ? l.foe + " " + (enemy.kind === "pirates" ? "pirates" : enemy.kind === "brigands" ? "brigands" : enemy.kind === "rebels" ? "rebels" : "warriors") + (l.cut ? ` after missiles` : "") : "no one"}</text>`; }).join("");
-    const home = enemy.home, walls = home && s.buildings.some((b) => b.kind === "walls" && s.turn >= b.done);
+    const home = enemy.walled, walls = enemy.walled;
     const zones = `<rect x="0" y="250" width="900" height="210" fill="rgba(226,189,102,.03)"/>
       <path d="M300,250V460M600,250V460" stroke="rgba(226,189,102,.25)" stroke-dasharray="4 6"/><path d="M0,300H900M0,362H900" stroke="rgba(226,189,102,.12)"/>
       <text x="8" y="266" font-family="Marcellus" font-size="10" letter-spacing="2" fill="#b9a98f">FRONT · MISSILES</text><text x="8" y="316" font-family="Marcellus" font-size="10" letter-spacing="2" fill="#b9a98f">THE LINE</text><text x="8" y="452" font-family="Marcellus" font-size="10" letter-spacing="2" fill="#b9a98f">SECOND LINE · STANDARD</text>
@@ -957,11 +1021,11 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       <p class="sum" style="margin:0">Kit: ${k.pila ? "javelins (pila)" : "no javelins"}, ${k.gladius ? "short swords (gladii)" : "old swords"}. Experience ${stars} (+${Math.min(3, Math.floor(xp / 2))} on the dice). Morale: ${m > 0 ? "high (+" + m + ")" : m < 0 ? "low (" + m + ")" : "steady"}. New troops and kit are orders, under "The garrison" in All actions. When the enemy comes you can also call the village militia.</p></div>`;
   }
   function warIdle() {
-    const lb = s.last_battle, rumour = s.conflict ? { pirates: "Fishermen speak of strange sails beyond the gulf.", brigands: "Shepherds say armed men camp in the gorge.", tribes: "The hill people are restless; smoke rises beyond the mountains." }[s.conflict.kind] : "";
+    const lb = s.last_battle, seen = s.conflict && s.conflict.foretold ? s.conflict : null, rumour = seen ? `The haruspex foretold it: ${{ pirates: "pirates", brigands: "brigands", tribes: "the tribes" }[seen.kind]} will come in ${E.seasonOf(seen.turn)[0].season} AD ${E.seasonOf(seen.turn)[1]}, ${E.AT_NAME[seen.at] || ""}.` : s.conflict ? { pirates: "Fishermen speak of strange sails beyond the gulf.", brigands: "Shepherds say armed men camp in the gorge.", tribes: "The hill people are restless; smoke rises beyond the mountains." }[s.conflict.kind] : "";
     $("sheet-war").innerHTML = `<p class="eyebrow">The battlefield</p>
       <p style="margin:0">${rumour ? `<b style="color:#ffb3a0;font-weight:400">Rumours this year:</b> ${esc(rumour)} ` : "No rumours of war this year. "}Once a year, as a rule, the town must fight: pirates, brigands, or the tribes beyond the mountains. A march you order against a tribe is fought here too.</p>
       ${armyHTML()}
-      <p class="sum" style="margin:0">${s.buildings.some((b) => b.kind === "walls") ? "The walls hold an empty flank at home, and archers and slingers can stand on them. " : ""}${s.buildings.some((b) => b.kind === "arx" && s.turn >= b.done) ? "The citadel stands: at home the town can hardly be taken." : "No citadel yet: build one on the crag above the town."}</p>
+      <p class="sum" style="margin:0">${s.buildings.some((b) => b.kind === "walls") ? "When the enemy storms the town, the walls count and hold an empty flank, and archers and slingers can stand on them. When they raid the open fields, the walls cannot help: fight in the open or shut the gates. " : ""}${s.buildings.some((b) => b.kind === "arx" && s.turn >= b.done) ? "The citadel stands: at home the town can hardly be taken." : "No citadel yet: build one on the crag above the town."}</p>
       ${lb && lb.plan && lb.plan.units ? `<div class="mapwrap">${warSVG(lb.enemy, null, lb.plan, { fates: lb.fates })}</div><p class="sum" style="margin:0">The last battle, in ${E.seasonOf(lb.turn)[0].season} AD ${E.seasonOf(lb.turn)[1]}: ${lb.won ? "a victory" : "a defeat"} against ${esc(lb.enemy.name.replace(/^./, (m) => m.toLowerCase()))} ${esc(lb.enemy.where)} (${lb.enemy.men} men), in ${lb.rounds} round${lb.rounds > 1 ? "s" : ""}.</p>` : ""}`;
   }
   const warUI = {
@@ -976,15 +1040,17 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
           ${allies.length ? `<p style="margin:0;color:#9fdcae">Our allies answer the call: ${allies.map((x) => `${x.men} warriors of the ${esc(x.name)}`).join(", ")}.</p>` : ""}
           ${m.called ? `<p style="margin:0">${m.slingers || m.archers ? `<span style="color:#9fdcae">The villages come: ${m.slingers} slingers from the fishing villages of the gulf and ${m.archers} bowmen from the shepherds' hamlets.</span>` : `<span style="color:#ff9b9b">The riders come back alone: the villages did not come in time.</span>`}</p>`
             : enemy.home ? `<button class="btn quiet small" type="button" id="w-muster" ${s.treasury < 80 ? "disabled" : ""}>Send riders to the villages for slingers and bowmen · 80 denarii, loyalty −1 · d20 + ${Math.floor(s.loyalty / 20)} (loyalty) needs 8</button>` : ""}
+          <p style="margin:0">${enemy.walled ? `<b style="font-weight:400;color:#9fdcae">They come ${esc(E.AT_NAME.walls)}:</b> the walls count in every lane${s.buildings.some((b) => b.kind === "arx" && s.turn >= b.done) ? ", and the citadel" : ""}, and archers and slingers can shoot from them.` : E.canShut(enemy) ? `<b style="font-weight:400;color:#ffb3a0">They come ${esc(E.AT_NAME.fields)}:</b> out there the walls cannot help. Meet them in the open, or shut the gates and let them plunder.` : ""}${enemy.foretold ? " The haruspex foretold it: the men are ready (+1)." : ""}</p>
           <div class="war-ways"><button type="button" id="w-send"><b>Send ${esc(a.name)}</b><span class="pc">${odds.chance}%</span><span class="sum">He deploys the army; you hear the result when the dust settles. If he loses, he comes back wounded.</span></button>
-            <button type="button" id="w-self"><b>Lead them yourself</b><span class="pc">${self.chance}%+</span><span class="sum">You place every block on the field and stand in the front rank (+3). A victory brings glory. <span style="color:#ff9b9b">If you lose, you fall or are taken and the game ends${E.troopsOf(s).cavalry >= 5 ? ", unless your horsemen by the standard carry you off (60%)" : ""}.</span></span></button></div></div>
+            <button type="button" id="w-self"><b>Lead them yourself</b><span class="pc">${self.chance}%+</span><span class="sum">You place every block on the field and stand in the front rank (+3). A victory brings glory. <span style="color:#ff9b9b">If you lose, you fall or are taken and the game ends${E.troopsOf(s).cavalry >= 5 ? ", unless your horsemen by the standard carry you off (60%)" : ""}.</span></span></button>
+            ${E.canShut(enemy) ? `<button type="button" id="w-gates"><b>Shut the gates</b><span class="pc">no battle</span><span class="sum">Nobody of ours falls. They burn ${E.SHUT.burn} field building${E.SHUT.burn > 1 ? "s" : ""} and carry off ${E.SHUT.grain} month${E.SHUT.grain > 1 ? "s" : ""} of grain; the farmers curse you (loyalty ${E.SHUT.loyalty}) and Rome hears you hid (favour ${E.SHUT.favour}).</span></button>` : ""}</div></div>
           ${armyHTML()}<div class="mapwrap">${warSVG(enemy, odds, E.defaultPlan(s, enemy, enemy.who))}</div>`;
         const mb = $("w-muster");
         if (mb) mb.onclick = () => { const r = E.muster(s); toast(r.came ? `The villages come (d20: ${r.r} + ${r.bonus})` : `Nobody comes in time (d20: ${r.r} + ${r.bonus})`); clatter(); draw(); };
       };
       draw();
       $("sheet-war").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
-      return new Promise((res) => { $("sheet-war").addEventListener("click", function h(e) { const b = e.target.closest("#w-send, #w-self"); if (!b) return; $("sheet-war").removeEventListener("click", h); res(b.id === "w-self" ? "self" : enemy.who); }); });
+      return new Promise((res) => { $("sheet-war").addEventListener("click", function h(e) { const b = e.target.closest("#w-send, #w-self, #w-gates"); if (!b) return; $("sheet-war").removeEventListener("click", h); res(b.id === "w-self" ? "self" : b.id === "w-gates" ? "gates" : enemy.who); }); });
     },
     async battlePlan(enemy, plan, oddsFn) {
       plan = JSON.parse(JSON.stringify(plan));
@@ -992,9 +1058,9 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       return new Promise((done) => {
         const draw = () => {
           const odds = oddsFn(plan);
-          const rowOf = (u) => (u.type === "horse" ? (u.x < 90 ? "flank-left" : u.x > 810 ? "flank-right" : u.y > 400 && Math.abs(u.x - 450) < 130 ? "guard" : u.y > 400 ? "pursue" : "line") : (enemy.home && Math.abs(u.y - 375) <= 13 ? "walls" : u.y < 300 ? "front" : u.y < 362 ? "line" : "second"));
+          const rowOf = (u) => (u.type === "horse" ? (u.x < 90 ? "flank-left" : u.x > 810 ? "flank-right" : u.y > 400 && Math.abs(u.x - 450) < 130 ? "guard" : u.y > 400 ? "pursue" : "line") : (enemy.walled && Math.abs(u.y - 375) <= 13 ? "walls" : u.y < 300 ? "front" : u.y < 362 ? "line" : "second"));
           const laneName = (u) => E.LANES[E.laneAt(u.x)];
-          const canWalls = enemy.home && s.buildings.some((b) => b.kind === "walls" && s.turn >= b.done);
+          const canWalls = !!enemy.walled;
           const rows = plan.units.map((u) => {
             const opts = u.type === "horse" ? [["flank-left", "strike the left flank"], ["flank-right", "strike the right flank"], ["guard", "guard me by the standard"], ["pursue", "wait to pursue"]]
               : [["left", "left"], ["centre", "centre"], ["right", "right"]];
@@ -1008,7 +1074,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
             <div class="war-total"><span class="pc">${odds.chance}%</span><span>to win the day: two lanes of three. Missiles first, the charge, then up to ${E.MELEE_ROUNDS} rounds of fighting; a lane breaks when its morale runs out, and a second line steps in when the front wavers.</span></div>
             <div class="lanes-odds">${odds.lanes.map((l) => `<div><b>${l.empty ? "—" : l.chance + "%"}</b> ${l.lane}: ${l.men} men against ${l.foe0}${l.cut ? `, ${l.foe} after missiles (−${l.cut}%: ${stagesText(l)})` : ""}${l.reserve ? `; second line ready` : ""}${l.exposed ? `<br><span class="exposed">No shield line here: these slingers and archers will be cut down when the enemy closes.</span>` : ""}<br>${l.empty ? "no enemy here" : l.parts.map(([t, v]) => `${esc(t)} ${v > 0 ? "+" : "−"}${Math.abs(v)}`).join(" · ")}</div>`).join("")}</div>
             <div class="units">${rows}</div>
-            <p class="sum" style="margin:0">Drag a block on the map, or use its buttons. Front row: missiles thin the crowd before the clash, in stages. Slingers throw twice, far and near: stones fly far but wide, so they do best against a dense crowd (${Math.round((.04 + .12 * (E.DENSITY[enemy.kind] ?? .7)) * 100)}% against ${esc(lower(enemy.name))}; 16% against the massed tribes, 9–10% against scattered pirates or brigands). Archers shoot once, nearer, but aimed: 10% against anyone. Ballistae 15% far, scorpions 10% near, village militia 6–8%, javelins 5%; 60% at most. Slingers and archers need a shield line in their lane (cohorts, allies or horsemen): alone, they are overrun when the enemy closes. The line fights; shield lines count ${(s.kit || {}).gladius ? "2.1" : "1.75"} of theirs. The second line steps in when the front wavers. Horsemen on a flank strike that lane (+2 in the first round); by the standard they guard you. ${enemy.home ? "At home the walls hold an empty lane." : "On a march an empty lane is lost; ballistae batter their stockade."}</p>
+            <p class="sum" style="margin:0">Drag a block on the map, or use its buttons. Front row: missiles thin the crowd before the clash, in stages. Slingers throw twice, far and near: stones fly far but wide, so they do best against a dense crowd (${Math.round((.04 + .12 * E.densityOf(enemy)) * 100)}% against ${esc(lower(enemy.name))}; 16% against the massed tribes, 9–10% against scattered pirates or brigands). Archers shoot once, nearer, but aimed: 10% against anyone. Ballistae 15% far, scorpions 10% near, village militia 6–8%, javelins 5%; 60% at most. Slingers and archers need a shield line in their lane (cohorts, allies or horsemen): alone, they are overrun when the enemy closes. The line fights; shield lines count ${(s.kit || {}).gladius ? "2.1" : "1.75"} of theirs. The second line steps in when the front wavers. Horsemen on a flank strike that lane (+2 in the first round); by the standard they guard you. ${enemy.walled ? "They storm the town: the walls count, and hold an empty lane; archers and slingers may stand on them." : enemy.home ? "In the open fields the walls cannot help: an empty lane is held only by the farmers (−1)." : "On a march an empty lane is lost; ballistae batter their stockade."}</p>
             <div class="row"><button class="btn" type="button" id="w-go">Sound the trumpets</button></div>`;
           // drag and drop on the map
           const svg = $("warmap").querySelector("svg");
@@ -1151,7 +1217,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   function toast(t, cls = "", ms = 6000) { const d = document.createElement("div"); d.className = "toast" + (cls ? " " + cls : ""); d.textContent = t; $("toasts").appendChild(d); setTimeout(() => d.remove(), ms); }
   /** The season's news (rules v9): a ship launched, a convoy home with its profit or loss, a prize, an invention. */
   function showNews() {
-    const MARK = { ship: "⚓ ", voyage: "⛵ ", invention: "⚙ ", land: "🌿 ", rebellion: "⚔ " };
+    const MARK = { ship: "⚓ ", voyage: "⛵ ", invention: "⚙ ", land: "🌿 ", rebellion: "⚔ ", omen: "☉ " };
     (s.news || []).forEach((n, k) => setTimeout(() => toast((MARK[n.kind] || "") + n.text, "news", 10000), k * 700));
     s.news = [];
   }
@@ -1676,7 +1742,7 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
       .map((c) => `History (${c.title}): ${String(c.historical_note).replace(/\s+/g, " ")}`);
     const list = notes.map((t) => `<li>${esc(t)}</li>`).join("") + history.map((t) => `<li class="history">${esc(t)}</li>`).join("");
     const WIN = /triumph|finished|slides? into the harbour|is launched|: profit \+|pirate liburna is taken|already bearing, is ours|is built and working|from the same harvest|neighbours who press|you pardon|comes home (safely|early)|sails for Rome|is pleased|cleared:|wins a season's grace|approves|is glad|learns a great deal|success|\+[0-9]/i;
-    const WOE = /hungry|unrest|desert|storm|pirates|only part of its tribute|feels ignored|sulks|uprising|failure|idle|nowhere to live|not fully paid|Warning|disaster|a setback|lapses|goes down|thrown down|: loss −|militia fell|were cut down|discontent|revolt|rebels|parley fails/i;
+    const WOE = /hungry|unrest|desert|storm|pirates|only part of its tribute|feels ignored|sulks|uprising|failure|idle|nowhere to live|not fully paid|Warning|disaster|a setback|lapses|goes down|thrown down|: loss −|militia fell|were cut down|shut the gates|revolt|rebels|parley fails/i;
     const woe = (n) => WOE.test(n) && !/^Victory|^You pardon|^A pirate liburna/.test(n);   // a won battle mentions the pirates, but is no trouble
     const woes = notes.filter(woe), wins = notes.filter((n) => !woe(n) && (WIN.test(n) || /^Victory/.test(n)));
     for (const n of ["treasury", "loyalty", "favour", "people"]) {

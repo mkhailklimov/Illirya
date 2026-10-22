@@ -27,7 +27,7 @@ const ui = {
     return { kind: "advice", i: k };
   },
   roll: async (r) => { log.rolls++; if (r.ok) log.wins++; },
-  battleCall: async (enemy, chance) => { war.n = (war.n || 0) + 1; war.chance = (war.chance || 0) + (+chance || 0); return style === "commander" ? "self" : enemy.who; },
+  battleCall: async (enemy, chance) => { war.n = (war.n || 0) + 1; war.chance = (war.chance || 0) + (+chance || 0); if (["careful", "econ"].includes(style) && E.canShut(enemy) && chance < 50) { war.shut = (war.shut || 0) + 1; return "gates"; } return style === "commander" ? "self" : enemy.who; },
   battlePlan: async (enemy, plan) => plan,
   battleDice: async (enemy, st, result, won, lead) => { if (won) war.won = (war.won || 0) + 1; if (lead === "self") { war.self = (war.self || 0) + 1; if (!won) war.fell = (war.fell || 0) + 1; } },
   throwDice: async (ds, rs) => { for (const r of rs) { tiers[r.tier] = (tiers[r.tier] || 0) + 1; log.rolls++; if (r.ok) log.wins++; } }, ability: async () => true, choose: async (title) => (/rebellion/.test(title) && (log.reb = (log.reb || 0) + 1), /^Judgement/.test(title) ? (style === "random" ? Math.floor(Math.random() * 2) : E.reputation(s).ratio < .28 ? 1 : 0) : /rebellion/.test(title) ? (style === "army" ? 1 : 0) : 0), number: async (t, lo, hi) => hi,
@@ -65,14 +65,14 @@ E.setUI(ui);
       }
       const sc = E.score(s);
       const tribes = E.TRIBES.map((t) => E.tribeState(s, t.id).state[0]).join("");
-      res.push({ fin: !!s.finished, turn: s.turn - 1, score: sc.total, people: s.people, treasury: s.treasury, loy: s.loyalty, fav: s.favour, army: s.army, disc: s.discontent, ships: s.ships, tribes, over: s.over, p12: peopleAt[12], p24: peopleAt[24], p36: peopleAt[36] });
+      res.push({ fin: !!s.finished, turn: s.turn - 1, score: sc.total, people: s.people, treasury: s.treasury, loy: s.loyalty, fav: s.favour, army: s.army, ships: s.ships, tribes, over: s.over, p12: peopleAt[12], p24: peopleAt[24], p36: peopleAt[36] });
     }
     const avg = (k) => Math.round(res.reduce((a, r) => a + (r[k] || 0), 0) / res.length);
     const fin = res.filter((r) => r.fin).length;
     const why = {}; for (const r of res.filter((r) => !r.fin)) { const k = r.over.split(":")[0]; why[k] = (why[k] || 0) + 1; }
     const won = res.reduce((a, r) => a + (r.tribes.match(/[ac]/g) || []).length, 0);
-    console.log(`${style.padEnd(8)} finished ${fin}/${N}  score ${avg("score")}  people ${avg("people")} (t12 ${avg("p12")}, t24 ${avg("p24")}, t36 ${avg("p36")})  treasury ${avg("treasury")}  loyalty ${avg("loy")}  favour ${avg("fav")}  army ${avg("army")}  discontent ${avg("disc")}  ships ${avg("ships")}  rebellions ${log.reb || 0}  tribes won ${won}  lost: ${JSON.stringify(why)}`);
+    console.log(`${style.padEnd(8)} finished ${fin}/${N}  score ${avg("score")}  people ${avg("people")} (t12 ${avg("p12")}, t24 ${avg("p24")}, t36 ${avg("p36")})  treasury ${avg("treasury")}  loyalty ${avg("loy")}  favour ${avg("fav")}  army ${avg("army")}  ships ${avg("ships")}  rebellions ${log.reb || 0}  tribes won ${won}  lost: ${JSON.stringify(why)}`);
     console.log(`         per game: quakes ${(log.quakes / N).toFixed(2)}, letters ${(log.letters / N).toFixed(1)}, gambles ${(log.gambles / N).toFixed(1)}, dice ${(log.rolls / N).toFixed(1)} (won ${Math.round(100 * log.wins / Math.max(1, log.rolls))}%), card dice ${JSON.stringify(tiers)}`);
-    console.log(`         battles: ${war.n || 0} (${((war.n || 0) / N).toFixed(1)} a game), won ${Math.round(100 * (war.won || 0) / Math.max(1, war.n || 0))}%, expected ${Math.round((war.chance || 0) / Math.max(1, war.n || 0))}%${war.self ? `; led in person ${war.self}, fell or taken ${war.fell || 0}` : ""}`);
+    console.log(`         battles: ${war.n || 0} (${((war.n || 0) / N).toFixed(1)} a game), won ${Math.round(100 * (war.won || 0) / Math.max(1, war.n || 0))}%, expected ${Math.round((war.chance || 0) / Math.max(1, war.n || 0))}%${war.shut ? `; gates shut ${war.shut}` : ""}${war.self ? `; led in person ${war.self}, fell or taken ${war.fell || 0}` : ""}`);
   }
 })();

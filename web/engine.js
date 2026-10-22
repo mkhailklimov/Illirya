@@ -84,7 +84,7 @@
       council: newCouncil(), last_roll: null });
     return migrate(s);
   }
-  // rules v9: ships with names, voyages, inventions, justice, discontent. Older saves get the new fields here.
+  // rules v9-v10: ships with names, voyages, inventions, justice, restlessness. Older saves get the new fields here.
   const SHIP_NAMES = ["Fortuna", "Concordia", "Aquila", "Victoria", "Neptunus", "Salus", "Delphinus", "Pax", "Spes", "Minerva", "Castor", "Pollux", "Felicitas", "Triton", "Pietas", "Ister", "Clementia", "Mercurius"];
   function newShipName(s) {
     const used = new Set([...(s.fleet || []), ...(s.shipyard || []).map((k) => k.name)]);
@@ -107,7 +107,8 @@
     s.shipyard = (s.shipyard || []).map((k) => (typeof k === "number" ? { done: k, name: null } : k));
     fleetNames(s);   // the ships afloat are named first, then the keels
     for (const k of s.shipyard) if (!k.name) k.name = newShipName(s);
-    if (!("discontent" in s)) s.discontent = num(RULES.discontent.start);
+    delete s.discontent; delete s.discontent_parts;   // rules v10: one number, loyalty
+    s.restless = s.restless || 0;
     s.justice = s.justice || { pardoned: 0, executed: 0 };
     s.inventions = s.inventions || [];
     s.voyages = s.voyages || [];
@@ -290,7 +291,7 @@
     else if (fieldsFull(s) && fieldPlots(s) < FIELD_PLOTS_MAX) { say.economist = "Every field round the bay is taken. Clear the scrub on the hillside for new terraces."; wants.economist = decreeIs("clear_land"); }
     else { say.economist = "The markets are steady. Vines and olives take years; plant them early."; wants.economist = buildOf("vineyard", "olives"); }
     if (s.army < ORDER_ARMY) { say.general = `Only ${Math.trunc(s.army)} men. Rome expects order, and so do the hill tribes.`; wants.general = decreeIs("recruit"); }
-    else if (s.loyalty < 40) { say.general = "The mood in the streets is sour. Hang a few brigands, recruit, and the town will keep its head down."; wants.general = decreeIs("recruit", "hang_brigands"); }
+    else if (s.loyalty < 52) { say.general = "The mood in the streets is sour. Hang a few brigands, recruit, and the town will keep its head down."; wants.general = decreeIs("recruit", "hang_brigands"); }
     else say.general = `The garrison of ${Math.trunc(s.army)} stands ready. Its pay is ${intc(s.army * ARMY_PAY)} denarii a season.`;
     const [north] = sailing(s, true), [south] = sailing(s, false);
     if (season.sailing === "no") say.fleet = "Mare clausum. No ship of mine leaves the bay until spring.";
@@ -298,9 +299,11 @@
     else if (north > south) { say.fleet = `Wind and current favour a voyage north up the coast (${pct(north)} on prices).`; wants.fleet = toward("north"); }
     else if (south > north) { say.fleet = `The wind is with us for a voyage south (${pct(south)} on prices).`; wants.fleet = toward("south"); }
     else say.fleet = "The sea is open; wind and current favour neither course.";
-    if (s.loyalty < 40) { say.priest = "The people murmur against you. A festival would please the gods and men alike."; wants.priest = decreeIs("hold_festival"); }
+    const pr = s.prophecy && s.prophecy.turn >= s.turn - 1 ? s.prophecy : null;
+    if (pr && pr.advice) { say.priest = `The liver spoke. ${pr.signs[0]} ${pr.advice.say}`; wants.priest = decreeIs(pr.advice.order.id); }
+    else if (s.loyalty < 55) { say.priest = "The people murmur against you. A festival would please the gods and men alike."; wants.priest = decreeIs("hold_festival"); }
     else if (s.favour < 40) { say.priest = `The omens from Rome are cold. Honour ${emperorOf(s.turn)}, or send gifts.`; wants.priest = decreeIs("honour_rome", "honour_tiberius"); }
-    else say.priest = "The omens are calm. Still, the gods like to see the governor at the altar.";
+    else say.priest = "Sacrifice at the temple, Governor, and I will read the liver: the coming war, the sea, the granaries, and what you should do.";
     return { wants, say };
   }
 
@@ -504,7 +507,7 @@
     const crowded = s.people > housing(s) * 0.95;
     const out = [];
     out.push({ who: "treasurer", title: "Fill the chest", orders: fit(s, [
-      s.tax !== "high" && s.loyalty >= 45 ? order("raise_taxes") : null, order("hear_petitions"),
+      s.tax !== "high" && s.loyalty >= 68 ? order("raise_taxes") : null, order("hear_petitions"),
       sellConvoy(s, ["wine", "oil", "fish", "cloth"], { wine: FESTIVAL_WINE_KEEP }), b("market")]) });
     out.push({ who: "economist", title: "Feed the town and trade", orders: fit(s, [
       s.grain < 3 ? merchantOrder(s, { grain: 2 }) : null, s.grain < 6 ? grainConvoy(s, s.grain < 3 ? 4 : 2) : null, fieldsFull(s) ? order("clear_land") : null, b("wheat"), b("fishery"), s.fleece >= 6 ? b("weavers") : null,
@@ -519,14 +522,14 @@
     out.push({ who: "priest", title: "The gods and Rome", orders: fit(s, [
       wantTemple && (s.marble < 20 || s.bronze < 4) ? buyConvoy(s, { marble: Math.max(0, 20 - Math.trunc(s.marble)), bronze: Math.max(0, 4 - Math.trunc(s.bronze)) }) : null,
       wantTemple && s.marble < 20 ? merchantOrder(s, { marble: 20 - Math.trunc(s.marble), bronze: Math.max(0, 4 - Math.trunc(s.bronze)) }) : null,
-      order("visit_temple"), order("honour_tiberius"), s.loyalty < 50 ? order("hold_festival") : null,
+      order("visit_temple"), order("honour_tiberius"), s.loyalty < 58 ? order("hold_festival") : null,
       s.favour < 45 ? order("honour_rome") : null, b("temple"), order("listen_sages")]) });
     out.push({ who: "bold", title: "The scribe's bold plan", orders: fit(s, [
-      s.tax !== "high" && s.loyalty >= 35 ? order("raise_taxes") : null, sellConvoy(s, ["wine", "oil", "fish", "cloth", "fleece"]),
+      s.tax !== "high" && s.loyalty >= 68 ? order("raise_taxes") : null, sellConvoy(s, ["wine", "oil", "fish", "cloth", "fleece"]),
       order("build_ship"), b("vineyard"), b("olives"), b("market"), order("recruit"), b("mine"), order("hang_brigands")]) });
     out.push({ who: "prudent", title: "The scribe's prudent plan", orders: fit(s, [
       s.grain < 3 ? merchantOrder(s, { grain: 2 }) : null, s.grain < 4.5 ? grainConvoy(s, 3) : null, s.grain < 6 ? b("fishery") : null, crowded ? b("houses") : null,
-      s.loyalty < 45 ? (s.last_festival !== s.turn - 1 ? order("hold_festival") : order("lower_taxes")) : order("hear_petitions"),
+      s.loyalty < 55 ? (s.last_festival !== s.turn - 1 ? order("hold_festival") : order("lower_taxes")) : order("hear_petitions"),
       order("visit_temple"), order("honour_tiberius"), order("listen_sages"), b("wheat")]) });
     return out.filter((p) => p.orders.length);
   }
@@ -604,7 +607,7 @@
 
 
   // --- Battles (rules v6): once a year a conflict; you send your commander or lead yourself ---
-  const UNIT = 50, ORDER_MULT = 1.75, SLING_CLASH = 1, SLING_CUT = 0.15, SLING_CUT_MAX = 0.45, BATTLE_DC = 10, ROMAN_ORDER = 2, SELF_LEAD = 3, GROWTH_OF_RAIDERS = 0.06, GLORY = [3, 2], WALLS_ALONE = 1;
+  const UNIT = 50, ORDER_MULT = 1.75, SLING_CLASH = 1, SLING_CUT = 0.15, SLING_CUT_MAX = 0.45, BATTLE_DC = 10, ROMAN_ORDER = 2, SELF_LEAD = 3, GROWTH_OF_RAIDERS = 0.06, GLORY = [3, 2], WALLS_ALONE = 1, HOME_GROUND = 1, FARMERS_ALONE = -1;
   const LANES = ["left", "centre", "right"];
   const ENEMIES = {
     pirates: { name: "Pirates", who: "fleet", fury: 1, home: true, terrain: "shore", where: "at the mouth of the river, below the Sea Gate",
@@ -618,10 +621,19 @@
     rebels: { name: "The rebels of Acruvium", who: "general", fury: 2, home: false, terrain: "fields", where: "in the streets and the forum",
       say: "Thousands of townsmen with clubs, axes and stolen spears: your own people, and some of your militia with them." },
   };
+  // rules v10: pirates and tribes either storm the town (the walls count) or raid the fields (no walls: meet them in the open, or shut the gates)
+  const AT_TEXT = {
+    pirates: { walls: ["at the Sea Gate", "Liburnian sails in the gulf: at night they run their ships against the quay and throw ladders up at the Sea Gate."],
+      fields: ["on the shore farms by the river mouth", "Liburnian sails in the gulf: they beach their ships at dawn and fall on the farms and salt pans along the shore, far from the walls."] },
+    tribes: { walls: ["under the walls of the town", "Men from beyond the mountains come down in a howling mass with ladders and fire, to storm the walls."],
+      fields: ["in the fields below the walls", "Men from beyond the mountains come down in a howling mass, shields painted, to burn the harvest in the open fields."] },
+  };
+  const AT_NAME = { walls: "to storm the walls", fields: "to raid the fields" };
   // rules v9: how close the enemy stands. Stones from a sling fly far but wide: they do best against a dense crowd.
   // Arrows are fewer but aimed: the same against any enemy.
   const DENSITY = { tribes: 1, march: 1, rebels: 1, pirates: .5, brigands: .4 };
-  const missileOf = (type, enemy) => { const d = DENSITY[enemy.kind] ?? .7;
+  const densityOf = (enemy) => Math.min(1, (DENSITY[enemy.kind] ?? .7) + (enemy.at === "walls" ? .3 : 0));   // an assault packs them at the gate
+  const missileOf = (type, enemy) => { const d = densityOf(enemy);
     return type === "sling" ? .04 + .12 * d : type === "militia_sling" ? .03 + .08 * d : MISSILE[type] || 0; };
   const MISSILE_TYPES = ["sling", "archer", "militia_sling", "militia_archer"];
   const SHIELDS = ["cohort", "ally", "horse"];
@@ -630,20 +642,27 @@
     const [season, year] = seasonOf(s.turn);
     if (season.season !== "Spring" || s.conflict_year === year) return;
     s.conflict_year = year;
+    s.conflict = { turn: s.turn + rint(0, 2), ...rollConflict(s) };
+  }
+  /** Who comes this year, and whether they storm the town or raid the fields. */
+  function rollConflict(s) {
     const w = { pirates: 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0) + (reputation(s).id === "weak" ? 3 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
     const kind = choices(Object.keys(w), Object.values(w));
-    s.conflict = { turn: s.turn + rint(0, 2), kind };
+    const at = kind === "pirates" ? (rint(1, 2) === 1 ? "walls" : "fields") : kind === "tribes" ? (rint(1, 5) <= 2 ? "walls" : "fields") : "fields";
+    return { kind, at };
   }
   /** The enemy force: how many, and how they stand across the three lanes. */
-  function makeEnemy(s, kind, tribe) {
+  function makeEnemy(s, kind, tribe, at) {
     const E0 = ENEMIES[kind];
+    at = at || (kind === "march" ? "valley" : kind === "rebels" ? "streets" : "fields");
     let men, share;
     if (kind === "pirates") { men = rint(110, 200) + Math.min(80, Math.floor(s.treasury / 250)); const wing = rint(0, 1) ? 0 : 2; share = [0, 0, 0]; share[wing] = .55; share[1] = .35; share[2 - wing] = .1; }
     else if (kind === "brigands") { men = rint(100, 170) + (s.loyalty < 40 ? 60 : 0); const a = rint(15, 35) / 100, c = rint(20, 40) / 100; share = rint(0, 1) ? [a, c, 1 - a - c] : [1 - a - c, c, a]; }
     else { const t = TRIBE[tribe] || TRIBES[rint(0, TRIBES.length - 1)]; tribe = t.id; men = rint(150, 260) + t.strength * 60 + (hostile(s, t.id) ? 60 : 0) + (kind === "march" ? 60 : 0); share = [.25, .5, .25]; }
     men = Math.round(men * (1 + GROWTH_OF_RAIDERS * (seasonOf(s.turn)[1] - 30)));   // word of a rich town spreads
     const name = kind === "tribes" || kind === "march" ? `${E0.name}: the ${TRIBE[tribe].name}` : E0.name;
-    return { kind, tribe, name, men, share, fury: E0.fury, home: E0.home, terrain: E0.terrain, where: E0.where, say: E0.say, who: E0.who };
+    const [where, say] = (AT_TEXT[kind] && AT_TEXT[kind][at]) || [E0.where, E0.say];
+    return { kind, tribe, name, men, share, fury: E0.fury, home: E0.home, terrain: E0.terrain, where, say, who: E0.who, at, walled: at === "walls" && built(s, "walls") };
   }
   // the mixed army (rules v7)
   const SLING_GROUP = 25, ARCHER_GROUP = 30, CAVALRY_MIN = 5, ENGINES_MAX = 4;
@@ -667,7 +686,7 @@
   const laneAt = (x) => (x < FIELD.left ? 0 : x < FIELD.right ? 1 : 2);
   function rowAt(u, enemy, s) {
     if (u.type === "horse") return u.x < 90 || u.x > 810 ? "flank" : u.y > 400 && Math.abs(u.x - 450) < 130 ? "guard" : u.y > 400 ? "pursue" : "line";
-    if (enemy.home && built(s, "walls") && ["archer", "militia_archer", "sling", "militia_sling"].includes(u.type) && u.y >= FIELD.wallTop && u.y <= FIELD.wallBottom) return "walls";
+    if (enemy.walled && ["archer", "militia_archer", "sling", "militia_sling"].includes(u.type) && u.y >= FIELD.wallTop && u.y <= FIELD.wallBottom) return "walls";
     return u.y < FIELD.front ? "front" : u.y < FIELD.line ? "line" : "second";
   }
   /** The army as blocks to place: cohorts, slinger and archer groups, engines, ballistae, the horsemen, and this battle's militia and allies. */
@@ -690,7 +709,7 @@
     let n = 0;
     give.forEach((g, i) => { for (let k = 0; k < g; k++) units.push({ id: "c" + n++, type: "cohort", x: LANE_CX[i] + (k - (g - 1) / 2) * 92, y: 330 }); });
     if (second !== null) units.push({ id: "c" + n++, type: "cohort", x: LANE_CX[second], y: 410 });
-    const walls = enemy.home && built(s, "walls");
+    const walls = enemy.walled;
     const spread = (n, k) => (k - (n - 1) / 2) * 92;   // side by side within a lane
     for (let k = 0; k < f.slingers; k++) units.push({ id: "s" + k, type: "sling", x: LANE_CX[big] + spread(f.slingers, k), y: 272 });
     const held = [0, 1, 2].filter((i) => give[i] || second === i), cover = (k) => (held.length ? held[k % held.length] : big);   // missiles only where a shield line stands
@@ -709,7 +728,9 @@
   function setup(s, enemy, plan, lead) {
     const f = forces(s), kit = s.kit || {};
     const common = [["the discipline of Rome", DISCIPLINE]];
-    if (enemy.home) { const hd = Math.trunc(stat(s, "home_defence")); if (hd) common.push([built(s, "arx") ? "the walls and the citadel" : "the walls", hd]); }
+    if (enemy.walled) { const hd = Math.trunc(stat(s, "home_defence")); if (hd) common.push([built(s, "arx") ? "the walls and the citadel" : "the walls", hd]); }
+    if (enemy.foretold) common.push(["forewarned by the haruspex", 1]);
+    if (enemy.home && !enemy.walled) common.push(["our own ground: every terrace and path", HOME_GROUND]);
     const bb = Math.trunc(stat(s, "battle_bonus")); if (bb) common.push(["drilled in the barracks", bb]);
     const xp = Math.min(3, Math.floor((s.army_xp || 0) / 2)); if (xp) common.push(["veterans of past battles", xp]);
     if (s.morale) common.push([s.morale > 0 ? "high spirits" : "low spirits after defeat", s.morale]);
@@ -743,11 +764,12 @@
       const ours = Math.round(front.reduce((a, u) => a + u.men * mult(u), 0)), reserve = Math.round(second.reduce((a, u) => a + u.men * mult(u), 0));
       const men = Math.round(front.reduce((a, u) => a + u.men, 0));
       const parts = foe < 5 ? [] : ours ? [[ours / foe >= 1 ? `${Math.round(ours / foe * 10) / 10} to 1 in our favour` : `${Math.round(foe / ours * 10) / 10} to 1 against us`, Math.max(-6, Math.min(6, Math.round(4 * Math.log2(ours / foe))))]].concat(common)
-        : enemy.home && Math.trunc(stat(s, "home_defence")) ? [[built(s, "arx") ? "only the walls and the citadel" : "only the walls and the townsmen", Math.trunc(stat(s, "home_defence")) + WALLS_ALONE]] : [["nobody holds this flank", -99]];
+        : enemy.walled && Math.trunc(stat(s, "home_defence")) ? [[built(s, "arx") ? "only the walls and the citadel" : "only the walls and the townsmen", Math.trunc(stat(s, "home_defence")) + WALLS_ALONE]]
+        : enemy.home ? [["only the farmers with their pitchforks", FARMERS_ALONE]] : [["nobody holds this flank", -99]];
       if (foe >= 5 && enemy.fury) parts.push(["their first wild charge (first round)", -enemy.fury]);
       if (strikeLane === i && foe >= 5) parts.push(["our horsemen strike their flank (first round)", CAVALRY_STRIKE]);
       if (exposed && foe >= 5) parts.push(["slingers and archers with no shield line to hide behind", -2]);
-      return { lane: LANES[i], i, foe0, foe, cut: Math.round(cut * 100), stage: Object.fromEntries(Object.entries(stage).map(([k, v]) => [k, Math.round(Math.min(CUT.max, v) * 100)])), exposed: exposed && foe >= 5, ours, reserve, men, parts, walls: !ours && foe >= 5 && enemy.home && Math.trunc(stat(s, "home_defence")) > 0,
+      return { lane: LANES[i], i, foe0, foe, cut: Math.round(cut * 100), stage: Object.fromEntries(Object.entries(stage).map(([k, v]) => [k, Math.round(Math.min(CUT.max, v) * 100)])), exposed: exposed && foe >= 5, ours, reserve, men, parts, walls: !ours && foe >= 5 && ((enemy.walled && Math.trunc(stat(s, "home_defence")) > 0) || (enemy.home && !enemy.walled)),
         empty: foe < 5, units: here.map((u) => u.type) };
     });
     return { lanes, horse: horse ? horse.row : null, placed, f };
@@ -805,7 +827,8 @@
     s.army = Math.max(0, Math.trunc(s.army));   // card effects this season may have taken it below zero before the clamp
     s.troops = Object.fromEntries(Object.entries(troopsOf(s)).map(([k, v]) => [k, Math.max(0, v)]));
     s.militia = { allies: enemy.home ? alliesFor(s) : [] };
-    const lead = await ui.battleCall(enemy, battleOdds(s, enemy, defaultPlan(s, enemy, enemy.who), enemy.who).chance);   // "self" or the advisor's id
+    const lead = await ui.battleCall(enemy, battleOdds(s, enemy, defaultPlan(s, enemy, enemy.who), enemy.who).chance);   // "self", the advisor's id, or "gates"
+    if (lead === "gates" && canShut(enemy)) return shutGates(s, enemy, notes);
     const plan = lead === "self" ? await ui.battlePlan(enemy, defaultPlan(s, enemy, "self"), (pl) => battleOdds(s, enemy, pl, "self")) : defaultPlan(s, enemy, lead);
     const st = setup(s, enemy, plan, lead), result = fight(s, enemy, st, Math.random);
     const won = result.won;
@@ -852,9 +875,10 @@
         if (st.horse === "guard" && Math.random() < GUARD_ESCAPE) { s.favour -= 6; s.loyalty -= 4; notes.push("Your horsemen close round you and cut a way out: you live, but the town has seen its governor flee the field."); }
         else s.over = rint(1, 2) === 1 ? `You fell ${enemy.where}, sword in hand, against ${lower(enemy.name)}. Rome sends a new governor.` : `Taken prisoner ${enemy.where} by ${lower(enemy.name)}. Your governorship ends in chains.`;
       } else { s.council[lead].mood = Math.max(0, s.council[lead].mood - 1); notes.push(`${ADVISORS[lead].name} comes back wounded and ashamed (mood ${s.council[lead].mood}/${MOOD_MAX}).`); }
-      const take = enemy.home ? Math.round(s.treasury * .2) : 0;
+      let take = 0;
+      if (enemy.at === "walls") { take = Math.round(s.treasury * .25); notes.push("They break into the town."); damage(s, { damage: 1 }, notes); }
+      else if (enemy.home) { take = Math.round(s.treasury * .1); burnFields(s, 1, notes); s.grain = Math.max(0, s.grain - 1); }
       s.treasury -= take;
-      if (enemy.home && enemy.kind !== "pirates") { const fb = s.buildings.filter((bb) => BLD[bb.kind].zone === "field" && isDone(s, bb)); if (fb.length) { const bb = fb[rint(0, fb.length - 1)]; bb.done = s.turn + 2; notes.push(`They burn the ${BLD[bb.kind].name.toLowerCase()} (two seasons to restore).`); } }
       notes.push(`Defeat ${enemy.where} against ${lower(enemy.name)} (${enemy.men} men): ${leader}; ${dead} of ours fell${take ? `, and ${intc(take)} denarii were carried off` : ""}. Morale is low; the council doubts you.`);
     }
     if (!s.over && dead) {
@@ -876,12 +900,30 @@
     s.militia = null;
     return won;
   }
-  // --- Spoils, judgement and discontent (rules v9) ---
+  /** Burn n field buildings: two seasons to restore. */
+  function burnFields(s, n, notes) {
+    const fb = s.buildings.filter((bb) => BLD[bb.kind].zone === "field" && isDone(s, bb)), names = [];
+    for (let k = 0; k < n && fb.length; k++) { const bb = fb.splice(rint(0, fb.length - 1), 1)[0]; bb.done = s.turn + 2; names.push(BLD[bb.kind].name.toLowerCase()); }
+    if (names.length) notes.push(`They burn the ${names.join(" and the ")} (two seasons to restore).`);
+  }
+  // rules v10: raiders in the open fields may be left to burn them, behind shut gates
+  const canShut = (enemy) => enemy.home && enemy.at === "fields";
+  const SHUT = { grain: 1, loyalty: -4, favour: -2, burn: 1 };
+  function shutGates(s, enemy, notes) {
+    const grain = Math.min(s.grain, SHUT.grain);
+    s.grain -= grain; s.loyalty += SHUT.loyalty; s.favour += SHUT.favour; s.calamity_turn = s.turn; s.militia = null;
+    notes.push(`You shut the gates and leave the fields to ${lower(enemy.name)}. Nobody of ours falls, but they carry off ${grain.toFixed(1)} months of grain.`);
+    burnFields(s, SHUT.burn, notes);
+    notes.push(`The farmers outside the walls curse you (loyalty ${SHUT.loyalty}), and Rome hears that the governor hid behind his walls (favour ${SHUT.favour}).`);
+    s.last_battle = null;
+    return false;
+  }
+  // --- Spoils, judgement and loyalty (rules v9-v10) ---
   const EXPOSED_WON = .45, EXPOSED_LOST = .8, PRIZE_DC = 12, PRIZE_SALE = 500, GROVE_DC = 13;
   /** What a victory brings besides the plunder: a pirate ship taken, or the tribes' vines and olives on the border. */
   function spoils(s, enemy, st, notes) {
     const r = rint(1, 20) + (st.horse === "pursue" ? 4 : 0);
-    if (enemy.kind === "pirates" && r >= PRIZE_DC) {
+    if (enemy.kind === "pirates" && r >= PRIZE_DC - (enemy.at === "walls" ? 2 : 0)) {   // at the quay their ships are easier to take
       if (Math.trunc(s.ships) + s.shipyard.length < berths(s)) {
         fleetNames(s); s.ships += 1; const name = newShipName(s); s.fleet.push(name);
         notes.push(`A pirate liburna is taken on the beach: renamed the ${name}, she joins your ships (${Math.trunc(s.ships)} now).`);
@@ -901,9 +943,9 @@
   function reputation(s) {
     const J = s.justice || { pardoned: 0, executed: 0 }, n = J.pardoned + J.executed, ratio = n ? J.pardoned / n : .3;
     const r = n < 3 ? { id: "unknown", text: "the town does not yet know what kind of judge you are", drift: 0 }
-      : ratio < .15 ? { id: "cruel", text: "they call you a cruel tyrant", drift: 2 }
-      : ratio > .5 ? { id: "weak", text: "they call you soft: insolence grows, and brigands grow bold", drift: 2 }
-      : ratio >= .2 && ratio <= .4 ? { id: "just", text: "they call you stern but just", drift: -1 }
+      : ratio < .15 ? { id: "cruel", text: "they call you a cruel tyrant", drift: -2 }
+      : ratio > .5 ? { id: "weak", text: "they call you soft: insolence grows, and brigands grow bold", drift: -2 }
+      : ratio >= .2 && ratio <= .4 ? { id: "just", text: "they call you stern but just", drift: 1 }
       : { id: "fair", text: "they think you fair enough", drift: 0 };
     return { ...r, ratio, pardoned: J.pardoned, executed: J.executed };
   }
@@ -913,31 +955,32 @@
     const J = (s.justice = s.justice || { pardoned: 0, executed: 0 }), rep0 = reputation(s), who = CAPTIVES[enemy.kind] || "the prisoners";
     const pick = await ui.choose(`Judgement on ${who}`,
       `They stand in chains in the forum. So far you have pardoned ${J.pardoned} and executed ${J.executed}: ${rep0.text}. A wise ruler pardons about one in three or four; never pardoning makes a tyrant, pardoning too often makes a weak one.`,
-      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is cowed (discontent +2)" }, { label: "Pardon them", sub: "loyalty +2, discontent −3; they swear never to return" }]);
-    if (pick === 1) { J.pardoned++; s.loyalty += 2; s.discontent -= 3; notes.push(`You pardon ${who}: they kneel and swear by their gods. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
-    else { J.executed++; s.favour += 1; s.discontent += 2; notes.push(`${who.replace(/^./, (m) => m.toUpperCase())} are executed outside the Sea Gate. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
+      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is frightened (loyalty −2)" }, { label: "Pardon them", sub: "loyalty +3; they swear never to return" }]);
+    if (pick === 1) { J.pardoned++; s.loyalty += 3; notes.push(`You pardon ${who}: they kneel and swear by their gods. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
+    else { J.executed++; s.favour += 1; s.loyalty -= 2; notes.push(`${who.replace(/^./, (m) => m.toUpperCase())} are executed outside the Sea Gate. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
   }
-  const REBELLION_AT = 50, DISC_TAX = { low: -2, normal: 0, high: 3 }, PARLEY_DC = 15, REBEL_SHARE = .12;
-  /** How discontent moves this season, part by part (shown in the ledger). */
-  function discontentParts(s, hunger) {
-    const rep0 = reputation(s), parts = [];
-    if (DISC_TAX[s.tax]) parts.push([`${s.tax} taxes`, DISC_TAX[s.tax]]);
-    if (hunger) parts.push(["hunger", 6]); else if (s.grain < 3) parts.push(["little bread", 2]);
-    if (s.loyalty < 40) parts.push(["low loyalty", 2]); else if (s.loyalty >= 60) parts.push(["a loyal town", -2]);
-    if (rep0.drift) parts.push([rep0.id === "just" ? "stern but just" : rep0.id === "cruel" ? "a cruel tyrant" : "a weak ruler", rep0.drift]);
-    if (!hunger && s.grain >= 3 && s.calamity_turn !== s.turn) parts.push(["peace and bread", -1]);
+  const REBELLION_BELOW = 50, PARLEY_DC = 15, REBEL_SHARE = .12, PEACE_UNTIL = 60, PEACE_LOYALTY = 2;
+  const REP_LABEL = { just: "stern but just", cruel: "a cruel tyrant", weak: "a weak ruler" };
+  /** How loyalty moves on its own this season, part by part (shown in the ledger). Cards, orders and battles come on top. */
+  function loyaltyParts(s, hunger) {
+    const rep0 = reputation(s), parts = [], taxL = TAX_RATES[s.tax][1], b = stat(s, "loyalty");
+    if (taxL) parts.push([`${s.tax} taxes`, taxL]);
+    if (hunger) parts.push(["hunger", LOYALTY_HUNGER]); else if (s.grain < 3) parts.push(["little bread", LOYALTY_LOW_FOOD]);
+    if (b) parts.push(["the temple and the baths", b]);
+    if (!hunger && s.grain >= 3 && s.calamity_turn !== s.turn && s.loyalty < PEACE_UNTIL) parts.push(["peace and bread", PEACE_LOYALTY]);
+    if (rep0.drift) parts.push([REP_LABEL[rep0.id], rep0.drift]);
     return parts;
   }
   /** The town rises: talk, or fight your own people. Winning costs half the town. */
   async function rebellion(s, notes) {
     const t = (s.troops = { ...troopsOf(s) });
     const pick = await ui.choose("The town rises in rebellion",
-      `Discontent has reached ${Math.round(s.discontent)} of 100. Thousands of townsmen take up arms in the forum, and the militia you raised from them wavers. You may parley (d20 + loyalty / 10, need ${PARLEY_DC}): taxes fall to low and Rome thinks you weak. Or you may crush them: if you win, half the town is dead and its trade ruined; if you lose, you are finished.`,
+      `Loyalty has stayed below ${REBELLION_BELOW} for two seasons (now ${Math.round(s.loyalty)}). Thousands of townsmen take up arms in the forum, and the militia you raised from them wavers. You may parley (d20 + loyalty / 10, need ${PARLEY_DC}): taxes fall to low and Rome thinks you weak. Or you may crush them: if you win, half the town is dead and its trade ruined; if you lose, you are finished.`,
       [{ label: "Parley with the rebels", sub: `d20 + ${Math.floor(s.loyalty / 10)}, need ${PARLEY_DC}; if it fails, they fight` }, { label: "Crush the revolt", sub: "a battle in the streets" }]);
     if (pick === 0) {
       const r = await roll(20, Math.floor(s.loyalty / 10), PARLEY_DC, "Parley with the rebels");
       if (r.ok) {
-        s.tax = "low"; s.discontent = 30; s.favour -= 6; s.loyalty += 4; s.calamity_turn = s.turn;
+        s.tax = "low"; s.restless = 0; s.favour -= 6; s.loyalty = Math.max(s.loyalty, REBELLION_BELOW + 5); s.calamity_turn = s.turn;
         notes.push(`The parley holds (d20: ${r.r}): you lower the taxes and swear to hear the town. The crowds go home; Rome hears that the governor bargained with a mob (favour −6).`);
         news(s, "rebellion", "The rebellion ends at the parley table: taxes are lowered.");
         return true;
@@ -947,9 +990,9 @@
     const defect = Math.round(t.slingers / 2) + Math.round(t.archers / 2);
     t.slingers -= Math.round(t.slingers / 2); t.archers -= Math.round(t.archers / 2);
     const E0 = ENEMIES.rebels;
-    const enemy = { kind: "rebels", tribe: null, name: E0.name, men: Math.round(s.people * REBEL_SHARE) + defect, share: [.3, .4, .3], fury: E0.fury, home: false, terrain: E0.terrain, where: E0.where, say: E0.say, who: E0.who, quality: .5 };
+    const enemy = { kind: "rebels", tribe: null, name: E0.name, men: Math.round(s.people * REBEL_SHARE) + defect, share: [.3, .4, .3], fury: E0.fury, home: false, terrain: E0.terrain, where: E0.where, say: E0.say, who: E0.who, quality: .5, at: "streets", walled: false };
     if (defect) notes.push(`${defect} of the town's slingers and archers go over to the rebels.`);
-    s.discontent = 0;   // the battle itself decides now
+    s.restless = 0;   // the battle itself decides now
     const won = await battle(s, enemy, notes);
     if (s.over) return won;
     if (won) {
@@ -958,7 +1001,7 @@
       for (const g of GOODS) s[g] = Math.floor(s[g] / 2);
       s.treasury = Math.floor(s.treasury / 2);
       damage(s, { damage: 2 }, notes);
-      s.discontent = 20; s.loyalty = Math.min(s.loyalty, 30); s.favour -= 8; s.calamity_turn = s.turn;
+      s.loyalty = REBELLION_BELOW; s.favour -= 8; s.calamity_turn = s.turn;   // a town in terror obeys
       notes.push(`The revolt is crushed, but at a terrible price: ${intc(dead)} townspeople are dead, the stores and the chest are plundered (half lost), and Rome asks how a governor let it come to this (favour −8).`);
       news(s, "rebellion", `Rebellion crushed: ${intc(dead)} dead, half the town's wealth gone.`);
     } else s.over = "Overthrown: the town rose in rebellion and your soldiers could not hold the streets.";
@@ -966,10 +1009,11 @@
   }
   /** The season's battle, if the year's conflict falls now; or the town's own rebellion. */
   async function conflictPhase(s, notes) {
-    if (s.discontent > REBELLION_AT && !s.over) { if (s.conflict && s.conflict.turn === s.turn) s.conflict.turn++; return rebellion(s, notes); }
+    if ((s.restless || 0) >= 2 && s.loyalty < REBELLION_BELOW && !s.over) { if (s.conflict && s.conflict.turn === s.turn) s.conflict.turn++; return rebellion(s, notes); }
     planConflict(s);
     if (!s.conflict || s.conflict.turn !== s.turn || s.over) return null;
-    const enemy = makeEnemy(s, s.conflict.kind);
+    const enemy = makeEnemy(s, s.conflict.kind, undefined, s.conflict.at);
+    enemy.foretold = !!s.conflict.foretold;
     s.conflict = null;
     return battle(s, enemy, notes);
   }
@@ -1047,7 +1091,7 @@
         if (seasonOf(s.turn)[0].sailing === "no") { useAbility(s, "fleet"); notes.push("Epicadus takes a ship out in winter, when no one else dares: his winter run is spent."); }
         await convoy(s, notes, o);
       } else if (d.id === "hang_brigands") { cheer(s, "general", notes, "approves of the hangings"); s.justice = s.justice || { pardoned: 0, executed: 0 }; s.justice.executed++; }
-      else if (d.id === "visit_temple") cheer(s, "priest", notes, "is glad to see the governor at the altar");
+      else if (d.id === "visit_temple") { cheer(s, "priest", notes, "is glad to see the governor at the altar"); prophecy(s, notes, o.boost); }
       else if (d.id === "hear_petitions") cheer(s, "treasurer", notes, "learns a great deal about who owes what");
       else if (d.id === "listen_sages") {
         s.forecast = drawWeather(s.turn + 1); s.forecast_turn = s.turn + 1;
@@ -1056,6 +1100,54 @@
       }
       for (const [n, v] of Object.entries(eff)) s[n] += v;
     }
+  }
+  // --- The haruspex (rules v10): a sacrifice at the temple, and Tertius reads the liver ---
+  const KIND_NAME = { pirates: "Pirates", brigands: "Brigands from the gorge", tribes: "Warriors of the tribes" };
+  /** This year's conflict if it is still to come; otherwise next year's, decided now. */
+  function foresee(s) {
+    if (s.conflict) return s.conflict;
+    const [, year] = seasonOf(s.turn), idx = (s.turn - 1) % SEASONS.length;
+    if (s.conflict_year !== year) return null;   // not planned yet (only before the first Spring)
+    s.conflict_year = year + 1;
+    s.conflict = { turn: s.turn + (SEASONS.length - idx) + rint(0, 2), ...rollConflict(s) };
+    return s.conflict;
+  }
+  /** What the liver says: the coming war, the sea, the granaries, the town; and one piece of wise advice. */
+  function prophecy(s, notes, boost) {
+    if (boost === "lose" || boost === "lost") { s.prophecy = { turn: s.turn, signs: ["The liver is malformed: the gods will not speak this season."], advice: null }; notes.push("Tertius Volusius turns the liver in his hands and goes pale: it is malformed, and the gods are silent."); return; }
+    const signs = [], c = foresee(s);
+    let advice = null;
+    if (c) {
+      const [se, yr] = seasonOf(c.turn), en = makeEnemy(s, c.kind, undefined, c.at);
+      c.foretold = en.foretold = true;
+      const odds = battleOdds(s, en, defaultPlan(s, en, en.who), en.who).chance;
+      signs.push(`Mars: ${KIND_NAME[c.kind] || "Enemies"} will come in ${se.season} AD ${yr}, ${AT_NAME[c.at] || "against us"}. As we stand now, ${en.who === "general" ? "Antistius" : ADVISORS[en.who].name.split(" ")[0]} would win ${odds} times in 100. Forewarned, the men fight better (+1).`);
+      if (odds < 75) {
+        const t = troopsOf(s), o = c.at === "walls" ? (built(s, "walls") && t.archers < 60 ? order("raise_archers") : order("recruit"))
+          : refillOf(s).n >= 30 ? order("refill_ranks") : s.army < 300 ? order("recruit") : t.slingers < 50 ? order("train_slingers") : null;
+        if (o) advice = { order: o, say: c.at === "walls" ? `They will come against the walls: ${o.id === "raise_archers" ? "put archers on them" : "more men on the walls"}, Governor: ${lower(describe(s, o))}.`
+          : `They will come into the open fields, where the walls cannot help: ${lower(describe(s, o))}. Or be ready to shut the gates and let the fields burn.` };
+      }
+    }
+    const atSea = (s.convoys || []);
+    if (atSea.length) { for (const cv of atSea) cv.blessed = true; signs.push(`Neptune accepts the offering: ${atSea.map((cv) => `the ${cv.ship || "ship"}`).join(" and ")} will have a kind sea home (+2 on the voyage).`); }
+    const seasonsOfBread = Math.floor(s.grain / 3);
+    if (s.grain < 6) {
+      signs.push(`Ceres frowns: the granaries hold ${s.grain.toFixed(1)} months, ${seasonsOfBread ? `bread for ${seasonsOfBread} season${seasonsOfBread > 1 ? "s" : ""}` : "not even a season's bread"} without a harvest.`);
+      if (s.grain < 4) { const g = suggestions(s).find((p) => p.who === "economist"); if (g) advice = { order: g.order, say: `Fill the granaries before anything else: ${lower(describe(s, g.order))}.` }; }
+    }
+    if (s.loyalty < 55) {
+      signs.push(`The household gods are uneasy: loyalty stands at ${Math.round(s.loyalty)}. Below ${REBELLION_BELOW} for two seasons, the town rises.`);
+      if (!advice) { const o = s.tax === "high" ? order("lower_taxes") : order("hold_festival"); advice = { order: o, say: `Win back the town: ${lower(describe(s, o))}.` }; }
+    }
+    if (!advice) {
+      const p = suggestions(s)[0];
+      if (p) advice = { order: p.order, say: `${ADVISORS[p.who].name.split(" ")[0]} is right this time: ${lower(describe(s, p.order))}.` };
+    }
+    if (!signs.length) signs.push("Jupiter is silent: no war is written for this year or the next, the sea is empty of our ships, and the granaries are full.");
+    s.prophecy = { turn: s.turn, signs, advice: advice ? { say: advice.say, order: advice.order } : null };
+    notes.push(`Tertius Volusius reads the liver: ${signs.join(" ")}${advice ? ` His advice: ${advice.say}` : ""}`);
+    news(s, "omen", `The haruspex foretells: ${signs[0]}`);
   }
   async function convoy(s, notes, o) {
     const t = TOWN[o.town];
@@ -1082,7 +1174,7 @@
   async function convoyHome(s, c, notes) {
     const t = TOWN[c.town];
     const [factor] = sailing(s, t.direction !== "north");   // the voyage home runs the other way
-    const bonus = Math.round(factor * 10) + (s.council.fleet.mood >= 4 ? 1 : 0);
+    const bonus = Math.round(factor * 10) + (s.council.fleet.mood >= 4 ? 1 : 0) + (c.blessed ? 2 : 0);
     const r = await roll(VOYAGE_DIE, bonus, VOYAGE_TARGET, `The ship from ${t.name}`, true);
     let share = 1, how = "safely";
     if (r.r === 1) { share = 0; how = "robbed by pirates off the coast; she limps home empty"; }
@@ -1117,7 +1209,7 @@
       for (const k of ready) { notes.push(`The ${k.name} is launched: she slides into the harbour (${Math.trunc(s.ships)} ships now).`); news(s, "ship", `Launched: the ${k.name} slides into the harbour.`); }
     }
     // income
-    const [rate, rateLoyalty] = TAX_RATES[s.tax];
+    const [rate] = TAX_RATES[s.tax];
     s.treasury += Math.round(s.people * rate);
     s.treasury += stat(s, "treasury");
     for (const v of inventionsOf(s)) if (v.rent) { s.treasury += v.rent; notes.push(`${v.name}: +${v.rent} denarii ${v.rent_text}.`); }
@@ -1188,19 +1280,19 @@
       } else notes.push("The town is full: newcomers have nowhere to live. Build a residential district.");
     }
     // loyalty and favour
-    s.loyalty += rateLoyalty + (hunger ? LOYALTY_HUNGER : s.grain < 3 ? LOYALTY_LOW_FOOD : 0);
-    s.loyalty += stat(s, "loyalty");
-    if (!hunger && s.calamity_turn !== s.turn && s.grain >= 3 && s.loyalty < 50) s.loyalty += 1;   // peace and bread (v4)
+    const lparts = loyaltyParts(s, hunger);
+    s.loyalty += lparts.reduce((a, [, v]) => a + v, 0);
+    s.loyalty_parts = lparts;
     s.favour += stat(s, "favour");
     if (s.loyalty < UNREST_BELOW) { s.favour += UNREST_FAVOUR; notes.push("Unrest in the streets; Rome hears of it."); }
     if (s.army < ORDER_ARMY) s.favour += ORDER_FAVOUR;
     if (s.morale && s.turn - (s.last_war ?? -9) >= 4 && s.turn % 2 === 0) s.morale += s.morale > 0 ? -1 : 1;   // spirits settle with time
-    // discontent (rules v9)
-    const dparts = discontentParts(s, hunger), dd = dparts.reduce((a, [, v]) => a + v, 0);
-    s.discontent = Math.max(0, Math.min(100, s.discontent + dd));
-    s.discontent_parts = dparts;
-    if (s.discontent > REBELLION_AT) notes.push(`Warning: discontent stands at ${Math.round(s.discontent)}: the town will rise in rebellion next season unless it falls.`);
-    else if (s.discontent >= 35 && dd > 0) notes.push(`Discontent festers (${Math.round(s.discontent)} of 100; above ${REBELLION_AT} the town rises): ${dparts.filter(([, v]) => v > 0).map(([t]) => t).join(", ")}.`);
+    // rules v10: below 50 the town grows restless; still below 50 a season later, it rises
+    if (s.loyalty < REBELLION_BELOW) {
+      s.restless = (s.restless || 0) + 1;
+      notes.push(s.restless >= 2 ? `Warning: loyalty is still below ${REBELLION_BELOW} (${Math.round(s.loyalty)}): the town will rise in rebellion next season unless it climbs back.`
+        : `Warning: loyalty has fallen below ${REBELLION_BELOW} (${Math.round(s.loyalty)}). If it is still below ${REBELLION_BELOW} at the end of next season, the town rises in rebellion.`);
+    } else s.restless = 0;
     s.army_peak = Math.max(s.army_peak || 150, Math.trunc(s.army));
     fleetNames(s);
   }
@@ -1371,12 +1463,12 @@
       ? [order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null, sellConvoy(s, ["fish", "wine", "oil", "timber", "fleece", "cloth"], { wine: FESTIVAL_WINE_KEEP, timber: 20 })]
       : [sellConvoy(s, ["wine", "oil", "fish", "cloth", "timber", "fleece"], { wine: FESTIVAL_WINE_KEEP, timber: 20 }), order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null];
     if (who === "treasurer" && tone !== "good" && s.favour < 60) return [order("honour_tiberius"), order("honour_rome"), houses, order("hear_petitions"), b("market"), sellConvoy(s, ["wine", "oil", "fish", "cloth"], { wine: FESTIVAL_WINE_KEEP })];
-    if (who === "treasurer") return [houses, tone === "good" && s.tax !== "high" && s.loyalty >= 60 ? order("raise_taxes") : null, order("hear_petitions"), b("market"),
+    if (who === "treasurer") return [houses, tone === "good" && s.tax !== "high" && s.loyalty >= 68 ? order("raise_taxes") : null, order("hear_petitions"), b("market"),
       sellConvoy(s, ["wine", "oil", "fish", "cloth"], { wine: FESTIVAL_WINE_KEEP }), s.army > 200 ? order("dismiss") : null];
     // priest
-    const easeTaxes = s.tax === "high" && s.loyalty < 45 ? order("lower_taxes") : null;
+    const easeTaxes = s.tax === "high" && s.loyalty < 58 ? order("lower_taxes") : null;
     return tone === "bad"
-      ? [easeTaxes, order("visit_temple"), s.loyalty < 55 && s.last_festival !== s.turn - 1 ? order("hold_festival") : null, s.favour < 45 ? order("honour_rome") : null, order("honour_tiberius")]
+      ? [easeTaxes, order("visit_temple"), s.loyalty < 60 && s.last_festival !== s.turn - 1 ? order("hold_festival") : null, s.favour < 45 ? order("honour_rome") : null, order("honour_tiberius")]
       : [easeTaxes, tone === "quiet" ? order("listen_sages") : null, order("honour_tiberius"), order("visit_temple"), !s.buildings.some((x) => x.kind === "temple") ? b("temple") : null, order("listen_sages")];
   }
   const sameOrder = (a, x) => a && x && a.id === x.id && (a.building || "none") === (x.building || "none") && a.town === x.town;
@@ -1481,9 +1573,8 @@
   }
   const TIER = (r, total, dc) => (r === 1 ? "disaster" : r === 20 ? "triumph" : total >= dc ? "success" : "setback");
   const scale = (eff, k) => Object.fromEntries(Object.entries(eff || {}).map(([n, v]) => [n, typeof v !== "number" ? v : n === "grain" ? Math.round(v * k * 10) / 10 : Math.round(v * k)]));
-  // good and bad effects; for discontent, up is bad
-  const negatives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([n, v]) => typeof v === "number" && (n === "discontent" ? v > 0 : v < 0)));
-  const positives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([n, v]) => typeof v === "number" && (n === "discontent" ? v < 0 : v > 0)));
+  const negatives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([n, v]) => typeof v === "number" && v < 0));
+  const positives = (eff) => Object.fromEntries(Object.entries(eff || {}).filter(([n, v]) => typeof v === "number" && v > 0));
   /** Carry out one card's decision with the tier its die gave. */
   async function settle(s, d, res, notes) {
     const c = d.card, tier = res.tier, title = c.title;
@@ -1611,7 +1702,6 @@
     for (const n of CORE) s[n] = Math.min(Math.max(s[n], num(RULES[n].min, 0)), num(RULES[n].max, Infinity));
     for (const g of GOODS) s[g] = Math.max(0, s[g]);
     fleetNames(s);
-    if (s.loyalty < UPRISING_BELOW) notes.push("Warning: loyalty is so low that an uprising is near.");
     if (s.over) return;
     if (s.favour <= 0) s.over = "Recalled to Rome in disgrace: Roman favour reached 0.";
     else if (s.loyalty <= 0 && s.army < ORDER_ARMY) s.over = "Overthrown: the town rose up and the army was too weak to stop it.";
@@ -1631,10 +1721,10 @@
   // --- The fourth order (rules v4): three prepared choices from the council ---
   function suggestions(s) {
     const order3 = s.grain < 4 ? ["economist", "treasurer", "general"] : s.army < ORDER_ARMY ? ["general", "economist", "priest"]
-      : s.loyalty < 45 ? ["priest", "economist", "treasurer"] : s.favour < 45 ? ["priest", "treasurer", "economist"]
+      : s.loyalty < 56 ? ["priest", "economist", "treasurer"] : s.favour < 45 ? ["priest", "treasurer", "economist"]
       : [["economist", "fleet", "general"], ["treasurer", "economist", "priest"], ["fleet", "general", "economist"]][s.turn % 3];
     const out = [];
-    if (s.tax === "high" && s.loyalty < 45 && !canDo(s, order("lower_taxes"))) out.push({ who: "priest", order: order("lower_taxes"), say: "The people cannot carry these taxes much longer, Governor. Ease them." });
+    if (s.tax === "high" && s.loyalty < 58 && !canDo(s, order("lower_taxes"))) out.push({ who: "priest", order: order("lower_taxes"), say: "The people cannot carry these taxes much longer, Governor. Ease them." });
     for (const who of order3) {
       if (out.length >= 3) break;
       for (const tone of ["good", "quiet", "bad"]) {
@@ -1774,7 +1864,7 @@
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
     TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
-    CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, REBELLION_AT, discontentParts, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
+    CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
     tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS,
   };
 })();

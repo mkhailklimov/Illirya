@@ -2,8 +2,7 @@ id,name,unit,min,max,start,lose_if,shown_as,notes
 grain,Grain,months of supply,0,24,6,0 for 2 seasons in a row,6 months,"DRAFT. Wheat in the granaries, counted as months of food for People and Army. A season eats 3 months."
 treasury,Treasury,denarii,0,,3000,,"3,000 denarii",DRAFT. Cannot go below 0: a decree you cannot pay for is refused.
 people,People,inhabitants,0,,4000,,"4,000",DRAFT. Acruvium was a small town; a few thousand is plausible.
-loyalty,Loyalty,0-100,0,100,55,0 and Army below 100,55 / 100,DRAFT. Locals' content.
+loyalty,Loyalty,0-100,0,100,60,below 50 two seasons running: rebellion,60 / 100,"DRAFT (v10). Locals' content. Below 50 the town grows restless; still below 50 at the end of the next season, it rises in rebellion."
 favour,Roman favour,0-100,0,100,60,0,60 / 100,DRAFT. The Emperor's opinion of the governor.
 army,Army,soldiers,0,,150,,150,DRAFT. Local auxiliaries paid from the town treasury.
 ships,Ships,ships,0,,2,,2 ships,DRAFT. Merchant ships. A convoy needs a free ship; a harbour has berths for 3. Pirates and storms can sink them.
-discontent,Discontent,0-100,0,100,10,above 50 the town rebels,10 / 100,"DRAFT (v9). Grievances that fester: high taxes, hunger, a cruel or a weak hand. Above 50 the town rises in rebellion."
