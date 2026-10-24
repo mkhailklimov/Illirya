@@ -85,6 +85,11 @@
     return migrate(s);
   }
   // rules v9-v10: ships with names, voyages, inventions, justice, restlessness. Older saves get the new fields here.
+  const WAR_NAMES = ["Mars", "Bellona", "Fulmen", "Hercules", "Leo", "Triumphus", "Ultor", "Invicta"];
+  function newWarName(s) {
+    const used = new Set([...(s.navy || []), ...(s.shipyard || []).map((k) => k.name)]);
+    return WAR_NAMES.find((n) => !used.has(n)) || `Mars ${["II", "III", "IV"][rint(0, 2)]}`;
+  }
   const SHIP_NAMES = ["Fortuna", "Concordia", "Aquila", "Victoria", "Neptunus", "Salus", "Delphinus", "Pax", "Spes", "Minerva", "Castor", "Pollux", "Felicitas", "Triton", "Pietas", "Ister", "Clementia", "Mercurius"];
   function newShipName(s) {
     const used = new Set([...(s.fleet || []), ...(s.shipyard || []).map((k) => k.name)]);
@@ -109,6 +114,7 @@
     for (const k of s.shipyard) if (!k.name) k.name = newShipName(s);
     delete s.discontent; delete s.discontent_parts;   // rules v10: one number, loyalty
     s.restless = s.restless || 0;
+    s.warships = s.warships || 0; s.navy = s.navy || [];
     s.justice = s.justice || { pardoned: 0, executed: 0 };
     s.inventions = s.inventions || [];
     s.voyages = s.voyages || [];
@@ -145,7 +151,9 @@
   const merchantPrice = (g) => Math.round((g === "grain" ? GRAIN_PRICE : num(GOOD[g].price)) * MERCHANT_MARKUP);
   const merchantCost = (o) => Object.entries(o.buy || {}).reduce((t, [g, q]) => t + q * merchantPrice(g), 0);
   const shipsAtSea = (s) => s.convoys.length;
-  const berths = (s) => Math.trunc(stat(s, "ships_cap"));
+  const SHIPS_MAX = 6, TRIREME_UPKEEP = 40, TRIREME_CUT = .15, TRIREMES_COUNT = 2;   // rules v11: one harbour, six berths, merchant galleys and triremes together
+  const berths = (s) => Math.min(SHIPS_MAX, Math.trunc(stat(s, "ships_cap")));
+  const berthsUsed = (s) => Math.trunc(s.ships) + (s.warships || 0) + (s.shipyard || []).length;
   const housing = (s) => Math.trunc(stat(s, "housing"));
   const turnsToTribute = (s) => [0, 1, 2, 3].find((i) => seasonOf(s.turn + i)[0].tribute_due === "yes");
   function buildingState(s, b) {
@@ -289,6 +297,7 @@
     else if (s.fleece >= 6 && !built(s, "weavers")) { say.economist = `${Math.trunc(s.fleece)} bales of fleece and no one to weave them. A weavers' workshop, Governor.`; wants.economist = buildOf("weavers"); }
     else if (mult !== 1 && num(season.harvest_grain) > 0) say.economist = `With this wind the harvest will be ${mult > 1 ? "better" : "worse"} than usual (${pct(mult - 1)}).`;
     else if (fieldsFull(s) && fieldPlots(s) < FIELD_PLOTS_MAX) { say.economist = "Every field round the bay is taken. Clear the scrub on the hillside for new terraces."; wants.economist = decreeIs("clear_land"); }
+    else if (built(s, "olives") && !(s.inventions || []).includes("screw_press") && s.treasury > 1500) { say.economist = "Our olives are pressed the old way. A Greek screw press, Governor: a third more oil from every harvest, and the neighbours will pay to use it."; wants.economist = decreeIs("commission_press"); }
     else { say.economist = "The markets are steady. Vines and olives take years; plant them early."; wants.economist = buildOf("vineyard", "olives"); }
     if (s.army < ORDER_ARMY) { say.general = `Only ${Math.trunc(s.army)} men. Rome expects order, and so do the hill tribes.`; wants.general = decreeIs("recruit"); }
     else if (s.loyalty < 52) { say.general = "The mood in the streets is sour. Hang a few brigands, recruit, and the town will keep its head down."; wants.general = decreeIs("recruit", "hang_brigands"); }
@@ -368,7 +377,8 @@
         const have = s.buildings.filter((x) => x.kind === b.id).length + (newKinds[b.id] || 0);
         if (have >= Math.trunc(num(b.max, 99))) { problems.push(`Acruvium already has as many ${b.name.toLowerCase()} as it can hold (${Math.trunc(num(b.max))}).`); return; }
       }
-      if (o.id === "build_ship" && Math.trunc(s.ships) + s.shipyard.length + newShips >= berths(s)) { problems.push(`Epicadus: no free berth for another ship (berths for ${berths(s)}); a second harbour first.`); return; }
+      if (["build_ship", "build_warship"].includes(o.id) && berthsUsed(s) + newShips >= berths(s)) { problems.push(berths(s) ? `Epicadus: every berth is taken (${berths(s)} at most, merchant galleys and triremes together, keels on the slipway included).` : "Epicadus: build the harbour first."); return; }
+      if (o.id === "commission_press" && (s.inventions || []).includes("screw_press")) { problems.push("Nikandros: we already have a screw press."); return; }
       if (o.id === "refill_ranks" && refillOf(s).n < 5) { problems.push(`Antistius: the cohorts are at full strength (${Math.trunc(s.army)} of ${Math.trunc(s.army_peak || 150)}); there is nobody to replace.`); return; }
       if (o.id === "clear_land" && clearedPlots(s) + (s.clearing || []).length + clears >= FIELD_PLOTS_MAX) { problems.push(`The hillside is used up: at most ${FIELD_PLOTS_MAX} field plots.`); return; }
       if (o.id === "merchants") {
@@ -415,7 +425,7 @@
       for (const [g, q] of Object.entries(mats)) stores[g] -= q;
       if (o.id === "send_convoy") for (const [g, q] of Object.entries(o.sell || {})) stores[g] -= q;
       if (o.id === "build") { newPlots[BLD[o.building].zone] += 1; newKinds[o.building] = (newKinds[o.building] || 0) + 1; }
-      if (o.id === "build_ship") newShips += 1;
+      if (["build_ship", "build_warship"].includes(o.id)) newShips += 1;
       if (o.id === "send_convoy") convoys += 1;
       if (o.id === "clear_land") clears += 1;
       if (o.id === "recruit") army += 50;
@@ -552,6 +562,7 @@
     hang_brigands: ["the town cheers: loyalty +3", "a riot at the gallows: loyalty −4"],
     raise_taxes: ["the people pay without a murmur", "they pay, and curse you: loyalty −6 more"],
     build_ship: ["ready next season", "the keel cracks: 150 denarii more"],
+    build_warship: ["launched a season early", "the ram is cast badly: a season late"],
     hold_festival: ["the best games in memory: twice the effect", "rain and a brawl: no effect"],
     visit_temple: ["a perfect sacrifice: twice the effect", "the liver is malformed: no effect"],
     honour_tiberius: ["the Emperor hears of it: twice the effect", "nobody in Rome notices"],
@@ -646,7 +657,7 @@
   }
   /** Who comes this year, and whether they storm the town or raid the fields. */
   function rollConflict(s) {
-    const w = { pirates: 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0) + (reputation(s).id === "weak" ? 3 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
+    const w = { pirates: Math.max(1, 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0) - (s.warships || 0)), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0) + (reputation(s).id === "weak" ? 3 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
     const kind = choices(Object.keys(w), Object.values(w));
     const at = kind === "pirates" ? (rint(1, 2) === 1 ? "walls" : "fields") : kind === "tribes" ? (rint(1, 5) <= 2 ? "walls" : "fields") : "fields";
     return { kind, at };
@@ -660,9 +671,11 @@
     else if (kind === "brigands") { men = rint(100, 170) + (s.loyalty < 40 ? 60 : 0); const a = rint(15, 35) / 100, c = rint(20, 40) / 100; share = rint(0, 1) ? [a, c, 1 - a - c] : [1 - a - c, c, a]; }
     else { const t = TRIBE[tribe] || TRIBES[rint(0, TRIBES.length - 1)]; tribe = t.id; men = rint(150, 260) + t.strength * 60 + (hostile(s, t.id) ? 60 : 0) + (kind === "march" ? 60 : 0); share = [.25, .5, .25]; }
     men = Math.round(men * (1 + GROWTH_OF_RAIDERS * (seasonOf(s.turn)[1] - 30)));   // word of a rich town spreads
+    const navy = kind === "pirates" ? Math.min(TRIREMES_COUNT, s.warships || 0) : 0;
+    if (navy) men = Math.round(men * (1 - TRIREME_CUT * navy));   // our triremes sink some of their boats before they land
     const name = kind === "tribes" || kind === "march" ? `${E0.name}: the ${TRIBE[tribe].name}` : E0.name;
     const [where, say] = (AT_TEXT[kind] && AT_TEXT[kind][at]) || [E0.where, E0.say];
-    return { kind, tribe, name, men, share, fury: E0.fury, home: E0.home, terrain: E0.terrain, where, say, who: E0.who, at, walled: at === "walls" && built(s, "walls") };
+    return { kind, tribe, name, men, share, fury: E0.fury, home: E0.home, terrain: E0.terrain, where, say: navy ? `${say} Our trireme${navy > 1 ? "s" : ""} caught them in the gulf and sank ${navy > 1 ? "several" : "some"} of their boats.` : say, who: E0.who, at, walled: at === "walls" && built(s, "walls"), navy };
   }
   // the mixed army (rules v7)
   const SLING_GROUP = 25, ARCHER_GROUP = 30, CAVALRY_MIN = 5, ENGINES_MAX = 4;
@@ -730,6 +743,7 @@
     const common = [["the discipline of Rome", DISCIPLINE]];
     if (enemy.walled) { const hd = Math.trunc(stat(s, "home_defence")); if (hd) common.push([built(s, "arx") ? "the walls and the citadel" : "the walls", hd]); }
     if (enemy.foretold) common.push(["forewarned by the haruspex", 1]);
+    if (enemy.navy) common.push([`our trireme${enemy.navy > 1 ? "s" : ""} in the bay`, enemy.navy]);
     if (enemy.home && !enemy.walled) common.push(["our own ground: every terrace and path", HOME_GROUND]);
     const bb = Math.trunc(stat(s, "battle_bonus")); if (bb) common.push(["drilled in the barracks", bb]);
     const xp = Math.min(3, Math.floor((s.army_xp || 0) / 2)); if (xp) common.push(["veterans of past battles", xp]);
@@ -888,7 +902,7 @@
       if (deadInf >= 10) {
         const n = deadInf, cost2 = n * REPLACE_COST + (s.kit && s.kit.pila ? n : 0), iron = Math.ceil(n / 10), cloth = Math.ceil(n / 10);
         const can = s.treasury >= cost2 && s.iron >= iron && s.cloth >= cloth && s.people > n + 500;
-        if (can && await ui.choose(`Replace the ${n} fallen?`, `Recruits from the town: ${intc(cost2)} denarii, ${iron} iron and ${cloth} cloth for their kit; ${n} fewer townsmen.`, [{ label: "Fill the ranks", sub: `${intc(cost2)} denarii, ${iron} iron, ${cloth} cloth` }, { label: "Leave the ranks thin", sub: `the garrison stays at ${Math.trunc(s.army)}` }]) === 0) {
+        if (can && await ui.choose(`Replace the ${n} fallen?`, `Recruits from the town: ${intc(cost2)} denarii, ${iron} iron and ${cloth} cloth for their kit; ${n} fewer townsmen.`, [{ label: "Fill the ranks", sub: `${intc(cost2)} denarii, ${iron} iron, ${cloth} cloth` }, { label: "Leave the ranks thin", sub: `the garrison stays at ${Math.trunc(s.army)}` }], "general") === 0) {
           s.treasury -= cost2; s.iron -= iron; s.cloth -= cloth; s.people -= n; s.army += n; s.loyalty -= 1;
           notes.push(`${n} recruits fill the gaps in the ranks.`);
         }
@@ -923,8 +937,8 @@
   /** What a victory brings besides the plunder: a pirate ship taken, or the tribes' vines and olives on the border. */
   function spoils(s, enemy, st, notes) {
     const r = rint(1, 20) + (st.horse === "pursue" ? 4 : 0);
-    if (enemy.kind === "pirates" && r >= PRIZE_DC - (enemy.at === "walls" ? 2 : 0)) {   // at the quay their ships are easier to take
-      if (Math.trunc(s.ships) + s.shipyard.length < berths(s)) {
+    if (enemy.kind === "pirates" && r >= PRIZE_DC - (enemy.at === "walls" ? 2 : 0) - 2 * (enemy.navy || 0)) {   // at the quay their ships are easier to take
+      if (berthsUsed(s) < berths(s)) {
         fleetNames(s); s.ships += 1; const name = newShipName(s); s.fleet.push(name);
         notes.push(`A pirate liburna is taken on the beach: renamed the ${name}, she joins your ships (${Math.trunc(s.ships)} now).`);
         news(s, "ship", `Prize taken: the pirate liburna becomes the ${name}.`);
@@ -955,7 +969,7 @@
     const J = (s.justice = s.justice || { pardoned: 0, executed: 0 }), rep0 = reputation(s), who = CAPTIVES[enemy.kind] || "the prisoners";
     const pick = await ui.choose(`Judgement on ${who}`,
       `They stand in chains in the forum. So far you have pardoned ${J.pardoned} and executed ${J.executed}: ${rep0.text}. A wise ruler pardons about one in three or four; never pardoning makes a tyrant, pardoning too often makes a weak one.`,
-      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is frightened (loyalty −2)" }, { label: "Pardon them", sub: "loyalty +3; they swear never to return" }]);
+      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is frightened (loyalty −2)" }, { label: "Pardon them", sub: "loyalty +3; they swear never to return" }], "general");
     if (pick === 1) { J.pardoned++; s.loyalty += 3; notes.push(`You pardon ${who}: they kneel and swear by their gods. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
     else { J.executed++; s.favour += 1; s.loyalty -= 2; notes.push(`${who.replace(/^./, (m) => m.toUpperCase())} are executed outside the Sea Gate. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
   }
@@ -976,7 +990,7 @@
     const t = (s.troops = { ...troopsOf(s) });
     const pick = await ui.choose("The town rises in rebellion",
       `Loyalty has stayed below ${REBELLION_BELOW} for two seasons (now ${Math.round(s.loyalty)}). Thousands of townsmen take up arms in the forum, and the militia you raised from them wavers. You may parley (d20 + loyalty / 10, need ${PARLEY_DC}): taxes fall to low and Rome thinks you weak. Or you may crush them: if you win, half the town is dead and its trade ruined; if you lose, you are finished.`,
-      [{ label: "Parley with the rebels", sub: `d20 + ${Math.floor(s.loyalty / 10)}, need ${PARLEY_DC}; if it fails, they fight` }, { label: "Crush the revolt", sub: "a battle in the streets" }]);
+      [{ label: "Parley with the rebels", sub: `d20 + ${Math.floor(s.loyalty / 10)}, need ${PARLEY_DC}; if it fails, they fight` }, { label: "Crush the revolt", sub: "a battle in the streets" }], "priest");
     if (pick === 0) {
       const r = await roll(20, Math.floor(s.loyalty / 10), PARLEY_DC, "Parley with the rebels");
       if (r.ok) {
@@ -1080,6 +1094,12 @@
         const name = newShipName(s);
         s.shipyard.push({ done: s.turn + (win ? 1 : 2), name });
         notes.push(`The keel of the ${name} is laid on the slipway; she will be launched in ${win ? "one season" : "two seasons"}.`);
+      } else if (d.id === "build_warship") {
+        const name = newWarName(s), wait = win ? 2 : lose ? 4 : 3;
+        s.shipyard.push({ done: s.turn + wait, name, war: true });
+        notes.push(`The keel of the trireme ${name} is laid: three banks of oars and a bronze ram; she will be launched in ${wait} seasons.`);
+      } else if (d.id === "commission_press") {
+        invent(s, { invention: "screw_press" }, true, notes);
       } else if (d.id === "merchants") {
         for (const [g, q] of Object.entries(o.buy || {})) s[g] += q;
         notes.push(`Merchants at the quay sell you ${listText(o.buy)} for ${intc(merchantCost(o))} denarii.`);
@@ -1112,6 +1132,35 @@
     s.conflict = { turn: s.turn + (SEASONS.length - idx) + rint(0, 2), ...rollConflict(s) };
     return s.conflict;
   }
+  /** Next season's harvest as the gods see it: the wind is fixed now (like the sages' forecast), and the yield follows. */
+  function harvestForecast(s) {
+    const t = s.turn + 1, [season] = seasonOf(t);
+    if (!(s.forecast && s.forecast.turn === t)) { s.forecast = drawWeather(t); s.forecast_turn = t; }
+    const w = WINDS[s.forecast.wind], mult = num(w.harvest_mult, 1), later = { ...s, turn: t };
+    const eaters = s.people + s.army + soldiersBesides(s);
+    const grain = Math.round((num(season.harvest_grain) * built(s, "wheat") / BASE_WHEAT * GRAIN_BASE_EATERS / eaters * mult + stat(s, "grain")) * 10) / 10;
+    const goods = {};
+    for (const B of BUILDING_LIST) {
+      if (!B.produces || String(B.uses || "").trim()) continue;   // the farms and the sea; workshops depend on their stores
+      const when = String(B.yields_in || "any");
+      if (when !== "any" && !when.split(/[;, ]+/).includes(season.season)) continue;
+      const f = s.buildings.filter((x) => x.kind === B.id).reduce((a, x) => a + yieldFactor(later, x), 0);
+      for (const [g, q] of Object.entries(parseList(B.produces))) if (g !== "grain" && q * f) goods[g] = (goods[g] || 0) + Math.round(q * f);
+    }
+    for (const v of inventionsOf(s)) for (const [g, m] of Object.entries(v.more || {})) if (goods[g]) goods[g] += Math.round(goods[g] * m);
+    return { season: season.season, wind: w, mult, grain, goods, after: Math.round((s.grain + grain - GRAIN_EATEN) * 10) / 10 };
+  }
+  /** The omen card of next season, drawn now and kept for it. */
+  function foreOmen(s) {
+    const t = s.turn + 1;
+    if (s.omen_next && s.omen_next.turn === t) return CARDS.find((c) => c.id === s.omen_next.id);
+    weightState = s;
+    const pool = CARDS.filter((c) => c.deck === "omen" && cardFits(s, c));
+    if (!pool.length) return null;
+    const c = choices(pool, pool.map(weight));
+    s.omen_next = { turn: t, id: c.id };
+    return c;
+  }
   /** What the liver says: the coming war, the sea, the granaries, the town; and one piece of wise advice. */
   function prophecy(s, notes, boost) {
     if (boost === "lose" || boost === "lost") { s.prophecy = { turn: s.turn, signs: ["The liver is malformed: the gods will not speak this season."], advice: null }; notes.push("Tertius Volusius turns the liver in his hands and goes pale: it is malformed, and the gods are silent."); return; }
@@ -1131,10 +1180,13 @@
     }
     const atSea = (s.convoys || []);
     if (atSea.length) { for (const cv of atSea) cv.blessed = true; signs.push(`Neptune accepts the offering: ${atSea.map((cv) => `the ${cv.ship || "ship"}`).join(" and ")} will have a kind sea home (+2 on the voyage).`); }
-    const seasonsOfBread = Math.floor(s.grain / 3);
-    if (s.grain < 6) {
-      signs.push(`Ceres frowns: the granaries hold ${s.grain.toFixed(1)} months, ${seasonsOfBread ? `bread for ${seasonsOfBread} season${seasonsOfBread > 1 ? "s" : ""}` : "not even a season's bread"} without a harvest.`);
-      if (s.grain < 4) { const g = suggestions(s).find((p) => p.who === "economist"); if (g) advice = { order: g.order, say: `Fill the granaries before anything else: ${lower(describe(s, g.order))}.` }; }
+    const hf = harvestForecast(s), what = Object.entries(hf.goods).map(([g, q]) => `${q} ${nameOf(g).toLowerCase()}`);
+    const windText = hf.wind.id === "CALM" ? "a dead calm" : `${hf.wind.latin}, the wind from the ${hf.wind.from}`;
+    signs.push(`Ceres: next season (${hf.season}) brings ${windText}. ${hf.grain || what.length ? `The fields will give ${hf.grain ? `${hf.grain} months of grain` : "no grain"}${what.length ? ` and ${what.join(", ")}` : ""}${hf.mult !== 1 ? ` (the wind ${pct(hf.mult - 1)})` : ""}` : "No harvest is due"}; three months are eaten, so the granaries will hold ${Math.max(0, hf.after)} months${hf.after < 3 ? ": too little" : ""}.`);
+    const om = foreOmen(s);
+    if (om) signs.push(`The omen of next season is already written: “${om.title}”${om.choice ? ", a choice for you to make" : `: ${effectsText(om.effects)}`}.${darkOmen(om) ? " A dark sign: prepare for it." : ""}`);
+    if (hf.after < 3) {
+      if (s.grain < 4 || hf.after < 1.5) { const g = suggestions(s).find((p) => p.who === "economist"); if (g) advice = { order: g.order, say: `Fill the granaries before anything else: ${lower(describe(s, g.order))}.` }; }
     }
     if (s.loyalty < 55) {
       signs.push(`The household gods are uneasy: loyalty stands at ${Math.round(s.loyalty)}. Below ${REBELLION_BELOW} for two seasons, the town rises.`);
@@ -1144,7 +1196,6 @@
       const p = suggestions(s)[0];
       if (p) advice = { order: p.order, say: `${ADVISORS[p.who].name.split(" ")[0]} is right this time: ${lower(describe(s, p.order))}.` };
     }
-    if (!signs.length) signs.push("Jupiter is silent: no war is written for this year or the next, the sea is empty of our ships, and the granaries are full.");
     s.prophecy = { turn: s.turn, signs, advice: advice ? { say: advice.say, order: advice.order } : null };
     notes.push(`Tertius Volusius reads the liver: ${signs.join(" ")}${advice ? ` His advice: ${advice.say}` : ""}`);
     news(s, "omen", `The haruspex foretells: ${signs[0]}`);
@@ -1177,7 +1228,8 @@
     const bonus = Math.round(factor * 10) + (s.council.fleet.mood >= 4 ? 1 : 0) + (c.blessed ? 2 : 0);
     const r = await roll(VOYAGE_DIE, bonus, VOYAGE_TARGET, `The ship from ${t.name}`, true);
     let share = 1, how = "safely";
-    if (r.r === 1) { share = 0; how = "robbed by pirates off the coast; she limps home empty"; }
+    if (r.r === 1 && s.warships) how = "attacked by pirates off the coast, but a trireme drove them off";
+    else if (r.r === 1) { share = 0; how = "robbed by pirates off the coast; she limps home empty"; }
     else if (!r.ok) { share = 0.5; how = "battered by a storm; half the cargo went over the side"; }
     else if (r.r === VOYAGE_DIE) { share = 1.1; how = "early on a fair wind, with a little extra trade"; }
     const money = Math.round(c.revenue * share);
@@ -1200,7 +1252,13 @@
     const arrived = s.convoys.filter((c) => c.arrive <= s.turn);
     s.convoys = s.convoys.filter((c) => c.arrive > s.turn);
     for (const b of s.buildings) if (b.done === s.turn) notes.push(`${BLD[b.kind].name} finished.`);
-    const ready = s.shipyard.filter((k) => k.done <= s.turn);
+    const readyWar = s.shipyard.filter((k) => k.done <= s.turn && k.war);
+    const ready = s.shipyard.filter((k) => k.done <= s.turn && !k.war);
+    if (readyWar.length) {
+      s.shipyard = s.shipyard.filter((k) => !readyWar.includes(k));
+      s.warships = (s.warships || 0) + readyWar.length; s.navy = (s.navy || []).concat(readyWar.map((k) => k.name));
+      for (const k of readyWar) { notes.push(`The trireme ${k.name} is launched: her ram flashes in the bay (${s.warships} warship${s.warships > 1 ? "s" : ""} now).`); news(s, "ship", `Launched: the trireme ${k.name} joins the fleet.`); }
+    }
     const cleared = (s.clearing || []).filter((t) => t <= s.turn);
     if (cleared.length) { s.field_plots = clearedPlots(s) + cleared.length; s.clearing = s.clearing.filter((t) => t > s.turn); notes.push(`New field${cleared.length > 1 ? "s are" : " is"} cleared: ${s.field_plots} field plots now.`); }
     if (ready.length) {
@@ -1212,11 +1270,12 @@
     const [rate] = TAX_RATES[s.tax];
     s.treasury += Math.round(s.people * rate);
     s.treasury += stat(s, "treasury");
-    for (const v of inventionsOf(s)) if (v.rent) { s.treasury += v.rent; notes.push(`${v.name}: +${v.rent} denarii ${v.rent_text}.`); }
+    s.inv_report = [];
+    for (const v of inventionsOf(s)) if (v.rent) { s.treasury += v.rent; s.inv_report.push({ name: v.name, rent: v.rent, text: v.rent_text }); notes.push(`${v.name}: +${v.rent} denarii ${v.rent_text}.`); }
     for (const c of arrived) await convoyHome(s, c, notes);
     // army pay
     const tr = troopsOf(s);
-    const pay = (s.army + tr.slingers) * Math.max(1, ARMY_PAY - stat(s, "army_pay_discount")) + tr.archers * ARCHER_PAY + tr.cavalry * CAVALRY_PAY + tr.engines * ENGINE_UPKEEP + tr.ballistae * BALLISTA_UPKEEP;
+    const pay = (s.army + tr.slingers) * Math.max(1, ARMY_PAY - stat(s, "army_pay_discount")) + tr.archers * ARCHER_PAY + tr.cavalry * CAVALRY_PAY + tr.engines * ENGINE_UPKEEP + tr.ballistae * BALLISTA_UPKEEP + (s.warships || 0) * TRIREME_UPKEEP;
     if (s.treasury >= pay) s.treasury -= pay;
     else {
       const unpaid = (pay - s.treasury) / pay; s.treasury = 0;
@@ -1263,7 +1322,11 @@
       ratio = Math.max(0, Math.min(1, ratio));
       for (const [g, q] of Object.entries(use)) s[g] -= Math.round(q * f * ratio);
       const made = Object.fromEntries(Object.entries(out).map(([g, q]) => [g, Math.round(q * f * ratio)]));
-      for (const v of inventionsOf(s)) for (const [g, m] of Object.entries(v.more || {})) if (made[g]) { const extra = Math.round(made[g] * m); made[g] += extra; notes.push(`${v.name}: +${extra} ${nameOf(g).toLowerCase()} from the same harvest.`); }
+      for (const v of inventionsOf(s)) for (const [g, m] of Object.entries(v.more || {})) if (made[g]) {
+        const extra = Math.round(made[g] * m), base = made[g]; made[g] += extra;
+        (s.inv_report = s.inv_report || []).push({ name: v.name, good: g, extra, base, unit: unitOf(g) });
+        notes.push(`${v.name}: +${extra} ${nameOf(g).toLowerCase()} from the same harvest.`);
+      }
       for (const [g, q] of Object.entries(made)) s[g] += q;
       if (Object.values(made).some((q) => q > 0)) notes.push(`${B.name}${built(s, B.id) > 1 ? ` (${built(s, B.id)})` : ""}: +${listText(made)}${f < built(s, B.id) ? ", the young ones not yet at full yield" : ""}.`);
       else if (Object.keys(use).length) notes.push(`${B.name}: idle, no ${Object.keys(use).map((g) => nameOf(g).toLowerCase()).join(" or ")} to work.`);
@@ -1295,6 +1358,7 @@
     } else s.restless = 0;
     s.army_peak = Math.max(s.army_peak || 150, Math.trunc(s.army));
     fleetNames(s);
+    s.history = (s.history || []).concat([Object.fromEntries([["turn", s.turn], ...NUMBERS.map((n) => [n, Math.round(s[n] * 10) / 10])])]).slice(-12);
   }
   // inventions (rules v9): a card may bring a new machine that keeps paying
   const INVENTIONS = {
@@ -1336,6 +1400,8 @@
     for (const [deck] of DECKS) {
       const letter = deck === "sea" && CARDS.find((c) => c.date && dateTurn(c.date) === s.turn && !(s.once_fired || []).includes(c.id));
       if (letter) { drawn.push(letter); continue; }
+      const seen = deck === "omen" && s.omen_next && s.omen_next.turn === s.turn ? CARDS.find((c) => c.id === s.omen_next.id) : null;
+      if (seen && cardFits(s, seen)) { drawn.push(seen); s.omen_next = null; continue; }
       const pool = CARDS.filter((c) => c.deck === deck && cardFits(s, c));
       if (pool.length) drawn.push(choices(pool, pool.map(weight)));
     }
@@ -1432,7 +1498,7 @@
   const SEA_BUILDINGS = ["harbour", "fishery", "saltpans", "market"];
   function domainOf(o) {
     if (!o) return null;
-    if (["send_convoy", "build_ship", "merchants"].includes(o.id)) return "sea";
+    if (["send_convoy", "build_ship", "build_warship", "merchants"].includes(o.id)) return "sea";
     if (o.id === "build") return SEA_BUILDINGS.includes(o.building) ? "sea" : o.building === "temple" ? "omen" : "land";
     if (["visit_temple", "hold_festival", "honour_tiberius", "honour_rome", "listen_sages"].includes(o.id)) return "omen";
     return "land";
@@ -1453,6 +1519,7 @@
     if (who === "economist") return tone === "bad"
       ? food.concat([b("fishery"), b("wheat"), b("saltpans")])
       : food.concat([houses, crowded ? order("treat_tribe", { tribe: nextTribe.id }) : null, fieldsFull(s) && fieldPlots(s) < FIELD_PLOTS_MAX ? order("clear_land") : null, s.fleece >= 6 && !built(s, "weavers") ? b("weavers") : null,
+        built(s, "olives") && !(s.inventions || []).includes("screw_press") && s.treasury > 1500 ? order("commission_press") : null,
         tone === "good" ? b("wheat") : b("vineyard"), b("olives"), b("vineyard"), b("wheat"), b("pasture"), sellConvoy(s, ["wine", "oil"], { wine: FESTIVAL_WINE_KEEP })]);
     if (who === "general") return tone === "bad"
       ? [refillOf(s).n >= 30 ? order("refill_ranks") : null, s.army < 250 ? order("recruit") : null, order("hang_brigands"), b("walls"), b("barracks")]
@@ -1460,7 +1527,7 @@
         troopsOf(s).slingers < 50 ? order("train_slingers") : null, s.buildings.some((x) => x.kind === "walls") && troopsOf(s).archers < 60 ? order("raise_archers") : null,
         anyHostile(s) && troopsOf(s).engines < 2 ? order("build_engine") : null, troopsOf(s).cavalry < 10 && s.treasury > 4000 ? order("raise_cavalry") : null, b("walls"), b("barracks"), s.army < 300 ? order("recruit") : null, s.iron < 8 ? b("mine") : null, order("hang_brigands")];
     if (who === "fleet") return tone === "bad"
-      ? [order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null, sellConvoy(s, ["fish", "wine", "oil", "timber", "fleece", "cloth"], { wine: FESTIVAL_WINE_KEEP, timber: 20 })]
+      ? [!s.warships && s.treasury > 2500 ? order("build_warship") : null, order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null, sellConvoy(s, ["fish", "wine", "oil", "timber", "fleece", "cloth"], { wine: FESTIVAL_WINE_KEEP, timber: 20 })]
       : [sellConvoy(s, ["wine", "oil", "fish", "cloth", "timber", "fleece"], { wine: FESTIVAL_WINE_KEEP, timber: 20 }), order("build_ship"), Math.trunc(s.ships) >= berths(s) ? b("harbour") : null];
     if (who === "treasurer" && tone !== "good" && s.favour < 60) return [order("honour_tiberius"), order("honour_rome"), houses, order("hear_petitions"), b("market"), sellConvoy(s, ["wine", "oil", "fish", "cloth"], { wine: FESTIVAL_WINE_KEEP })];
     if (who === "treasurer") return [houses, tone === "good" && s.tax !== "high" && s.loyalty >= 68 ? order("raise_taxes") : null, order("hear_petitions"), b("market"),
@@ -1503,7 +1570,7 @@
     return { tone, list: out, letbe: checkFor(s, c, { kind: "none" }) };
   }
   // --- Checks (rules v5): the die of the card's deck, a DC, and the bonuses that move it, shown before you choose ---
-  const isSea = (o) => o && ["send_convoy", "build_ship", "merchants"].includes(o.id);
+  const isSea = (o) => o && ["send_convoy", "build_ship", "build_warship", "merchants"].includes(o.id);
   const isArms = (o) => o && ["recruit", "hang_brigands", "dismiss", "march_tribe"].includes(o.id);
   /** chance of total >= dc on a d20 where a 1 always fails and a 20 always succeeds */
   const chanceOf = (bonus, dc) => Math.max(5, Math.min(95, 5 * (21 - Math.max(2, Math.min(21, dc - bonus)))));
@@ -1864,7 +1931,7 @@
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
     TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
-    CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
+    CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, harvestForecast, berthsUsed, SHIPS_MAX, TRIREME_UPKEEP, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
     tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS,
   };
 })();

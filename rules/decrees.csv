@@ -8,6 +8,7 @@ refill_ranks,Refill the cohorts,army,0,,no,,,,,,,"DRAFT (v9). Townsmen take the 
 dismiss,Dismiss 50 soldiers,army,0,,no,,,50,1,-1,-50,DRAFT. Saves pay; Rome likes a strong garrison.
 build,Build or plant,land,0,,no,,,,,,,DRAFT. One building on a free plot; its cost and time come from buildings.csv.
 build_ship,Lay the keel of a ship,sea,300,timber 20; iron 3; cloth 4,no,,,,,,,DRAFT. Ready in two seasons. Needs a free berth.
+build_warship,Lay the keel of a trireme,sea,900,timber 30; iron 8; cloth 6,no,,,,,,,"DRAFT (v11). A warship with three banks of oars and a bronze ram; launched in three seasons; 40 denarii a season for rowers and marines. Each trireme (two count): pirates come less often, a seventh of their men sink before landing, +1 in the battle, their ships are easier to take; a convoy robbed by pirates is saved."
 send_convoy,Send a trade convoy,sea,100,,no,,,,,,,DRAFT. One ship to one town; sell and buy there. Back next season (Aquileia: in two).
 hold_festival,Hold a festival,gods,300,wine 4,yes,,,,8,,,DRAFT. Games and a feast. Half the effect if held two seasons running.
 visit_temple,Sacrifice at the temple,gods,50,,yes,,,,1,1,,"DRAFT (v10). The governor sacrifices in public; the haruspex reads the liver: the coming war (who, when, walls or fields; +1 in that battle), a blessing on ships at sea (+2 home), the granaries, the town's mood, and one piece of advice."
@@ -25,3 +26,4 @@ build_engine,Build a scorpion,army,350,timber 10; iron 4,no,,,,,,,"DRAFT. A bolt
 arm_pila,Issue javelins (pila) to the infantry,army,250,iron 10,yes,,,,,,,DRAFT. Once for the whole infantry: each cohort's volley thins the crowd in front of it by 5%.
 arm_gladius,Issue short swords (gladii) to the infantry,army,350,iron 15,yes,,,,,1,,DRAFT. Once for the whole infantry: a shield line counts 2.1 men of theirs instead of 1.75.
 build_ballista,Build a ballista,army,600,timber 15; iron 8,no,,,,,,,"DRAFT. A torsion engine that hurls stones: 15% off the lane in front of it before the clash, +2 to every lane on a march (it breaks their stockade). Upkeep 15 a season. Two at most."
+commission_press,Commission a screw press,land,800,iron 4; timber 6,yes,,,,,,,"DRAFT (v11). The Greek screw press, built to order: olive oil +30% at every harvest, and 50 denarii a season from neighbours who press their olives here."

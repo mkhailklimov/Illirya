@@ -129,6 +129,14 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v11 (24 October 2026): triremes, six berths, the press to order, the haruspex sees the harvest
+
+- **Six berths.** One harbour (no second one) holds 6 ships at most: merchant galleys and triremes together, keels on the slipway included.
+- **Triremes** ("Lay the keel of a trireme", sea): 900 denarii, 30 timber, 8 iron, 6 cloth; launched in 3 seasons (2 on a good die, 4 on a bad one); 40 denarii a season for rowers and marines. They do not trade. Each trireme, two at most: the pirates' weight in the year's raid −1 (never below 1); a pirate force loses 15% of its men at sea before landing; +1 in a pirate battle; the prize ship is 2 easier to take. While you have one, a convoy that rolls a 1 is not robbed: the trireme drives the pirates off.
+- **Commission a screw press** (land, once): 800 denarii, 4 iron, 6 timber. The same machine as the Greek engineer's card: olive oil +30% at every harvest, +50 denarii a season. Nikandros proposes it once you have olives.
+- **The haruspex sees further.** Besides the war, the sea, the town and his advice, a sacrifice now shows (1) next season's wind (fixed, like the sages' forecast) and the harvest it brings, grain and goods, and how many months the granaries will hold after it; (2) next season's omen card, drawn now and kept: that is the card that comes. His reading opens as a pop-up after the report.
+- **The citadel** costs 2,500 denarii, 20 timber and 6 iron (was 30 and 10) and takes 8 seasons (was 12). Build it from the dashed citadel site on the crag.
+
 ## Rules v10 (22 October 2026, evening): one loyalty, walls or fields, the haruspex
 
 - **Discontent is gone; loyalty does its work.** Loyalty starts at 60. Each season it moves on its own, part by part (click Loyalty in the ledger): taxes (low +1, high −2), hunger −10 or little bread −3, the temple and the baths, peace and bread +2 while below 60, and your name as a judge (stern but just +1, a cruel tyrant or a weak ruler −2). Cards, orders and battles come on top. A pardon is loyalty +3; an execution loyalty −2 and favour +1.

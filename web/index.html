@@ -247,6 +247,23 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .veil { position: fixed; inset: 0; background: rgba(6, 5, 16, .78); display: grid; place-items: center; padding: 20px; z-index: 20; backdrop-filter: blur(3px); }
 .dialog { width: min(600px, 100%); max-height: calc(100% - 20px); overflow: auto; background: linear-gradient(180deg, #1b1a3e, #2c1c48); border: 2px solid var(--gold); border-radius: 18px; padding: 20px; display: grid; gap: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
 .dialog.wide { width: min(780px, 100%); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.kpis.goods { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.kpi { border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px 8px; background: rgba(44, 8, 25, .55); display: grid; gap: 1px; min-width: 0; }
+.kpi .k { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .v { font: 400 26px/1.15 var(--f-label); color: var(--gold-pale); font-variant-numeric: tabular-nums; }
+.kpis.goods .kpi .v { font-size: 20px; }
+.kpi .v small { font-size: 12px; color: var(--mute); margin-left: 4px; }
+.kpi .d { font-size: 13px; font-variant-numeric: tabular-nums; }
+.kpi .d.up { color: var(--good); } .kpi .d.down { color: var(--bad); } .kpi .d.flat { color: var(--mute); }
+.kpi svg { width: 100%; height: 28px; display: block; margin-top: 4px; overflow: visible; }
+.kpi.warn { border-color: var(--bad); }
+.figdlg { width: min(760px, 100%); display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 18px; align-items: start; }
+.figdlg .fig { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.figdlg .fig svg { display: block; width: 100%; height: auto; }
+.figdlg .side { display: grid; gap: 10px; min-width: 0; }
+.figdlg ul.signs { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+@media (max-width: 620px) { .figdlg { grid-template-columns: 110px minmax(0, 1fr); gap: 12px; } }
 .dialog .head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
 .dialog .head .coinwrap { --d: 80px; }
 .dialog .ability { font: 400 24px/1.1 var(--f-display); color: var(--gold); }
@@ -396,7 +413,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   </div>
   <div class="stage" id="stage"></div>
   <footer>
-    <span>Phase 0 playtest · rules v10 · all numbers DRAFT</span>
+    <span>Phase 0 playtest · rules v11 · all numbers DRAFT</span>
     <span class="opts" id="opts"></span>
   </footer>
 </div>
@@ -522,6 +539,8 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     recruit: '<path d="M-12,12V2a12,12 0 0 1 24,0v10M-12,5h-3M-6,12V6h12v6M-9,-9c3,-7 15,-7 18,0"/><path d="M15,-17v9M10.5,-12.5h9"/>',
     dismiss: '<path d="M-12,12V2a12,12 0 0 1 24,0v10M-12,5h-3M-6,12V6h12v6M-9,-9c3,-7 15,-7 18,0"/><path d="M10.5,-12.5h9"/>',
     build: '<path d="M-15,16L5,-4M1,-8l8,-8 8,8 -8,8Z"/><path d="M-15,16h10"/>',
+    build_warship: '<path d="M-19,2h34l6,-3l-3,6l-5,5h-30Z"/><path d="M-14,10l-3,6M-8,10l-2,6M-2,10v6M4,10l1,6M10,10l2,6M-12,6l-4,4M-4,6l-3,4M4,6l-2,4"/><path d="M-4,2V-14M-11,-12h14"/>',
+    commission_press: '<path d="M-14,14h28M-11,14V-4h22V14M-14,-4h28"/><path d="M0,-4V-16M-8,-16h16"/><path d="M-6,4h12"/><circle cx="0" cy="-16" r="2"/>',
     build_ship: '<path d="M-17,3h34l-6,9h-22Z"/><path d="M0,3V-16M0,-15c8,2 11,7 11,14h-11"/><path d="M-12,12l-2,5M-6,12l-1,5M0,12v5M6,12l1,5M12,12l2,5"/>',
     send_convoy: '<path d="M-18,5h24l-5,8h-15Z M-7,5V-13 M-7,-12c6,2 9,6 9,12h-9"/><path d="M7,-6h11M14,-10l4,4 -4,4"/>',
     merchants: '<path d="M-4,-16h8M-3,-16v4c-8,3 -10,10 -8,18c1,5 6,9 11,11c5,-2 10,-6 11,-11c2,-8 0,-15 -8,-18v-4M-8,-9c-5,0 -6,6 -3,8M8,-9c5,0 6,6 3,8"/>',
@@ -686,6 +705,13 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       ${ghost ? "" : `<path d="M0,0V-34" stroke="${MAP.ink}" stroke-width="2"/><path d="M-1,-32c14,4 18,12 18,22c-8,-2 -14,-2 -18,0Z" fill="${MAP.red}" fill-opacity=".8" stroke="${MAP.ink}" stroke-width="1.2"/>`}
       ${Array.from({ length: 5 }, (_, k) => `<path d="M${-20 + k * 9},12l-3,7" stroke="${MAP.ink}" stroke-width="1.2"/>`).join("")}</g>`;
   }
+  /** A trireme at her mooring, in ink: a long low hull with a ram, three banks of oars, the sail furled on the yard. */
+  function triremeSVG(x, y, scale = 1) {
+    return `<g transform="translate(${x},${y}) scale(${scale})">
+      <path d="M-36,-2h64l10,-4l-5,8l-8,8h-56Z" fill="${MAP.ink2}" stroke="${MAP.ink}" stroke-width="1.6"/><path d="M-34,3h60" stroke="${MAP.red}" stroke-width="1.6"/>
+      ${Array.from({ length: 9 }, (_, k) => `<path d="M${-30 + k * 7},10l-3,${6 + (k % 3) * 2}" stroke="${MAP.ink}" stroke-width="1"/>`).join("")}
+      <path d="M-4,-2V-26M-16,-24h24" stroke="${MAP.ink}" stroke-width="1.8"/><path d="M-15,-24c4,3 18,3 22,0" fill="none" stroke="${MAP.ink}" stroke-width="2.4"/></g>`;
+  }
   // the old map's ornaments: little hachured peaks, a compass rose, a sea serpent, a scale of miles
   function peakSVG([x, y], k) {
     const h = 20 + (k % 3) * 7, w = 22 + (k % 2) * 7;
@@ -712,9 +738,10 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const town = sortedPlots("town"), fields = sortedPlots("field"), hill = sortedPlots("hill");
     const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
     const MOORING = [[290, 222], [290, 262], [230, 318], [230, 356], [290, 412], [290, 450]];
-    const ships = MOORING.slice(0, Math.min(free, 6)).map(([x, y]) => shipSVG(x, y, .5)).join("");
+    const war = s.warships || 0;
+    const ships = MOORING.slice(0, Math.min(free, 6)).map(([x, y]) => shipSVG(x, y, .5)).join("") + MOORING.slice(Math.min(free, 6), Math.min(free + war, 6)).map(([x, y]) => triremeSVG(x, y, .5)).join("");
     const SLIPS = [110, 170, 230];
-    const keels = s.shipyard.slice(0, 3).map((t, k) => shipSVG(SLIPS[k], 556, .42, true) + `<text x="${SLIPS[k]}" y="592" text-anchor="middle" font-family="Marcellus" font-size="10.5" fill="${MAP.ink}">${esc(t.name || "keel")} · ${t.done - s.turn}</text>`).join("");
+    const keels = s.shipyard.slice(0, 3).map((t, k) => (t.war ? `<g opacity=".75">${triremeSVG(SLIPS[k], 556, .4)}</g>` : shipSVG(SLIPS[k], 556, .42, true)) + `<text x="${SLIPS[k]}" y="592" text-anchor="middle" font-family="Marcellus" font-size="10.5" fill="${MAP.ink}">${esc(t.name || "keel")} · ${t.done - s.turn}</text>`).join("");
     const poly = TOWN_POLY.map((p) => p.join(",")).join(" ");
     const BAY = "M0,0 H300 C316,50 326,100 330,128 L330,488 C300,522 262,545 200,560 C120,576 60,560 0,566Z";
     const RIVER = "M770,6 C708,58 656,108 602,138 C522,166 432,142 334,126", SPRING = "M690,412 C622,444 522,470 424,488 C384,496 352,494 332,490";
@@ -831,7 +858,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     $("sheet-city").innerHTML = `<div class="mapwrap" id="citymap">${citySVG()}</div>
       <p class="sum" style="margin:0"><b style="color:var(--gold-pale);font-weight:400">${esc(E.CITY.name)}:</b> ${esc(E.CITY.traits)}</p>
       <div class="legend"><span>${E.plotsUsed(s, "town")}/${E.TOWN_PLOTS} plots in town, ${E.plotsUsed(s, "field")}/${E.fieldPlots(s)} in the fields (${E.FIELD_PLOTS_MAX} at most without the tribes' land)</span>
-      <span>Houses for ${E.intc(E.housing(s))} people</span><span>${Math.trunc(s.ships)} ships: ${free} in harbour${E.shipsAtSea(s) ? `, ${E.shipsAtSea(s)} at sea` : ""}; berths for ${E.berths(s)}</span>
+      <span>Houses for ${E.intc(E.housing(s))} people</span><span>${Math.trunc(s.ships)} merchant galleys: ${free} in harbour${E.shipsAtSea(s) ? `, ${E.shipsAtSea(s)} at sea` : ""}${s.warships ? `; ${s.warships} trireme${s.warships > 1 ? "s" : ""}` : ""}; ${E.berthsUsed(s)} of ${E.berths(s)} berths used</span>
       <span><i style="background:#2c0819;border:1px dashed #e2bd66"></i>being built</span><span><i style="background:#1f3a22;border:1px solid #9fdcae"></i>growing</span></div>
       <div class="inventions"><p class="eyebrow" style="margin:0 0 4px">Inventions</p>${E.inventionsOf(s).length ? E.inventionsOf(s).map((v) => `<div><b style="font-weight:400;color:var(--gold-pale)">${esc(v.name)}</b>: working. ${esc(v.text)}</div>`).join("") : `<div class="sum">None yet. Engineers and inventors arrive by sea (the sea cards): a new machine keeps paying every season.</div>`}</div>
       ${storesHTML(before)}`;
@@ -942,10 +969,11 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       if (!c) return `<tr><td>${esc(n)}</td><td class="where">in harbour</td><td>ready to sail</td></tr>`;
       const t = E.TOWN[c.town], left = c.arrive - s.turn;
       return `<tr><td>${esc(n)}</td><td class="where">at sea · ${esc(t.name)}</td><td>${goods(c.sold) ? `took ${esc(goods(c.sold))}` : "sailed empty"}${goods(c.cargo) ? `; to bring back ${esc(goods(c.cargo))}` : ""}. Home ${left <= 0 ? "this season" : `in ${left} season${left > 1 ? "s" : ""}`} (${when(c.arrive)}).</td></tr>`; })
-      .concat(s.shipyard.map((k) => `<tr><td>${esc(k.name)}</td><td class="where">on the slipway</td><td>${k.done - s.turn <= 0 ? "launched at the end of this season" : `launched in ${k.done - s.turn} season${k.done - s.turn > 1 ? "s" : ""} (${when(k.done)})`}</td></tr>`)).join("");
+      .concat((s.navy || []).map((n) => `<tr><td>${esc(n)}</td><td class="where">trireme · in the bay</td><td>guards the gulf: pirates come less often, and lose boats before they land; escorts convoys (${E.TRIREME_UPKEEP} denarii a season).</td></tr>`))
+      .concat(s.shipyard.map((k) => `<tr><td>${esc(k.name)}${k.war ? " (trireme)" : ""}</td><td class="where">on the slipway</td><td>${k.done - s.turn <= 0 ? "launched at the end of this season" : `launched in ${k.done - s.turn} season${k.done - s.turn > 1 ? "s" : ""} (${when(k.done)})`}</td></tr>`)).join("");
     const HOW = { safe: "safe", "fair wind": "fair wind", storm: "storm", pirates: "pirates" };
     const v = (s.voyages || []).slice(-6).reverse().map((x) => `<tr><td>${when(x.turn)}</td><td>${esc(x.ship)} · ${esc(E.TOWN[x.town].name)}</td><td>${HOW[x.how]}</td><td class="n">${E.intc(x.money)}</td><td class="n">${E.intc(x.brought)}</td><td class="n">−${E.intc(x.paid)}</td><td class="n ${x.profit >= 0 ? "pos" : "neg"}">${x.profit >= 0 ? "+" : "−"}${E.intc(Math.abs(x.profit))}</td></tr>`).join("");
-    return `<section class="fleet"><h2 style="margin:0">The fleet: ${names.length} ship${names.length === 1 ? "" : "s"}, berths for ${E.berths(s)}</h2>
+    return `<section class="fleet"><h2 style="margin:0">The fleet: ${names.length} merchant galley${names.length === 1 ? "" : "s"}${s.warships ? `, ${s.warships} trireme${s.warships > 1 ? "s" : ""}` : ""} · ${E.berthsUsed(s)} of ${E.berths(s)} berths</h2>
       <div class="fleet-wrap"><table><thead><tr><th>Ship</th><th>Where</th><th>What</th></tr></thead><tbody>${rows || `<tr><td colspan="3">No ships.</td></tr>`}</tbody></table></div>
       <p class="eyebrow" style="margin:0">Ledger of the last voyages</p>
       ${v ? `<div class="fleet-wrap"><table><thead><tr><th>Home</th><th>Ship</th><th>Voyage</th><th class="n">Sold for</th><th class="n">Goods brought</th><th class="n">Paid</th><th class="n">Profit</th></tr></thead><tbody>${v}</tbody></table></div>
@@ -1032,6 +1060,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     async battleCall(enemy, chance) {
       showTab("war");
       gong();
+      if (enemy.kind !== "march") await advisorSpeaks(enemy.who, `To arms: ${enemy.name}`, `“Governor! ${esc(enemy.say)} About ${enemy.men} men, ${esc(enemy.where)}.”`, "", "To the battlefield");
       const draw = () => {
         const odds = E.battleOdds(s, enemy, E.defaultPlan(s, enemy, enemy.who), enemy.who), self = E.battleOdds(s, enemy, E.defaultPlan(s, enemy, "self"), "self"), a = E.ADVISORS[enemy.who];
         const m = s.militia || {}, allies = m.allies || [];
@@ -1145,6 +1174,74 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   let badgeN = 0;
   const coin = (aid) => { const k = ++badgeN, em = String((D.emblems || {})[aid] || "").split(`gold-${aid}`).join(`gold-${aid}-${k}`);
     return `<span class="coinwrap"><span class="coin"><img src="img/advisor-${aid}.webp" alt=""></span><span class="badge">${em}</span></span>`; };
+  // Full-length figures for the important moments (v11): a dark silhouette in the advisor's colour, rimmed in gold, holding his things.
+  const FIG_TINT = { fleet: "#24506a", general: "#6a1830", economist: "#2f5a3a", treasurer: "#6a5020", priest: "#4a2a66" };
+  const HEAD = "M118,40c14,-1 24,9 25,21l5,7 -5,2c1,3 0,6 -3,7l1,3c-2,6 -9,9 -16,9c-12,0 -22,-10 -22,-24c0,-14 6,-24 15,-25Z";
+  const NECK = "M110,82h18l2,18h-22Z";
+  function figureSVG(aid) {
+    const t = FIG_TINT[aid] || "#3a2a55", G = "#e2bd66", body = `url(#fb-${aid})`;
+    const S = (d, extra = "") => `<path d="${d}" fill="${body}" stroke="#f6e3a1" stroke-opacity=".75" stroke-width="1.6" stroke-linejoin="round" ${extra}/>`;
+    const L = (d, w = 3, col = G) => `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const fold = (d) => `<path d="${d}" fill="none" stroke="#f6e3a1" stroke-opacity=".35" stroke-width="1.2"/>`;
+    const head = S(HEAD) + S(NECK), hand = (x, y) => `<circle cx="${x}" cy="${y}" r="6.5" fill="${body}" stroke="#f6e3a1" stroke-opacity=".75" stroke-width="1.4"/>`;
+    const legs = (top, foot) => S(`M100,${top}L98,${foot}L116,${foot}L119,${top + 24}L125,${top + 24}L129,${foot}L147,${foot}L146,${top}Z`) + S(`M95,${foot}h22v8h-26Z`) + S(`M127,${foot}h22l8,8h-30Z`);
+    let fig = "";
+    if (aid === "priest") fig =   // Tertius: veiled, the toga to the ground, the lituus raised, a patera with the liver; a small altar smoking
+      S("M102,62C100,38 118,30 134,36C140,40 137,50 131,54C126,62 128,80 136,96C150,102 156,120 158,150C164,240 170,360 176,462L66,462C70,360 78,230 86,150C88,120 92,100 102,62Z")
+      + S("M118,40c14,-1 24,9 25,21l5,7 -5,2c1,3 0,6 -3,7l1,3c-2,6 -9,9 -16,9c-6,0 -9,-4 -10,-10c4,-10 2,-24 3,-37Z")
+      + fold("M100,140C110,240 104,340 96,456") + fold("M128,150C134,250 140,350 146,456") + fold("M86,206C110,222 140,216 160,198")
+      + S("M140,108C158,120 172,140 182,164l-10,8C162,152 150,138 136,126Z") + L("M176,262L184,62C185,44 168,40 165,52C163,60 174,63 178,55", 3.5) + hand(178, 168)
+      + `<ellipse cx="160" cy="228" rx="15" ry="4.5" fill="${G}"/><path d="M152,226c3,-7 13,-7 15,0" fill="#9b2240"/>` + S("M150,150C158,180 160,205 156,224l-10,2C148,200 146,176 140,156Z") + hand(154, 226)
+      + `<g transform="translate(206,420)"><path d="M-16,42V0h32v42M-20,0h40M-20,42h40" fill="none" stroke="${G}" stroke-width="2.5"/><path d="M0,-4c-8,-10 8,-14 0,-26c-6,-8 6,-14 2,-24" fill="none" stroke="${G}" stroke-width="2" opacity=".75"/></g>`;
+    else if (aid === "general") fig =   // Antistius: helmet with a red crest, cuirass, cloak, the vine rod of command, shield and gladius
+      `<path d="M104,98C80,110 64,200 58,384C72,396 90,396 100,388C96,300 98,200 108,122Z" fill="#5a1426" stroke="#f6e3a1" stroke-opacity=".6" stroke-width="1.4"/>`
+      + `<ellipse cx="84" cy="262" rx="28" ry="60" fill="#2a1430" stroke="${G}" stroke-width="2.2"/><circle cx="84" cy="262" r="8" fill="${G}"/><path d="M84,206v112" stroke="${G}" stroke-width="1.2" opacity=".6"/>`
+      + head + S("M98,64C98,40 140,36 145,58L145,66L98,68Z") + S("M128,64l5,20 -8,2Z") + S("M98,64l-8,12 11,-2Z")
+      + `<path d="M96,52C102,26 140,26 147,48C140,38 104,38 96,52Z" fill="#b8324f" stroke="${G}" stroke-width="1.4"/>`
+      + S("M104,96C96,100 92,110 92,130L96,210L148,210L152,130C152,110 146,100 136,96Z") + fold("M100,150C112,160 136,160 146,150") + fold("M98,178C112,186 136,186 148,178")
+      + S("M94,208h56v36h-56Z") + `<path d="M101,210v34M108,210v34M115,210v34M122,210v34M129,210v34M136,210v34M143,210v34" stroke="${G}" stroke-width="1.1" opacity=".6"/>`
+      + S("M94,242L90,272L154,272L150,242Z") + legs(270, 446)
+      + L("M150,200L166,236", 4, "#d8c8a0") + `<path d="M146,196l8,-3" stroke="${G}" stroke-width="3"/>`
+      + S("M140,104C156,116 164,140 168,164l-10,4C152,148 146,130 134,118Z") + hand(164, 168) + L("M146,196L190,124", 3.6) + `<g fill="${G}"><circle cx="157" cy="178" r="2.6"/><circle cx="168" cy="160" r="2.6"/><circle cx="179" cy="142" r="2.6"/></g>`;
+    else if (aid === "fleet") fig =   // Epicadus: the felt pilos, a full beard, a short belted tunic, the trident and a coil of rope
+      L("M184,466L184,44", 3.5) + L("M170,70C169,52 171,40 173,30M198,70C199,52 197,40 195,30M170,70H198M184,44V22", 3) + `<path d="M171,30l2,-6 2,6M193,30l2,-6 2,6M182,22l2,-7 2,7" fill="${G}"/>`
+      + S("M100,104C90,130 88,170 92,206l12,0C104,170 106,140 110,118Z")
+      + S("M100,96C84,102 80,116 82,140L88,250L84,302L158,302L154,250L158,140C160,116 154,102 138,96Z") + L("M88,222H156", 3) + fold("M100,250L96,300M120,252V300M140,250L146,300")
+      + `<circle cx="102" cy="134" r="17" fill="none" stroke="${G}" stroke-width="2.4"/><circle cx="102" cy="134" r="11" fill="none" stroke="${G}" stroke-width="1.6"/>`
+      + head + S("M100,60C102,34 118,20 130,20C140,26 144,46 143,60Z") + S("M124,74C132,80 142,82 147,76C149,92 137,102 122,98C114,92 115,84 118,78Z")
+      + legs(298, 446) + S("M144,108C162,120 176,150 182,190l-12,4C164,160 152,136 138,124Z") + hand(180, 196) + hand(96, 210);
+    else if (aid === "economist") fig =   // Nikandros: the wide petasos, a chlamys pinned at the shoulder, the merchant's scales, an amphora
+      `<g transform="translate(66,392)" fill="none" stroke="${G}" stroke-width="2.4"><path d="M-8,0h16v8c14,6 18,22 14,36c-4,14 -10,22 -22,22c-12,0 -18,-8 -22,-22c-4,-14 0,-30 14,-36Z"/><path d="M-8,6c-10,-2 -12,10 -6,14M8,6c10,-2 12,10 6,14"/></g>`
+      + head + S("M118,82c-2,6 -4,10 -2,14c8,4 16,2 22,-4c-6,-2 -12,-6 -16,-12Z") + `<ellipse cx="120" cy="50" rx="38" ry="7" fill="${body}" stroke="#f6e3a1" stroke-opacity=".75" stroke-width="1.6"/>` + S("M104,50C104,32 138,32 138,50Z")
+      + S("M102,96C92,104 90,118 92,140L96,300L150,300L152,140C152,118 146,104 136,96Z") + fold("M106,230L102,298M126,232V298M144,230L148,298")
+      + S("M98,98C82,140 78,232 92,292L118,262C108,200 112,140 122,104Z") + `<circle cx="122" cy="104" r="4.5" fill="${G}"/>` + legs(298, 450)
+      + S("M140,106C160,116 176,128 186,140l-6,10C168,140 152,132 136,124Z") + hand(184, 146)
+      + L("M184,150V164M160,164H210M160,164L154,192M160,164L166,192M210,164L204,198M210,164L216,198", 2.2) + `<path d="M149,192Q160,201 171,192Z M199,198Q210,207 221,198Z" fill="${G}"/><circle cx="210" cy="194" r="3" fill="#f6e3a1"/>`;
+    else fig =   // Felix: cropped hair, a long belted tunic, the open wax tablets and stylus, the purse, the strongbox at his feet
+      `<g transform="translate(200,396)"><rect x="-28" y="0" width="56" height="58" rx="3" fill="#2a1a10" stroke="${G}" stroke-width="2.4"/><path d="M-28,18h56M-28,40h56M-10,0v58M10,0v58" stroke="${G}" stroke-width="1.6"/>${[-14, 0, 14].map((x, k) => `<ellipse cx="${x}" cy="${-4 - (k % 2) * 6}" rx="8" ry="3" fill="${G}"/>`).join("")}</g>`
+      + head + `<path d="M102,58c4,-14 22,-20 36,-12" fill="none" stroke="#f6e3a1" stroke-opacity=".6" stroke-width="3" stroke-dasharray="2 3"/>`
+      + S("M102,96C92,104 90,118 92,140L94,342L150,342L152,140C152,118 146,104 136,96Z") + L("M94,204H152", 3) + fold("M104,240L100,338M124,242V338M144,240L148,338")
+      + `<path d="M140,206c-6,6 -6,18 2,22c8,4 16,-2 14,-12c-2,-6 -8,-10 -16,-10Z" fill="${G}"/>` + legs(340, 452)
+      + S("M138,106C156,118 164,140 166,160l-10,4C150,146 144,130 134,120Z") + S("M104,108C110,130 126,150 150,160l2,10C124,164 104,146 98,124Z") + hand(160, 166) + hand(152, 168)
+      + `<path d="M146,146l28,-7 5,32 -28,7Z" fill="#3a2a18" stroke="${G}" stroke-width="2"/><path d="M174,139l26,4 -3,32 -26,-4Z" fill="#3a2a18" stroke="${G}" stroke-width="2"/>`
+      + `<path d="M152,154l18,-4M153,162l18,-4M154,170l12,-3M180,150l14,2M179,158l14,2M178,166l10,1" stroke="${G}" stroke-width="1.1" opacity=".8"/>` + L("M140,182L170,150", 2, "#f6e3a1");
+    return `<svg viewBox="0 0 240 480" role="img" aria-label="${esc(E.ADVISORS[aid] ? E.ADVISORS[aid].name : aid)}, full figure">
+      <defs><linearGradient id="fb-${aid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${t}"/><stop offset="1" stop-color="#120c22"/></linearGradient>
+      <radialGradient id="fg-${aid}" cx=".5" cy=".38" r=".7"><stop offset="0" stop-color="${t}" stop-opacity=".9"/><stop offset=".7" stop-color="#1b1a3e"/><stop offset="1" stop-color="#120c22"/></radialGradient></defs>
+      <rect width="240" height="480" fill="url(#fg-${aid})"/><ellipse cx="120" cy="468" rx="96" ry="10" fill="#0a0718" opacity=".6"/>${fig}</svg>`;
+  }
+  /** A pop-up with an advisor at full length: what he says, and the buttons (data-i) or a single acknowledgement. */
+  function figureHTML(aid, title, text, inner) {
+    const a = E.ADVISORS[aid];
+    return `<div class="dialog figdlg" role="dialog" aria-label="${esc(title)}"><div class="fig">${figureSVG(aid)}</div><div class="side">
+      <p class="eyebrow" style="margin:0">${esc(a.name)} · ${esc(a.title)}</p><h2 style="margin:0">${esc(title)}</h2>${text ? `<p class="voice" style="margin:0">${text}</p>` : ""}${inner}</div></div>`;
+  }
+  window.IllyriaFigure = figureSVG;   // for the design kit's screenshots
+  async function advisorSpeaks(aid, title, text, inner = "", btn = "I hear you") {
+    modal(figureHTML(aid, title, text, inner + `<div class="row"><button class="btn" type="button" data-i="0">${esc(btn)}</button></div>`));
+    await waitPick($("veil"));
+    unmodal();
+  }
   function councilView() {
     $("council").innerHTML = E.COUNCIL_ORDER.map((aid) => {
       const a = E.ADVISORS[aid], st = s.council[aid], state = E.abilityState(s, aid);
@@ -1456,16 +1553,15 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     },
     async ability(aid, question) {
       const a = E.ADVISORS[aid];
-      modal(`<div class="dialog" role="dialog" aria-label="${esc(a.name)}"><div class="head">${coin(aid)}<div><div class="ability">${esc(a.ability_name)}</div>
-        <div class="uses">${esc(a.name)} · ${a.ability_uses === "game" ? "once per governorship" : "once a year"}</div></div></div>
-        <p class="voice">“${esc(question)}”</p>
-        <div class="row"><button class="btn" type="button" data-i="1">Yes, do it</button><button class="btn quiet" type="button" data-i="0">No</button></div></div>`);
+      modal(figureHTML(aid, a.ability_name, `“${esc(question)}”`, `<div class="uses">${a.ability_uses === "game" ? "once per governorship" : "once a year"}</div>
+        <div class="row"><button class="btn" type="button" data-i="1">Yes, do it</button><button class="btn quiet" type="button" data-i="0">No</button></div>`));
       const yes = await waitPick($("veil"));
       unmodal();
       return yes === 1;
     },
-    async choose(title, text, opts) {
-      modal(`<div class="dialog" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2>${text ? `<p class="voice">${esc(text)}</p>` : ""}<div class="choice">${options(opts)}</div></div>`);
+    async choose(title, text, opts, who) {
+      modal(who && E.ADVISORS[who] ? figureHTML(who, title, text ? esc(text) : "", `<div class="choice">${options(opts)}</div>`)
+        : `<div class="dialog" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2>${text ? `<p class="voice">${esc(text)}</p>` : ""}<div class="choice">${options(opts)}</div></div>`);
       const i = await waitPick($("veil"));
       unmodal();
       return i;
@@ -1531,7 +1627,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
 
   // ---------- the order desk: plans, actions, the order book ----------
   const GROUPS = [["Treasury and law", ["raise_taxes", "lower_taxes", "hear_petitions", "hang_brigands"]],
-    ["Building and planting", ["build", "clear_land"]], ["Sea and trade", ["send_convoy", "merchants", "build_ship"]], ["The garrison", ["recruit", "refill_ranks", "dismiss", "train_slingers", "raise_archers", "raise_cavalry", "build_engine", "build_ballista", "arm_pila", "arm_gladius"]],
+    ["Building and planting", ["build", "clear_land", "commission_press"]], ["Sea and trade", ["send_convoy", "merchants", "build_ship", "build_warship"]], ["The garrison", ["recruit", "refill_ranks", "dismiss", "train_slingers", "raise_archers", "raise_cavalry", "build_engine", "build_ballista", "arm_pila", "arm_gladius"]],
     ["Gods and Rome", ["visit_temple", "hold_festival", "honour_tiberius", "honour_rome"]], ["The council", ["listen_sages"]]];
   const PLAN_MARK = { bold: "A", prudent: "B" };
   let plansNow = [];
@@ -1571,7 +1667,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   /** Every action, for those who want them all: grouped, in a dialog. */
   function allActions() {
     const GROUPS = [["Treasury and law", ["raise_taxes", "lower_taxes", "hear_petitions", "hang_brigands"]],
-      ["Building and planting", ["build", "clear_land"]], ["Sea and trade", ["send_convoy", "merchants", "build_ship"]], ["The garrison", ["recruit", "refill_ranks", "dismiss", "train_slingers", "raise_archers", "raise_cavalry", "build_engine", "build_ballista", "arm_pila", "arm_gladius"]],
+      ["Building and planting", ["build", "clear_land", "commission_press"]], ["Sea and trade", ["send_convoy", "merchants", "build_ship", "build_warship"]], ["The garrison", ["recruit", "refill_ranks", "dismiss", "train_slingers", "raise_archers", "raise_cavalry", "build_engine", "build_ballista", "arm_pila", "arm_gladius"]],
       ["Gods and Rome", ["visit_temple", "hold_festival", "honour_tiberius", "honour_rome"]], ["The frontier", ["treat_tribe", "march_tribe"]], ["The council", ["listen_sages"]]];
     openVeil(`<div class="dialog wide" role="dialog" aria-label="All actions"><h2>All actions</h2><div class="groups">${GROUPS.map(([label, ids]) => `<div class="group"><h4>${label}</h4><div class="acts">${ids.map((id) => {
       const d = E.DECREE[id], c = E.num(d.cost_treasury), mats = E.parseList(d.cost);
@@ -1656,7 +1752,7 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
       const n = (k) => E.num(b[k]);
       const time = `${n("seasons_to_build")} season${n("seasons_to_build") !== 1 ? "s" : ""} to build${n("matures") ? `, first yield ${n("matures")} after` : ""}${n("ramp") > 1 ? `, full in ${n("ramp")} more` : ""}`;
       const cost = [c ? E.intc(c) + " den" : "", ...Object.entries(mats).map(([g, q]) => `<span class="${q > s[g] ? "short" : ""}">${q} ${esc(E.nameOf(g).toLowerCase())}</span>`)].filter(Boolean).join(", ");
-      return `<button class="pick" type="button" data-b="${b.id}" ${fits ? "" : "disabled"}>${icon(b.id, 38)}<span><span class="t">${esc(b.name)}</span> <span class="d">· ${b.zone === "town" ? "in town" : "in the fields"}</span><br><span class="d">${esc(clean(b.notes))} ${esc(time)}.</span>${fits ? "" : `<br><span class="d short">${esc(probs[probs.length - 1] || "")}</span>`}</span><span class="c">${cost || "free"}</span></button>`;
+      return `<button class="pick" type="button" data-b="${b.id}" ${fits ? "" : "disabled"}>${icon(b.id, 38)}<span><span class="t">${esc(b.name)}</span> <span class="d">· ${b.zone === "town" ? "in town" : b.zone === "hill" ? "on the crag" : "in the fields"}</span><br><span class="d">${esc(clean(b.notes))} ${esc(time)}.</span>${fits ? "" : `<br><span class="d short">${esc(probs[probs.length - 1] || "")}</span>`}</span><span class="c">${cost || "free"}</span></button>`;
     }).join("");
     openVeil(`<div class="dialog wide" role="dialog" aria-label="Build or plant"><h2>${zone === "town" ? "Build inside the walls" : zone === "field" ? "Build or plant in the fields" : zone === "hill" ? "Build on the crag" : "Build or plant"}</h2>
       <div class="picklist">${rows}</div><div class="row"><button class="btn quiet" type="button" data-close>Cancel</button></div></div>`);
@@ -1734,10 +1830,7 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     showNews();
     say = {}; book = [];
     const [season, year] = E.seasonOf(s.turn);
-    const rows = E.NUMBERS.filter((n) => Math.abs(s[n] - (before[n] || 0)) >= 0.05).map((n) => {
-      const d = s[n] - (before[n] || 0);
-      return `<tr><td>${esc(E.nameOf(n))}</td><td>${E.fmt(n, before[n] || 0)}</td><td>${E.fmt(n, s[n])}</td><td class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${E.fmt(n, Math.abs(d))}</td></tr>`;
-    }).join("");
+    const dash = dashboardHTML(before);
     const history = (s.season_cards || []).map((id) => D.cards.find((c) => c.id === id)).filter((c) => c && String(c.historical_note || "").trim())
       .map((c) => `History (${c.title}): ${String(c.historical_note).replace(/\s+/g, " ")}`);
     const list = notes.map((t) => `<li>${esc(t)}</li>`).join("") + history.map((t) => `<li class="history">${esc(t)}</li>`).join("");
@@ -1759,12 +1852,47 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season ends</p>
       <h2>${done ? "The end of your governorship" : "The scribe's report"}</h2>${done ? `<p class="voice">${esc(done)} You governed for ${s.turn - 1} seasons.</p>${scoreHTML()}` : ""}
-      ${review}<p class="eyebrow" style="margin:16px 0 6px">The scribe's record</p>
+      ${dash}${review}<p class="eyebrow" style="margin:16px 0 6px">The scribe's record</p>
       <ul class="notes">${list || "<li>A quiet season.</li>"}</ul>
-      ${rows ? `<div style="overflow-x:auto;margin-top:14px"><table class="changes"><tbody>${rows}</tbody></table></div>` : ""}
       <div class="row" style="margin-top:14px"><button class="btn" type="button" id="next">${done ? "Govern again" : "Next season"}</button></div></section>`;
     $("next").onclick = () => { if (done) { s = E.newGame(); intro(); } else startSeason(); };
     $("cardsbar").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
+    if (!done) await afterSeason(s.turn - 1);
+  }
+  /** The season's numbers as cards: the value, the change with an arrow, and a sparkline of the last seasons. */
+  function sparkSVG(n, now) {
+    const pts = (s.history || []).map((h) => [h.turn, h[n]]).filter(([, v]) => typeof v === "number");
+    if (!pts.length || pts[pts.length - 1][1] !== Math.round(now * 10) / 10) pts.push([s.turn - 1, Math.round(now * 10) / 10]);
+    if (pts.length < 2) return "";
+    const vs = pts.map(([, v]) => v), lo = Math.min(...vs), hi = Math.max(...vs), W = 120, H = 24;
+    const xy = pts.map(([, v], i) => [i / (pts.length - 1) * W, H - (hi === lo ? H / 2 : (v - lo) / (hi - lo) * H)]);
+    const [lx, ly] = xy[xy.length - 1];
+    return `<svg viewBox="-3 -3 ${W + 6} ${H + 6}" preserveAspectRatio="none" aria-hidden="true"><path d="M${xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L")}" fill="none" stroke="#e2bd66" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><circle cx="${lx}" cy="${ly}" r="3" fill="#f6e3a1"/></svg>`;
+  }
+  function kpiHTML(n, before, warnIf) {
+    const v = s[n], d = v - (before[n] || 0), unit = n === "grain" ? "months" : n === "loyalty" || n === "favour" ? "/100" : "";
+    const pts = (s.history || []).map((h) => `${E.seasonOf(h.turn)[0].season} AD ${E.seasonOf(h.turn)[1]}: ${E.fmt(n, h[n] ?? 0)}`).join("\n");
+    const flat = Math.abs(d) < .05, sign = flat ? "· no change" : `${d > 0 ? "▲ +" : "▼ −"}${E.fmt(n, Math.abs(d))}`;
+    return `<div class="kpi${warnIf ? " warn" : ""}" title="${esc(E.nameOf(n))}${pts ? "\n" + esc(pts) : ""}"><span class="k">${esc(E.nameOf(n))}</span><span class="v">${E.fmt(n, v)}${unit ? `<small>${unit}</small>` : ""}</span>
+      <span class="d ${flat ? "flat" : d > 0 ? "up" : "down"}">${sign}</span>${sparkSVG(n, v)}</div>`;
+  }
+  function dashboardHTML(before) {
+    const core = E.CORE.map((n) => kpiHTML(n, before, (n === "grain" && s.grain < 3) || (n === "loyalty" && s.loyalty < E.REBELLION_BELOW + 5) || (n === "favour" && s.favour < 30))).join("");
+    const goods = E.GOODS.filter((g) => s[g] > 0 || Math.abs(s[g] - (before[g] || 0)) >= 1).map((g) => kpiHTML(g, before, false)).join("");
+    return `<p class="eyebrow" style="margin:6px 0 6px">The season in numbers</p><div class="kpis">${core}</div>
+      ${goods ? `<p class="eyebrow" style="margin:12px 0 6px">The stores</p><div class="kpis goods">${goods}</div>` : ""}`;
+  }
+  /** After the report: the haruspex's reading, and what the inventions brought, as pop-ups. */
+  async function afterSeason(turn) {
+    const pr = s.prophecy;
+    if (pr && pr.turn === turn) await advisorSpeaks("priest", "The liver speaks", "", `<ul class="signs">${pr.signs.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>${pr.advice ? `<p style="margin:0"><b style="font-weight:400;color:var(--gold-pale)">His advice:</b> ${esc(pr.advice.say)}</p>` : ""}`, "So be it");
+    const inv = s.inv_report || [], made = inv.filter((x) => x.good);
+    if (made.length) {
+      const price = (g) => E.num((D.goods.find((x) => x.id === g) || {}).price);
+      const lines = inv.map((x) => x.good ? `${x.name} brings us <b style="font-weight:400;color:var(--gold-pale)">${x.extra} more ${esc(x.unit)} of ${esc(E.nameOf(x.good).toLowerCase())}</b> this season: ${x.base + x.extra} instead of ${x.base}, worth about ${E.intc(x.extra * price(x.good))} denarii at market.`
+        : `${x.name} brings <b style="font-weight:400;color:var(--gold-pale)">${E.intc(x.rent)} denarii</b> ${esc(x.text)}.`);
+      await advisorSpeaks("economist", "What the machines brought", "", `<ul class="signs">${lines.map((t) => `<li>${t}</li>`).join("")}</ul>`, "Excellent");
+    } else if (inv.length) toast("⚙ " + inv.map((x) => `${x.name}: +${x.rent} denarii ${x.text}`).join("; "), "news", 8000);
   }
 
   const DIE_LABEL = { opal: "opal", aquamarine: "aquamarine", onyx: "onyx" };
