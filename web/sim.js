@@ -65,13 +65,14 @@ E.setUI(ui);
       }
       const sc = E.score(s);
       const tribes = E.TRIBES.map((t) => E.tribeState(s, t.id).state[0]).join("");
-      res.push({ fin: !!s.finished, turn: s.turn - 1, score: sc.total, people: s.people, treasury: s.treasury, loy: s.loyalty, fav: s.favour, army: s.army, ships: s.ships, tribes, over: s.over, p12: peopleAt[12], p24: peopleAt[24], p36: peopleAt[36] });
+      res.push({ fin: !!s.finished, turn: s.turn - 1, score: sc.total, people: s.people, treasury: s.treasury, loy: s.loyalty, fav: s.favour, army: s.army, ships: s.ships, tribes, over: s.over, victory: s.victory || null, p12: peopleAt[12], p24: peopleAt[24], p36: peopleAt[36] });
     }
     const avg = (k) => Math.round(res.reduce((a, r) => a + (r[k] || 0), 0) / res.length);
     const fin = res.filter((r) => r.fin).length;
+    const vic = {}; for (const r of res) if (r.victory) vic[r.victory] = (vic[r.victory] || 0) + 1;
     const why = {}; for (const r of res.filter((r) => !r.fin)) { const k = r.over.split(":")[0]; why[k] = (why[k] || 0) + 1; }
     const won = res.reduce((a, r) => a + (r.tribes.match(/[ac]/g) || []).length, 0);
-    console.log(`${style.padEnd(8)} finished ${fin}/${N}  score ${avg("score")}  people ${avg("people")} (t12 ${avg("p12")}, t24 ${avg("p24")}, t36 ${avg("p36")})  treasury ${avg("treasury")}  loyalty ${avg("loy")}  favour ${avg("fav")}  army ${avg("army")}  ships ${avg("ships")}  rebellions ${log.reb || 0}  tribes won ${won}  lost: ${JSON.stringify(why)}`);
+    console.log(`${style.padEnd(8)} finished ${fin}/${N}  score ${avg("score")}  people ${avg("people")} (t12 ${avg("p12")}, t24 ${avg("p24")}, t36 ${avg("p36")})  treasury ${avg("treasury")}  loyalty ${avg("loy")}  favour ${avg("fav")}  army ${avg("army")}  ships ${avg("ships")}  rebellions ${log.reb || 0}  victories ${JSON.stringify(vic)}  tribes won ${won}  lost: ${JSON.stringify(why)}`);
     console.log(`         per game: quakes ${(log.quakes / N).toFixed(2)}, letters ${(log.letters / N).toFixed(1)}, gambles ${(log.gambles / N).toFixed(1)}, dice ${(log.rolls / N).toFixed(1)} (won ${Math.round(100 * log.wins / Math.max(1, log.rolls))}%), card dice ${JSON.stringify(tiers)}`);
     console.log(`         battles: ${war.n || 0} (${((war.n || 0) / N).toFixed(1)} a game), won ${Math.round(100 * (war.won || 0) / Math.max(1, war.n || 0))}%, expected ${Math.round((war.chance || 0) / Math.max(1, war.n || 0))}%${war.shut ? `; gates shut ${war.shut}` : ""}${war.self ? `; led in person ${war.self}, fell or taken ${war.fell || 0}` : ""}`);
   }

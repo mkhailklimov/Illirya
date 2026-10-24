@@ -17,3 +17,4 @@ saltpans,Salt pans,Salt,field,0,2,300,,2,0,0,Summer,salt 10,,,,,,,,,,,,DRAFT. Se
 woodcutters,Woodcutters' camp,Wood,field,1,3,250,iron 1,1,0,2,any,timber 4,,,,,,,,,,,,DRAFT. 4 loads of timber a season once the paths are cut.
 mine,Iron mine,Mine,field,0,2,900,timber 10,4,0,2,any,iron 3,,,,,,,,,,,,DRAFT. 3 bars of iron a season. Two shafts at most.
 arx,Citadel on the hill,Citadel,hill,0,1,2500,timber 20; iron 6,8,,,,,,,,,1,,,,5,,,"DRAFT. A fortress on the crag above the town, joined to the walls. +5 when the enemy storms the town. Two years to build (v11: cheaper, 20 timber and 6 iron). Click the dashed citadel site on the crag in the orders phase."
+wonder,Sanctuary of Cadmus and Harmonia,Sanctuary,town,0,1,15000,marble 60; timber 40; bronze 20,12,,,,,,,,5,5,,,,,,,"DRAFT (v12). A wonder of the Adriatic for the serpent-founders of Illyria. Needs the temple first. Three years to build. When it is finished the coast hails you as a living god: a religious victory."

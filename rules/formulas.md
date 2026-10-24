@@ -129,6 +129,17 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v12 (24 October 2026, later): four victories, one great prophecy a year
+
+- **Four paths to victory** (the Glory tab shows each one's progress). A victory ends the game at once in triumph (+150 to the score):
+  - *The purple* (political): in the season an Emperor dies (the letters of Spring AD 37 and Winter AD 40), if Roman favour ≥ 90, loyalty ≥ 70, soldiers ≥ 500 and people ≥ 6,000, the soldiers hail you Imperator. Accept: victory. Refuse: favour +10, the game goes on.
+  - *The sword* (war): soldiers (infantry, slingers, archers, horsemen) ≥ 1,000 and all three tribes won (allied or conquered).
+  - *The gods* (religious): the Sanctuary of Cadmus and Harmonia is finished: a town building, 15,000 denarii, 60 marble, 40 timber, 20 bronze, 12 seasons, the temple first.
+  - *The purse* (economic): 100,000 denarii in the chest at the end of a season.
+  - Otherwise the game ends in the winter of AD 42 with the score, as before.
+- **The haruspex speaks once a year**, at the first sacrifice of the year, and only of the most important thing to come, in this order: an Emperor's death or a revolt against Caesar within the next four seasons (the dated letters); the town rising (loyalty below 58, or already restless); pirates, or any raid with poor odds (+1 forewarned); a dark omen next season; famine (the harvest forecast leaves under 3 months); otherwise the coming raid, or a quiet year. Each comes with one order. Give it within four seasons: loyalty +2 and favour +2 on top of the order's own effect. "Do as he says" in the pop-up puts the order into next season's book. Later sacrifices that year still please the gods and bless ships at sea (+2), but he will not read the liver again. A bad die means silence, and he can try again next season.
+- **The city map** places the harbour by the quay, the fisheries and salt pans on the open field plots nearest the bay, the forum in the middle, and everything else inland.
+
 ## Rules v11 (24 October 2026): triremes, six berths, the press to order, the haruspex sees the harvest
 
 - **Six berths.** One harbour (no second one) holds 6 ships at most: merchant galleys and triremes together, keels on the slipway included.

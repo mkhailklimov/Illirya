@@ -259,6 +259,17 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .kpi svg { width: 100%; height: 28px; display: block; margin-top: 4px; overflow: visible; }
 .kpi.warn { border-color: var(--bad); }
 .figdlg { width: min(760px, 100%); display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 18px; align-items: start; }
+.notice-dlg .voice { font-size: 20px; line-height: 1.45; }
+.glory { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.path { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: rgba(44, 8, 25, .55); display: grid; gap: 8px; }
+.path h3 { margin: 0; font: 400 22px/1.1 var(--f-display); color: var(--gold); }
+.path .kind { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); }
+.path .bar { height: 8px; border-radius: 4px; background: rgba(226, 189, 102, .15); overflow: hidden; }
+.path .bar i { display: block; height: 100%; border-radius: 4px; background: var(--gold); }
+.path .bar i.done { background: var(--good); }
+.path ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.path li { display: grid; gap: 3px; font-size: 14px; }
+.path li span.n { font-variant-numeric: tabular-nums; color: var(--gold-pale); }
 .figdlg .fig { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
 .figdlg .fig svg { display: block; width: 100%; height: auto; }
 .figdlg .side { display: grid; gap: 10px; min-width: 0; }
@@ -404,16 +415,18 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
         <button class="tab" role="tab" id="tab-city" aria-selected="true" aria-controls="sheet-city" type="button"><b>Acruvium</b> city sheet</button>
         <button class="tab" role="tab" id="tab-sea" aria-selected="false" aria-controls="sheet-sea" type="button"><b>Adriatic</b> map</button>
         <button class="tab" role="tab" id="tab-war" aria-selected="false" aria-controls="sheet-war" type="button"><b>Battlefield</b></button>
+        <button class="tab" role="tab" id="tab-glory" aria-selected="false" aria-controls="sheet-glory" type="button"><b>Glory</b> paths to victory</button>
       </div>
       <section class="sheet" id="sheet-city" role="tabpanel" aria-labelledby="tab-city"></section>
       <section class="sheet" id="sheet-sea" role="tabpanel" aria-labelledby="tab-sea" hidden></section>
       <section class="sheet" id="sheet-war" role="tabpanel" aria-labelledby="tab-war" hidden></section>
+      <section class="sheet" id="sheet-glory" role="tabpanel" aria-labelledby="tab-glory" hidden></section>
     </div>
     <section class="panel"><p class="eyebrow">Your council</p><div class="council" id="council"></div></section>
   </div>
   <div class="stage" id="stage"></div>
   <footer>
-    <span>Phase 0 playtest · rules v11 · all numbers DRAFT</span>
+    <span>Phase 0 playtest · rules v12 · all numbers DRAFT</span>
     <span class="opts" id="opts"></span>
   </footer>
 </div>
@@ -511,6 +524,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
 
   // ---------- building icons (40x40 box around 0,0) ----------
   const I = {
+    wonder: '<path d="M-18,-5L0,-17 18,-5ZM-16,-5h32M-13,-2v13M-6.5,-2v13M0,-2v13M6.5,-2v13M13,-2v13M-17,11h34M-19,14h38"/><path d="M-5,-9c3,-4 7,-2 5,1c-2,3 2,4 4,1" stroke-width="1.4"/>',
     forum: '<path d="M-16,14h32M-14,10h28M-12,10V-4M12,10V-4M-4,10V0a4,4 0 0 1 8,0v10M-14,-4h28L0,-14Z"/>',
     houses: '<path d="M-17,14V0l9,-8 9,8v14M1,14V-3l8,-7 8,7v17M-11,14V7h5v7M6,6h5"/>',
     harbour: '<path d="M0,-12v26M-8,-6h16M-14,4c2,8 8,11 14,11s12,-3 14,-11M-14,4l-3,4M14,4l3,4"/><circle cx="0" cy="-15" r="3"/>',
@@ -734,6 +748,17 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   const scaleSVG = (x, y) => `<g transform="translate(${x},${y})" font-family="Marcellus" font-size="10" fill="${MAP.ink}">
     ${[0, 1, 2, 3].map((k) => `<rect x="${k * 28}" y="0" width="28" height="5" fill="${k % 2 ? MAP.paper : MAP.ink}" stroke="${MAP.ink}" stroke-width=".8"/>`).join("")}
     <text x="0" y="17" text-anchor="middle">0</text><text x="112" y="17" text-anchor="middle">M</text><text x="56" y="-5" text-anchor="middle" letter-spacing="2">PASSVS</text></g>`;
+  const SHORE = ["harbour", "fishery", "saltpans"];
+  const TOWN_SEA = [2, 1, 3, 0, 6, 5, 7, 4], TOWN_LAND = [11, 9, 8, 10, 6, 4, 7, 5, 0, 3, 1, 2], TOWN_CENTRE = 5;
+  /** Which town slot each building stands on (slot index -> index in the sorted list, -1 free): the harbour by the quay, the forum in the middle, the rest inland. */
+  function townSlots(list) {
+    const at = new Array(TOWN_SLOTS.length).fill(-1), used = new Set(), placed = new Set();
+    const put = (bi, order) => { const k = order.find((j) => !used.has(j)); if (k !== undefined) { at[k] = bi; used.add(k); placed.add(bi); } };
+    list.forEach((b, bi) => { if (b.kind === "forum" && !used.has(TOWN_CENTRE)) put(bi, [TOWN_CENTRE]); });
+    list.forEach((b, bi) => { if (!placed.has(bi) && SHORE.includes(b.kind)) put(bi, TOWN_SEA); });
+    list.forEach((b, bi) => { if (!placed.has(bi)) put(bi, TOWN_LAND); });
+    return at;
+  }
   function citySVG() {
     const town = sortedPlots("town"), fields = sortedPlots("field"), hill = sortedPlots("hill");
     const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
@@ -811,9 +836,9 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       ${roofsSVG()}
       ${ships}${keels}
       </g>
-      ${TOWN_SLOTS.map(down).map(([x, y], i) => plotSVG(town[i], x, y, "town", i)).join("")}
+      ${(() => { const at = townSlots(town); return TOWN_SLOTS.map(down).map(([x, y], j) => plotSVG(at[j] >= 0 ? town[at[j]] : undefined, x, y, "town", at[j])).join(""); })()}
       ${plotSVG(hill[0], HILL_SLOT[0], HILL_SLOT[1] + BAND, "hill", 0)}
-      ${fieldLayout().map((p, i) => p.kind === "open" ? plotSVG(fields[p.k], p.x, p.y, "field", p.k) : p.kind === "scrub" ? scrubSVG(p.x, p.y, p.left) : lockedSVG(p.x, p.y, p.tribe)).join("")}
+      ${fieldLayout().map((p, i) => p.kind === "open" ? plotSVG(p.k >= 0 ? fields[p.k] : undefined, p.x, p.y, "field", p.k) : p.kind === "scrub" ? scrubSVG(p.x, p.y, p.left) : lockedSVG(p.x, p.y, p.tribe)).join("")}
       <g pointer-events="none"><rect width="1000" height="${600 + BAND}" filter="url(#stain)"/><rect width="1000" height="${600 + BAND}" filter="url(#paper)"/><rect width="1000" height="${600 + BAND}" fill="url(#vign)"/>
         <rect x="3" y="3" width="994" height="${594 + BAND}" fill="none" stroke="${MAP.ink}" stroke-width="2"/>
         <rect x="7.5" y="7.5" width="985" height="${585 + BAND}" fill="none" stroke="${MAP.ink}" stroke-width="3.4" stroke-dasharray="24 24"/>
@@ -829,8 +854,16 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       else { const j = i - cleared; out.push({ kind: "scrub", x, y, left: j < clearing.length ? clearing[j] - s.turn : 0 }); }
     });
     E.TRIBES.forEach((t, ti) => tribeSlots(ti).map(corner).forEach(([x, y]) => {
-      out.push(E.tribeWon(s, t.id) ? { kind: "open", x, y, k: k++ } : { kind: "locked", x, y, tribe: t.id });
+      out.push(E.tribeWon(s, t.id) ? { kind: "open", x, y, k: k++, far: true } : { kind: "locked", x, y, tribe: t.id });
     }));
+    // fisheries and salt pans take the open plots nearest the bay; everything else the rest, in order
+    const fields = sortedPlots("field"), opens = out.filter((p) => p.kind === "open"), used = new Set();
+    const SEA_PTS = [[330, 126], [330, 300], [330, 488], [250, 548]];
+    const seaDist = (p) => (p.far ? 9999 : 0) + Math.min(...SEA_PTS.map(([a, b]) => Math.hypot(p.x + PW / 2 - a, p.y + PH / 2 - BAND - b)));
+    const bySea = [...opens].sort((a, b) => seaDist(a) - seaDist(b));
+    opens.forEach((p) => (p.k = -1));
+    fields.forEach((b, bi) => { if (SHORE.includes(b.kind)) { const p = bySea.find((q) => !used.has(q)); if (p) { p.k = bi; used.add(p); } } });
+    fields.forEach((b, bi) => { if (!SHORE.includes(b.kind)) { const p = opens.find((q) => !used.has(q)); if (p) { p.k = bi; used.add(p); } } });
     return out;
   }
   function lockedSVG(x, y, tribe) {
@@ -1233,7 +1266,8 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   /** A pop-up with an advisor at full length: what he says, and the buttons (data-i) or a single acknowledgement. */
   function figureHTML(aid, title, text, inner) {
     const a = E.ADVISORS[aid];
-    return `<div class="dialog figdlg" role="dialog" aria-label="${esc(title)}"><div class="fig">${figureSVG(aid)}</div><div class="side">
+    // a picture made from design/prompts/advisor-figures.md covers the line drawing when it exists
+    return `<div class="dialog figdlg" role="dialog" aria-label="${esc(title)}"><div class="fig" style="position:relative">${figureSVG(aid)}${(D.figures || []).includes(aid) ? `<img src="img/figure-${aid}.webp" alt="" onerror="this.remove()" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : ""}</div><div class="side">
       <p class="eyebrow" style="margin:0">${esc(a.name)} · ${esc(a.title)}</p><h2 style="margin:0">${esc(title)}</h2>${text ? `<p class="voice" style="margin:0">${text}</p>` : ""}${inner}</div></div>`;
   }
   window.IllyriaFigure = figureSVG;   // for the design kit's screenshots
@@ -1311,20 +1345,34 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       <p style="margin:0">${r ? `${esc(r.why)}: rolled ${r.r}${r.bonus ? ` ${r.bonus > 0 ? "+" : "−"} ${Math.abs(r.bonus)} = ${r.total}` : ""}, needed ${r.target}. ${esc(r.tag)}.` : "No die has been rolled yet. The d20 decides battles, risky choices on the cards, and every voyage home."}</p>
       <div class="row" style="justify-content:center"><button class="btn" type="button" data-close>Close</button></div></div>`);
   };
-  function toast(t, cls = "", ms = 6000) { const d = document.createElement("div"); d.className = "toast" + (cls ? " " + cls : ""); d.textContent = t; $("toasts").appendChild(d); setTimeout(() => d.remove(), ms); }
+  // v12: no small messages. Every notice is a full pop-up, one after another; news comes from the advisor it concerns, at full length.
+  const noticeQ = []; let noticeOpen = null;
+  function bigNotice(n) { noticeQ.push(n); pumpNotice(); }
+  function pumpNotice() {
+    if (noticeOpen || !$("veil").hidden || !noticeQ.length) return;
+    noticeOpen = noticeQ.shift();
+    const row = `<div class="row"><button class="btn" type="button" data-close>${esc(noticeOpen.btn || "Close")}</button></div>`;
+    openVeil(noticeOpen.aid ? figureHTML(noticeOpen.aid, noticeOpen.title, "", noticeOpen.html + row)
+      : `<div class="dialog notice-dlg" role="dialog" aria-label="${esc(noticeOpen.title)}"><p class="eyebrow" style="margin:0">The scribe</p><h2 style="margin:0">${esc(noticeOpen.title)}</h2><p class="voice" style="margin:0">${noticeOpen.html}</p>${row}</div>`);
+  }
+  function toast(t) { bigNotice({ title: "A note from the scribe", html: esc(t) }); }
+  function oldToast(t, cls = "", ms = 6000) { const d = document.createElement("div"); d.className = "toast" + (cls ? " " + cls : ""); d.textContent = t; $("toasts").appendChild(d); setTimeout(() => d.remove(), ms); }
   /** The season's news (rules v9): a ship launched, a convoy home with its profit or loss, a prize, an invention. */
   function showNews() {
-    const MARK = { ship: "⚓ ", voyage: "⛵ ", invention: "⚙ ", land: "🌿 ", rebellion: "⚔ ", omen: "☉ " };
-    (s.news || []).forEach((n, k) => setTimeout(() => toast((MARK[n.kind] || "") + n.text, "news", 10000), k * 700));
+    const WHO = { ship: "fleet", voyage: "fleet", invention: "economist", land: "economist", rebellion: "general" };
+    const TITLE = { fleet: "News from the harbour", economist: "News from the market", general: "News from the garrison" };
+    const by = {};
+    for (const n of s.news || []) if (WHO[n.kind]) (by[WHO[n.kind]] = by[WHO[n.kind]] || []).push(n.text);
+    for (const [aid, list] of Object.entries(by)) bigNotice({ aid, title: TITLE[aid], html: `<ul class="signs">${list.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` });
     s.news = [];
   }
 
   // ---------- overlay ----------
   function openVeil(html) { const v = $("veil"); v.innerHTML = html; v.hidden = false; v.querySelectorAll("[data-close]").forEach((b) => (b.onclick = closeVeil)); const f = v.querySelector("button, input, select"); if (f) f.focus(); }
-  function closeVeil() { $("veil").hidden = true; $("veil").innerHTML = ""; }
+  function closeVeil() { $("veil").hidden = true; $("veil").innerHTML = ""; if (noticeOpen) { noticeOpen = null; } setTimeout(pumpNotice, 120); }
   $("veil").addEventListener("click", (e) => { if (e.target === $("veil") && $("veil").dataset.lock !== "1") closeVeil(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("veil").hidden && $("veil").dataset.lock !== "1") closeVeil(); });
-  function modal(html) { $("veil").dataset.lock = "1"; openVeil(html); }
+  function modal(html) { if (noticeOpen) { noticeQ.unshift(noticeOpen); noticeOpen = null; } $("veil").dataset.lock = "1"; openVeil(html); }
   function unmodal() { delete $("veil").dataset.lock; closeVeil(); }
   const options = (opts) => opts.map((o, i) => `<button class="opt" type="button" data-i="${i}"><span class="key">${"ABCDEFG"[i]}</span><span class="what">${esc(o.label)}</span><span class="sub">${esc(o.sub || "")}</span></button>`).join("");
   const waitPick = (root) => new Promise((res) => root.querySelectorAll("[data-i]").forEach((b) => (b.onclick = () => res(+b.dataset.i))));
@@ -1578,15 +1626,25 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   Object.assign(ui, warUI);
   E.setUI(ui);
 
-  function refresh(before) { ledger(before); councilView(); cityView(before); seaView(); if (phase !== "battle") warIdle(); compassView(); cornerDie(); }
+  function refresh(before) { ledger(before); councilView(); cityView(before); seaView(); if (phase !== "battle") warIdle(); gloryView(); compassView(); cornerDie(); }
+  function gloryView() {
+    const paths = E.glory(s), fmtN = (n) => E.intc(n);
+    $("sheet-glory").innerHTML = `<p class="eyebrow" style="margin:0">Four paths to glory</p>
+      <p style="margin:0">Govern well until the winter of AD 42 and you are judged by your score. Or win outright, and the game ends in triumph. Four ways:</p>
+      <div class="glory">${paths.map((p) => `<div class="path"><span class="kind">${esc(p.kind)}</span><h3>${esc(p.name)}</h3><p style="margin:0">${esc(p.goal)}</p>
+        <div class="bar" role="img" aria-label="${p.pct}% of the way"><i class="${p.pct >= 100 ? "done" : ""}" style="width:${p.pct}%"></i></div>
+        <ul>${p.parts.map(([label, now, need]) => `<li><span>${esc(label)}: <span class="n">${fmtN(now)}</span> of ${fmtN(need)}${now >= need ? " ✓" : ""}</span><div class="bar"><i class="${now >= need ? "done" : ""}" style="width:${Math.min(100, Math.round(100 * now / need))}%"></i></div></li>`).join("")}</ul>
+        <p class="sum" style="margin:0">${esc(p.note)}</p></div>`).join("")}</div>`;
+  }
 
   // ---------- tabs ----------
   function showTab(which) {
-    for (const t of ["city", "sea", "war"]) { $("tab-" + t).setAttribute("aria-selected", String(t === which)); $("sheet-" + t).hidden = t !== which; }
+    for (const t of ["city", "sea", "war", "glory"]) { $("tab-" + t).setAttribute("aria-selected", String(t === which)); $("sheet-" + t).hidden = t !== which; }
   }
   $("tab-city").onclick = () => showTab("city");
   $("tab-sea").onclick = () => showTab("sea");
   $("tab-war").onclick = () => showTab("war");
+  $("tab-glory").onclick = () => showTab("glory");
 
   // ---------- the season ----------
   function save() { store.set(KEY, JSON.stringify(s)); }
@@ -1663,6 +1721,12 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       if (r.orders.length) addOrders(r.orders);
     };
     renderBook();
+    if (s.heed) {   // the haruspex's advice, accepted last season, goes into the orders
+      const o = s.heed; s.heed = null; save();
+      const [ok, probs] = E.validate(s, [o]);
+      if (ok.length) { addOrders([o]); bigNotice({ aid: "priest", title: "As you promised", html: `<p class="voice" style="margin:0">“The gods are watching, Governor. Your order is written: ${esc(E.describe(s, o))}.” You may change it.</p>`, btn: "Seal it later" }); }
+      else bigNotice({ aid: "priest", title: "The advice cannot be done now", html: `<p class="voice" style="margin:0">“${esc(E.describe(s, o))}: ${esc(probs[0] || "not possible this season")}. Try again before the year is out.”</p>` });
+    }
   }
   /** Every action, for those who want them all: grouped, in a dialog. */
   function allActions() {
@@ -1851,13 +1915,14 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     if (done) store.del(KEY); else save();
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season ends</p>
-      <h2>${done ? "The end of your governorship" : "The scribe's report"}</h2>${done ? `<p class="voice">${esc(done)} You governed for ${s.turn - 1} seasons.</p>${scoreHTML()}` : ""}
+      <h2>${done ? (s.victory ? "Victory!" : "The end of your governorship") : "The scribe's report"}</h2>${done ? `<p class="voice">${esc(done)} You governed for ${s.turn - 1} seasons.</p>${scoreHTML()}` : ""}
       ${dash}${review}<p class="eyebrow" style="margin:16px 0 6px">The scribe's record</p>
       <ul class="notes">${list || "<li>A quiet season.</li>"}</ul>
       <div class="row" style="margin-top:14px"><button class="btn" type="button" id="next">${done ? "Govern again" : "Next season"}</button></div></section>`;
     $("next").onclick = () => { if (done) { s = E.newGame(); intro(); } else startSeason(); };
     $("cardsbar").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
     if (!done) await afterSeason(s.turn - 1);
+    else if (s.victory) { gong(); const P = E.glory(s).find((p) => p.id === s.victory); await advisorSpeaks(P ? P.who : "general", P ? `Victory: ${P.name}` : "Victory", esc(done), "", "Glory to Acruvium"); }
   }
   /** The season's numbers as cards: the value, the change with an arrow, and a sparkline of the last seasons. */
   function sparkSVG(n, now) {
@@ -1885,14 +1950,22 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
   /** After the report: the haruspex's reading, and what the inventions brought, as pop-ups. */
   async function afterSeason(turn) {
     const pr = s.prophecy;
-    if (pr && pr.turn === turn) await advisorSpeaks("priest", "The liver speaks", "", `<ul class="signs">${pr.signs.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>${pr.advice ? `<p style="margin:0"><b style="font-weight:400;color:var(--gold-pale)">His advice:</b> ${esc(pr.advice.say)}</p>` : ""}`, "So be it");
+    if (pr && pr.turn === turn) {
+      gong();
+      modal(figureHTML("priest", `The liver speaks: ${pr.title}`, `“${esc(pr.signs[0])}”`, `<p style="margin:0"><b style="font-weight:400;color:var(--gold-pale)">His advice:</b> ${esc(pr.advice.say)}</p>
+        <p class="sum" style="margin:0">The gods speak only once a year. Do as he says within the year: loyalty +2 and Roman favour +2, besides what the order itself brings.</p>
+        <div class="row"><button class="btn" type="button" data-i="1">Do as he says</button><button class="btn quiet" type="button" data-i="0">I will think about it</button></div>`));
+      const yes = await waitPick($("veil"));
+      unmodal();
+      if (yes === 1) { s.heed = pr.advice.order; save(); }
+    }
     const inv = s.inv_report || [], made = inv.filter((x) => x.good);
     if (made.length) {
       const price = (g) => E.num((D.goods.find((x) => x.id === g) || {}).price);
       const lines = inv.map((x) => x.good ? `${x.name} brings us <b style="font-weight:400;color:var(--gold-pale)">${x.extra} more ${esc(x.unit)} of ${esc(E.nameOf(x.good).toLowerCase())}</b> this season: ${x.base + x.extra} instead of ${x.base}, worth about ${E.intc(x.extra * price(x.good))} denarii at market.`
         : `${x.name} brings <b style="font-weight:400;color:var(--gold-pale)">${E.intc(x.rent)} denarii</b> ${esc(x.text)}.`);
       await advisorSpeaks("economist", "What the machines brought", "", `<ul class="signs">${lines.map((t) => `<li>${t}</li>`).join("")}</ul>`, "Excellent");
-    } else if (inv.length) toast("⚙ " + inv.map((x) => `${x.name}: +${x.rent} denarii ${x.text}`).join("; "), "news", 8000);
+    } else if (inv.length) bigNotice({ aid: "economist", title: "What the machines brought", html: `<ul class="signs">${inv.map((x) => `<li>${esc(x.name)} brings <b style="font-weight:400;color:var(--gold-pale)">${E.intc(x.rent)} denarii</b> ${esc(x.text)}.</li>`).join("")}</ul>`, btn: "Excellent" });
   }
 
   const DIE_LABEL = { opal: "opal", aquamarine: "aquamarine", onyx: "onyx" };
@@ -1917,6 +1990,7 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, on the Gulf of Rhizon</p><h2>Tiberius sends you to govern Acruvium</h2>
       <p class="voice">Each turn is one season. Three cards are turned over one by one: the land, the sea and the gods. On each card two of your council propose what to do, one cautious and one bold, and you see the odds of each before you choose. When all three are decided, three dice are thrown together: opal for the land, aquamarine for the sea, onyx for the gods. Then one more order of your own, to make good the losses or make the most of a success.</p>
+      <p class="voice" style="margin-top:8px"><b style="font-weight:400;color:var(--gold-pale)">Four paths to victory</b> (see the Glory tab): be proclaimed Caesar when an Emperor dies, rule all Illyria by the sword, raise a wonder and be hailed a living god, or fill the chest with 100,000 denarii and buy the coast. Or simply govern well until AD 42.</p>
       <p class="voice" style="margin-top:8px">Letters from Rome arrive on their true dates: the fall of Sejanus, the death of Tiberius, Caligula, Claudius. Beyond your fields live the Illyrian tribes; their land can be won with gifts or with the sword. Your governorship ends in the winter of AD 42.</p>
       <p class="sum">Feed the people first: a town at peace grows every season, and more people pay more taxes. Things take time. A harbour takes two years to build and a temple three; vines give their first wine a year after planting. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
       <div class="row"><button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;

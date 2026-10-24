@@ -308,11 +308,12 @@
     else if (north > south) { say.fleet = `Wind and current favour a voyage north up the coast (${pct(north)} on prices).`; wants.fleet = toward("north"); }
     else if (south > north) { say.fleet = `The wind is with us for a voyage south (${pct(south)} on prices).`; wants.fleet = toward("south"); }
     else say.fleet = "The sea is open; wind and current favour neither course.";
-    const pr = s.prophecy && s.prophecy.turn >= s.turn - 1 ? s.prophecy : null;
-    if (pr && pr.advice) { say.priest = `The liver spoke. ${pr.signs[0]} ${pr.advice.say}`; wants.priest = decreeIs(pr.advice.order.id); }
+    const pr = s.prophecy && s.turn - s.prophecy.turn <= 4 ? s.prophecy : null;
+    if (pr && pr.advice && !pr.heeded) { say.priest = `${pr.title}. ${pr.signs[0]} ${pr.advice.say}`; wants.priest = decreeIs(pr.advice.order.id); }
     else if (s.loyalty < 55) { say.priest = "The people murmur against you. A festival would please the gods and men alike."; wants.priest = decreeIs("hold_festival"); }
     else if (s.favour < 40) { say.priest = `The omens from Rome are cold. Honour ${emperorOf(s.turn)}, or send gifts.`; wants.priest = decreeIs("honour_rome", "honour_tiberius"); }
-    else say.priest = "Sacrifice at the temple, Governor, and I will read the liver: the coming war, the sea, the granaries, and what you should do.";
+    else if (s.prophecy_year === seasonOf(s.turn)[1]) say.priest = "The gods have spoken this year, and you have heard them. Next spring, sacrifice again.";
+    else say.priest = "Sacrifice at the temple, Governor. Once a year the gods will tell me the one thing that matters most: a death in Rome, a revolt, pirates, hunger.";
     return { wants, say };
   }
 
@@ -378,6 +379,7 @@
         if (have >= Math.trunc(num(b.max, 99))) { problems.push(`Acruvium already has as many ${b.name.toLowerCase()} as it can hold (${Math.trunc(num(b.max))}).`); return; }
       }
       if (["build_ship", "build_warship"].includes(o.id) && berthsUsed(s) + newShips >= berths(s)) { problems.push(berths(s) ? `Epicadus: every berth is taken (${berths(s)} at most, merchant galleys and triremes together, keels on the slipway included).` : "Epicadus: build the harbour first."); return; }
+      if (o.id === "build" && o.building === "wonder" && !built(s, "temple")) { problems.push("Tertius: the Sanctuary needs a temple first; the gods are honoured in order."); return; }
       if (o.id === "commission_press" && (s.inventions || []).includes("screw_press")) { problems.push("Nikandros: we already have a screw press."); return; }
       if (o.id === "refill_ranks" && refillOf(s).n < 5) { problems.push(`Antistius: the cohorts are at full strength (${Math.trunc(s.army)} of ${Math.trunc(s.army_peak || 150)}); there is nobody to replace.`); return; }
       if (o.id === "clear_land" && clearedPlots(s) + (s.clearing || []).length + clears >= FIELD_PLOTS_MAX) { problems.push(`The hillside is used up: at most ${FIELD_PLOTS_MAX} field plots.`); return; }
@@ -1023,6 +1025,8 @@
   }
   /** The season's battle, if the year's conflict falls now; or the town's own rebellion. */
   async function conflictPhase(s, notes) {
+    await purpleChance(s, notes);
+    if (s.over) return null;
     if ((s.restless || 0) >= 2 && s.loyalty < REBELLION_BELOW && !s.over) { if (s.conflict && s.conflict.turn === s.turn) s.conflict.turn++; return rebellion(s, notes); }
     planConflict(s);
     if (!s.conflict || s.conflict.turn !== s.turn || s.over) return null;
@@ -1119,6 +1123,7 @@
         notes.push(`The sages read the sky: next season brings ${w.id === "CALM" ? "a dead calm" : `${w.latin}, the wind from the ${w.from}`}. ${w.effect}`);
       }
       for (const [n, v] of Object.entries(eff)) s[n] += v;
+      heedProphecy(s, o, notes);
     }
   }
   // --- The haruspex (rules v10): a sacrifice at the temple, and Tertius reads the liver ---
@@ -1162,43 +1167,78 @@
     return c;
   }
   /** What the liver says: the coming war, the sea, the granaries, the town; and one piece of wise advice. */
-  function prophecy(s, notes, boost) {
-    if (boost === "lose" || boost === "lost") { s.prophecy = { turn: s.turn, signs: ["The liver is malformed: the gods will not speak this season."], advice: null }; notes.push("Tertius Volusius turns the liver in his hands and goes pale: it is malformed, and the gods are silent."); return; }
-    const signs = [], c = foresee(s);
-    let advice = null;
-    if (c) {
-      const [se, yr] = seasonOf(c.turn), en = makeEnemy(s, c.kind, undefined, c.at);
-      c.foretold = en.foretold = true;
-      const odds = battleOdds(s, en, defaultPlan(s, en, en.who), en.who).chance;
-      signs.push(`Mars: ${KIND_NAME[c.kind] || "Enemies"} will come in ${se.season} AD ${yr}, ${AT_NAME[c.at] || "against us"}. As we stand now, ${en.who === "general" ? "Antistius" : ADVISORS[en.who].name.split(" ")[0]} would win ${odds} times in 100. Forewarned, the men fight better (+1).`);
-      if (odds < 75) {
-        const t = troopsOf(s), o = c.at === "walls" ? (built(s, "walls") && t.archers < 60 ? order("raise_archers") : order("recruit"))
-          : refillOf(s).n >= 30 ? order("refill_ranks") : s.army < 300 ? order("recruit") : t.slingers < 50 ? order("train_slingers") : null;
-        if (o) advice = { order: o, say: c.at === "walls" ? `They will come against the walls: ${o.id === "raise_archers" ? "put archers on them" : "more men on the walls"}, Governor: ${lower(describe(s, o))}.`
-          : `They will come into the open fields, where the walls cannot help: ${lower(describe(s, o))}. Or be ready to shut the gates and let the fields burn.` };
+  // rules v12: the gods speak once a year, and only of what matters most: an emperor's death, a revolt, the town rising, pirates, a disaster, famine
+  const LETTER_SIGNS = {
+    "h03-tiberius-dies": { kind: "emperor", sign: "an old eagle falling from the sky over the bay of Misenum", what: "the Emperor Tiberius will die, and Gaius, the son of Germanicus, will take his place", order: "honour_rome",
+      why: "Send gifts to Rome before it happens: the new Caesar will remember who honoured him first." },
+    "h06-claudius": { kind: "emperor", sign: "a young eagle torn apart by its own hounds", what: "the Emperor Gaius will be murdered by his own guard, and his uncle Claudius raised in his place", order: "honour_rome",
+      why: "Have gifts ready for the new Caesar, and swear to him at once when the letter comes." },
+    "h07-scribonianus": { kind: "revolt", sign: "a wolf that turns on the shepherd and is killed by the flock", what: "the governor of Dalmatia will rise against Caesar, and his own legions will abandon him within days", order: "honour_tiberius",
+      why: "Declare your loyalty to Caesar loudly now, and do not follow the rebel." },
+  };
+  const HEED_LOYALTY = 2, HEED_FAVOUR = 2;
+  /** The most important thing the gods can tell this year, with one order to give. */
+  function greatSign(s) {
+    const near = (t) => t > s.turn && t <= s.turn + 4, when = (t) => { const [se, y] = seasonOf(t); return `${se.season} AD ${y}`; };
+    for (const c of CARDS) {
+      const L = LETTER_SIGNS[c.id], t = c.date ? dateTurn(c.date) : null;
+      if (L && t && near(t) && !(s.once_fired || []).includes(c.id)) {
+        const pol = L.kind === "emperor" ? " When Caesar dies, the soldiers look for a strong man: if your town is great and your army loyal, they may look to you." : "";
+        return { kind: L.kind, title: L.kind === "emperor" ? "Caesar will die" : "A revolt against Caesar", text: `I saw ${L.sign}. In ${when(t)}, ${L.what}.${pol}`, order: order(L.order), why: L.why };
       }
     }
-    const atSea = (s.convoys || []);
-    if (atSea.length) { for (const cv of atSea) cv.blessed = true; signs.push(`Neptune accepts the offering: ${atSea.map((cv) => `the ${cv.ship || "ship"}`).join(" and ")} will have a kind sea home (+2 on the voyage).`); }
-    const hf = harvestForecast(s), what = Object.entries(hf.goods).map(([g, q]) => `${q} ${nameOf(g).toLowerCase()}`);
-    const windText = hf.wind.id === "CALM" ? "a dead calm" : `${hf.wind.latin}, the wind from the ${hf.wind.from}`;
-    signs.push(`Ceres: next season (${hf.season}) brings ${windText}. ${hf.grain || what.length ? `The fields will give ${hf.grain ? `${hf.grain} months of grain` : "no grain"}${what.length ? ` and ${what.join(", ")}` : ""}${hf.mult !== 1 ? ` (the wind ${pct(hf.mult - 1)})` : ""}` : "No harvest is due"}; three months are eaten, so the granaries will hold ${Math.max(0, hf.after)} months${hf.after < 3 ? ": too little" : ""}.`);
+    if (s.loyalty < 58 || (s.restless || 0) > 0) {
+      const o = s.tax === "high" ? order("lower_taxes") : order("hold_festival");
+      return { kind: "rebellion", title: "The town will rise", text: `I saw the household gods turn their faces to the wall. Loyalty stands at ${Math.round(s.loyalty)}: if it stays below ${REBELLION_BELOW} for two seasons, the town will take up arms against you within the year.`, order: o, why: `Win the people back before it is too late: ${lower(describe(s, o))}.` };
+    }
+    const c = foresee(s);
+    if (c) {
+      const en = makeEnemy(s, c.kind, undefined, c.at); c.foretold = en.foretold = true;
+      const odds = battleOdds(s, en, defaultPlan(s, en, en.who), en.who).chance, t = troopsOf(s);
+      if (c.kind === "pirates" || odds < 75) {
+        const o = c.kind === "pirates" && !s.warships && s.treasury >= 1200 && berthsUsed(s) < berths(s) ? order("build_warship")
+          : c.at === "walls" ? (built(s, "walls") && t.archers < 60 ? order("raise_archers") : order("recruit"))
+          : refillOf(s).n >= 30 ? order("refill_ranks") : s.army < 300 ? order("recruit") : t.slingers < 50 ? order("train_slingers") : order("recruit");
+        const lead = en.who === "general" ? "Antistius" : ADVISORS[en.who].name.split(" ")[0];
+        return { kind: "war", title: `${KIND_NAME[c.kind] || "Enemies"} will come`, text: `I saw ${c.kind === "pirates" ? "black sails on a red sea" : c.kind === "tribes" ? "smoke beyond the mountains" : "wolves in the gorge"}. In ${when(c.turn)}, ${(KIND_NAME[c.kind] || "enemies").toLowerCase()} will come ${AT_NAME[c.at] || "against us"}. As we stand now, ${lead} would win ${odds} times in 100. Forewarned, the men will fight better (+1).`,
+          order: o, why: o.id === "build_warship" ? `A trireme in the bay sinks their boats before they land: ${lower(describe(s, o))}.` : c.at === "walls" ? `Man the walls: ${lower(describe(s, o))}.` : `The walls will not help in the fields: ${lower(describe(s, o))}, or be ready to shut the gates.` };
+      }
+    }
     const om = foreOmen(s);
-    if (om) signs.push(`The omen of next season is already written: “${om.title}”${om.choice ? ", a choice for you to make" : `: ${effectsText(om.effects)}`}.${darkOmen(om) ? " A dark sign: prepare for it." : ""}`);
-    if (hf.after < 3) {
-      if (s.grain < 4 || hf.after < 1.5) { const g = suggestions(s).find((p) => p.who === "economist"); if (g) advice = { order: g.order, say: `Fill the granaries before anything else: ${lower(describe(s, g.order))}.` }; }
-    }
-    if (s.loyalty < 55) {
-      signs.push(`The household gods are uneasy: loyalty stands at ${Math.round(s.loyalty)}. Below ${REBELLION_BELOW} for two seasons, the town rises.`);
-      if (!advice) { const o = s.tax === "high" ? order("lower_taxes") : order("hold_festival"); advice = { order: o, say: `Win back the town: ${lower(describe(s, o))}.` }; }
-    }
-    if (!advice) {
+    if (om && darkOmen(om) && !om.choice) {
       const p = suggestions(s)[0];
-      if (p) advice = { order: p.order, say: `${ADVISORS[p.who].name.split(" ")[0]} is right this time: ${lower(describe(s, p.order))}.` };
+      return { kind: "disaster", title: "A dark omen", text: `I saw the sacred chickens refuse their grain. Next season, “${om.title}” will strike: ${effectsText(om.effects)}.`, order: p ? p.order : order("visit_temple"), why: p ? `Prepare: ${lower(describe(s, p.order))}.` : "Pray, and keep the stores full." };
     }
-    s.prophecy = { turn: s.turn, signs, advice: advice ? { say: advice.say, order: advice.order } : null };
-    notes.push(`Tertius Volusius reads the liver: ${signs.join(" ")}${advice ? ` His advice: ${advice.say}` : ""}`);
-    news(s, "omen", `The haruspex foretells: ${signs[0]}`);
+    const hf = harvestForecast(s);
+    if (hf.after < 3) {
+      const g = suggestions(s).find((p) => p.who === "economist") || { order: order("merchants", { buy: { grain: 2 } }) };
+      return { kind: "famine", title: "Hunger is coming", text: `I saw Ceres weeping in an empty field. Next season brings ${hf.wind.id === "CALM" ? "a dead calm" : hf.wind.latin}; the fields will give ${hf.grain} months of grain, and the granaries will hold only ${Math.max(0, hf.after)} months.`, order: g.order, why: `Fill the granaries before anything else: ${lower(describe(s, g.order))}.` };
+    }
+    if (c) {
+      const p = suggestions(s)[0];
+      return { kind: "war", title: `${KIND_NAME[c.kind] || "Enemies"} will come`, text: `In ${when(c.turn)}, ${(KIND_NAME[c.kind] || "enemies").toLowerCase()} will come ${AT_NAME[c.at] || "against us"}, but the signs are good: we shall beat them. Forewarned, the men will fight better (+1).`, order: p ? p.order : order("recruit"), why: p ? `Meanwhile, ${lower(describe(s, p.order))}.` : "Keep the garrison ready." };
+    }
+    const p = suggestions(s)[0];
+    return { kind: "peace", title: "A quiet year", text: "The liver is clean and the birds fly east: no war, no famine and no revolt is written for this year.", order: p ? p.order : order("visit_temple"), why: p ? `Use the peace: ${lower(describe(s, p.order))}.` : "Use the peace well." };
+  }
+  /** A sacrifice at the temple: once a year Tertius reads the liver and tells the one thing that matters most. */
+  function prophecy(s, notes, boost) {
+    const [, year] = seasonOf(s.turn);
+    for (const cv of s.convoys || []) cv.blessed = true;   // Neptune always takes the offering
+    if (s.prophecy_year === year) { notes.push("Tertius Volusius sacrifices for you, but will not read the liver again: “The gods have spoken once this year, Governor. Ask again next spring.”"); return; }
+    if (boost === "lose" || boost === "lost") { notes.push("Tertius Volusius turns the liver in his hands and goes pale: it is malformed, and the gods are silent. Sacrifice again next season."); return; }
+    s.prophecy_year = year;
+    const g = greatSign(s);
+    s.prophecy = { turn: s.turn, year, kind: g.kind, title: g.title, signs: [g.text], advice: { say: g.why, order: g.order }, heeded: false };
+    notes.push(`Tertius Volusius reads the liver: ${g.text} His advice: ${g.why}`);
+  }
+  /** Doing what the haruspex advised, within a year: the gods are pleased. */
+  function heedProphecy(s, o, notes) {
+    const pr = s.prophecy;
+    if (!pr || pr.heeded || !pr.advice || s.turn <= pr.turn || s.turn > pr.turn + 4 || o.id !== pr.advice.order.id) return;
+    pr.heeded = true; s.loyalty += HEED_LOYALTY; s.favour += HEED_FAVOUR;
+    notes.push(`You did as the haruspex advised: the gods are pleased, and the town sees it (loyalty +${HEED_LOYALTY}, favour +${HEED_FAVOUR}).`);
+    cheer(s, "priest", notes, "sees you heed the gods");
   }
   async function convoy(s, notes, o) {
     const t = TOWN[o.town];
@@ -1773,7 +1813,55 @@
     if (s.favour <= 0) s.over = "Recalled to Rome in disgrace: Roman favour reached 0.";
     else if (s.loyalty <= 0 && s.army < ORDER_ARMY) s.over = "Overthrown: the town rose up and the army was too weak to stop it.";
     else if (s.hunger_streak >= 2) s.over = "Replaced for famine: two hungry seasons in a row.";
+    else if (built(s, "wonder")) declareVictory(s, "gods");
+    else if (s.treasury >= GLORY_NEED.purse.treasury) declareVictory(s, "purse");
+    else if (soldiersOf(s) >= GLORY_NEED.sword.soldiers && tribesWon(s) >= GLORY_NEED.sword.tribes) declareVictory(s, "sword");
     else if (s.turn >= END_TURN) { s.over = "Your governorship ends in the winter of AD 42: Claudius sends a successor, and you sail for Rome."; s.finished = true; }
+  }
+  // --- Four paths to glory (rules v12): a victory ends the governorship early ---
+  const GLORY_NEED = { purple: { favour: 90, loyalty: 70, soldiers: 500, people: 6000 }, sword: { soldiers: 1000, tribes: 3 }, purse: { treasury: 100000 } };
+  const EMPEROR_DEATHS = ["h03-tiberius-dies", "h06-claudius"];
+  const soldiersOf = (s) => Math.trunc(s.army) + soldiersBesides(s);
+  const tribesWon = (s) => TRIBES.filter((t) => tribeWon(s, t.id)).length;
+  /** How far each path has come: the conditions, each with what you have and what it needs. */
+  function glory(s) {
+    const P = GLORY_NEED.purple, W = GLORY_NEED.sword, wonder = s.buildings.find((b) => b.kind === "wonder");
+    const deaths = EMPEROR_DEATHS.map((id) => CARDS.find((c) => c.id === id)).filter(Boolean).map((c) => dateTurn(c.date)).filter((t) => t >= s.turn);
+    const wonderPart = wonder ? (isDone(s, wonder) ? 1 : Math.max(0, 1 - (wonder.done - s.turn) / num(BLD.wonder ? BLD.wonder.seasons_to_build : 12, 12))) : 0;
+    const paths = [
+      { id: "purple", name: "The purple", who: "general", kind: "political victory",
+        goal: "When an Emperor dies, the soldiers look for a strong man. If your town is glorious, they proclaim you Caesar.",
+        parts: [["Roman favour", Math.round(s.favour), P.favour], ["loyalty", Math.round(s.loyalty), P.loyalty], ["soldiers", soldiersOf(s), P.soldiers], ["people", Math.trunc(s.people), P.people]],
+        note: deaths.length ? "The chance comes only when an Emperor dies. The haruspex may tell you when." : "No Emperor will die again before your governorship ends." },
+      { id: "sword", name: "The sword", who: "general", kind: "war victory",
+        goal: "Your army is so great that Epidaurum, Salona, Dyrrachium and the tribes of the hills open their gates and take you for their leader.",
+        parts: [["soldiers", soldiersOf(s), W.soldiers], ["tribes won (allied or conquered)", tribesWon(s), W.tribes]], note: "Soldiers: infantry, slingers, archers and horsemen." },
+      { id: "gods", name: "The gods", who: "priest", kind: "religious victory",
+        goal: "Raise the Sanctuary of Cadmus and Harmonia, a wonder of the Adriatic. The coast hails you as a living god, and every city comes to your feet.",
+        parts: [["temple built", built(s, "temple") ? 1 : 0, 1], ["the Sanctuary finished", Math.round(wonderPart * 100), 100]], note: "Build the temple first; then the Sanctuary on a town plot (15,000 denarii, 60 marble, 40 timber, 20 bronze, 3 years)." },
+      { id: "purse", name: "The purse", who: "treasurer", kind: "economic victory",
+        goal: "100,000 denarii in the chest. You buy the voices of every city on the coast, and their people choose to join Acruvium.",
+        parts: [["denarii in the chest", Math.trunc(s.treasury), GLORY_NEED.purse.treasury]], note: "Counted at the end of a season, after the tribute." },
+    ];
+    for (const p of paths) p.pct = Math.round(100 * p.parts.reduce((a, [, now, need]) => a + Math.min(1, now / need), 0) / p.parts.length);
+    return paths;
+  }
+  const VICTORY_TEXT = {
+    purple: "Victory: the purple. The legions of Dalmatia raise you on their shields and hail you Imperator. You sail for Rome as Caesar.",
+    sword: "Victory: the sword. Epidaurum, Salona and Dyrrachium open their gates, the chiefs of the hills bend the knee, and all Illyria takes you for its leader.",
+    gods: "Victory: the gods. The Sanctuary of Cadmus and Harmonia shines over the gulf; pilgrims call you a living god, and every city of the coast comes to your feet.",
+    purse: "Victory: the purse. With a hundred thousand denarii you buy the voices of every city on the coast, and their people vote to join Acruvium.",
+  };
+  function declareVictory(s, id) { s.over = VICTORY_TEXT[id]; s.finished = true; s.victory = id; }
+  /** The political victory: when the letter of an Emperor's death is read, the soldiers may proclaim you. */
+  async function purpleChance(s, notes) {
+    if (s.over || !EMPEROR_DEATHS.some((id) => { const c = CARDS.find((x) => x.id === id); return c && dateTurn(c.date) === s.turn; })) return;
+    const P = glory(s).find((p) => p.id === "purple");
+    if (!P.parts.every(([, now, need]) => now >= need)) { notes.push("Caesar is dead. In the camp the soldiers talk of strong men; your name is spoken, but not loudly enough."); return; }
+    const pick = await ui.choose("The soldiers hail you Imperator", "Caesar is dead. Your cohorts, the veterans of the coast and half the legion at Burnum gather in the forum and raise you on a shield: “Imperator! Caesar!” Rome is far, and the purple is offered.",
+      [{ label: "Accept the purple", sub: "a political victory: the game ends in triumph" }, { label: "Refuse, and swear to the new Caesar", sub: "Roman favour +10; the game goes on" }], "general");
+    if (pick === 0) declareVictory(s, "purple");
+    else { s.favour += 10; notes.push("You refuse the purple and swear to the new Caesar before the whole army. Rome hears of it (favour +10)."); }
   }
   /** The governorship's score: what a successor would find. */
   function score(s) {
@@ -1781,7 +1869,7 @@
     const parts = [["people", Math.round(s.people / 100)], ["loyalty", Math.round(s.loyalty)], ["Roman favour", Math.round(s.favour)],
       ["buildings", builtCount * 3], ["treasury", Math.round(s.treasury / 500)],
       ["the tribes", TRIBES.reduce((a, t) => a + (tribeState(s, t.id).state === "ally" ? 12 : tribeState(s, t.id).state === "conquered" ? 8 : 0), 0)],
-      ["seasons governed", s.turn]];
+      ["seasons governed", s.turn], ["victory", s.victory ? 150 : 0]];
     return { total: parts.reduce((a, [, v]) => a + v, 0), parts };
   }
 
@@ -1931,7 +2019,7 @@
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
     TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
-    CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, harvestForecast, berthsUsed, SHIPS_MAX, TRIREME_UPKEEP, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
+    CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, harvestForecast, berthsUsed, SHIPS_MAX, TRIREME_UPKEEP, glory, GLORY_NEED, soldiersOf, tribesWon, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
     tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS,
   };
 })();
