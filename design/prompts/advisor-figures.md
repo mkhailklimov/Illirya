@@ -25,7 +25,7 @@ This sits between the game's line drawings and the realistic pictures: as clear 
    - Red-figure vases: [Red-figure pottery](https://en.wikipedia.org/wiki/Red-figure_pottery), [the Berlin Painter](https://en.wikipedia.org/wiki/Berlin_Painter), or search Wikimedia Commons for [red-figure amphora](https://commons.wikimedia.org/w/index.php?search=red-figure+amphora).
    - Black-figure (simpler still): [Exekias](https://en.wikipedia.org/wiki/Exekias), the amphora of Achilles and Ajax playing dice (Vatican Museums).
    - Wall painting (style B): [Tomb of the Leopards, Tarquinia](https://en.wikipedia.org/wiki/Tomb_of_the_Leopards), or search Commons for [Pompeii fresco figure](https://commons.wikimedia.org/w/index.php?search=Pompeii+fresco+figure).
-   - Saved reference images go in `design/pieces/figures/references/` (the game ignores that folder).
+   - **Ready to use:** eight of them are already saved as PNG in [`design/pieces/figures/references/`](../pieces/figures/references/), with credits and licences. Start with `vase-A-redfigure-berlin-painter-singer.png` (one standing figure on black); for the robed advisors try `vase-A-redfigure-berlin-painter-judge.png`, for Antistius `vase-A-redfigure-kleophrades-hoplite.png`.
 4. **Keep the five alike.** Make Tertius first. When he is right, use him as the style reference for the other four.
 5. Save the PNGs in `design/pieces/figures/` as `priest.png`, `general.png`, `fleet.png`, `economist.png`, `treasurer.png`, and tell Claude (or run `python web/build.py`).
 
