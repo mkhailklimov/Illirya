@@ -2,47 +2,66 @@
 
 These pictures replace the line drawings in the game's big pop-ups (the enemy at the gates, the judgement, the haruspex's prophecy, the inventions, the advisors' special abilities). The round coin portraits on the council stay as they are.
 
-## How to use them
+## The look we want (version 2, 24 October 2026)
 
-1. Generate each advisor with the **shared style block** plus **his own prompt** below. Midjourney, ChatGPT (image), Ideogram and Flux all work.
-2. Use **portrait 2:3** (Midjourney `--ar 2:3`; elsewhere 1024 × 1536). Keep the whole figure inside the frame, feet included, with some empty space at the left and right edges: the game shows the picture at 1:2 and trims the sides a little.
-3. **Keep the five alike.** Make Tertius first. When he looks right, give his picture as a style reference to the other four (Midjourney: `--sref <link to his image>`; ChatGPT: "same style as this image"). Use the same seed if your tool has one.
-4. Save the files as PNG under `design/pieces/figures/`, named after the advisor's id: `priest.png`, `general.png`, `fleet.png`, `economist.png`, `treasurer.png`. Then run `python web/build.py` (it writes `web/img/figure-<id>.webp`), or simply tell Claude the files are there. The game picks a picture up automatically; while an advisor has none, his line drawing is shown.
+The first try (realistic painted illustration, kept in `design/pieces/figures/drafts-realistic/`) looked like a plate from a history book: shading, muscles, 3D light. That is too much. We want **the way the ancients drew themselves**: a figure from a Greek painted vase or a Roman/Etruscan wall painting. That means:
 
-## Shared style block (paste before every prompt)
+- **Flat colour, no shading.** No gradients, no light and shadow, no 3D. Each area is one colour.
+- **A bold contour line** around every shape, and a few thin lines for folds, hair and details. Drapery folds are parallel lines, not modelled cloth.
+- **Head in profile,** with the almond-shaped eye drawn as if seen from the front, as on the vases. Body upright, a stiff, formal, dignified pose.
+- **Few colours:** terracotta orange, black, cream and a little gold or dark red.
+- **Simple:** a child should be able to copy it. One or two objects in the hands, nothing else.
 
-**A: our house style (matches the coins, the cards and the city map).** Recommended.
+This sits between the game's line drawings and the realistic pictures: as clear as a sketch, as rich as real ancient art.
 
-> Full-length standing figure of a man in Roman Illyria, AD 30, seen from head to feet, three-quarter view, calm dignified pose, centred, plain background. Flat stylised illustration like a figure on an ancient coin or a Greek vase frieze: simple bold shapes, the figure as a deep near-black silhouette with soft details, a thin warm gold rim light along its edges, the objects he holds picked out in burnished gold. Background: a dusk gradient from night blue (#0d1530) to violet (#3a2552) with a soft glow behind the figure in {COLOUR}. Muted, elegant, no text, no letters, no frame, no border, no watermark.
+## How to use the prompts
 
-**B: painted alternative.** Use this if A looks too flat to you.
+1. Use **style block A** (red-figure vase) for all five. It suits the game's dark screens best. Style B (fresco) is the alternative if A feels too dark.
+2. Use **portrait 2:3** (Midjourney `--ar 2:3`; elsewhere 1024 × 1536). Draw the whole figure, feet included, with empty space left and right: the game shows it at 1:2 and trims the sides.
+3. **Give a style reference.** This matters more than the words. Download a photo of a real red-figure vase (for example the Berlin Painter's amphorae, or Achilles and Ajax playing dice by Exekias, black-figure) and attach it:
+   - in ChatGPT: "in the style of this image";
+   - in Midjourney: `--sref <image link>`, plus `--style raw --stylize 50` so it does not make it pretty.
+4. **Keep the five alike.** Make Tertius first. When he is right, use him as the style reference for the other four.
+5. Save the PNGs in `design/pieces/figures/` as `priest.png`, `general.png`, `fleet.png`, `economist.png`, `treasurer.png`, and tell Claude (or run `python web/build.py`).
 
-> Full-length standing figure of a man in Roman Illyria, AD 30, head to feet, three-quarter view, centred. Painterly character art for a historical strategy board game, oil-painting texture, dramatic rim lighting at dusk, rich but dark palette of tyrian purple, deep blue and burnished gold, historically accurate clothing and objects, plain dark background with a soft glow in {COLOUR}. No text, no frame, no watermark.
+## Style block A: red-figure vase (recommended)
 
-**Negative prompt** (if your tool has one): `text, letters, logo, watermark, frame, cropped feet, extra fingers, modern clothing, fantasy armour, horned helmet, medieval, anime, photorealistic face`
+> Ancient Greek red-figure vase painting, 5th century BC style. A single standing figure, full length from head to feet, head in strict profile with the eye drawn frontally, upright formal pose. The figure is the orange-red colour of the clay, outlined with a bold black contour line; folds of the clothes, hair and details drawn with fine black lines; a little gold and dark red for the objects he holds. The background is flat glossy black. Completely flat: no shading, no gradients, no 3D, no perspective. Simple, elegant, few lines, like the painting on an amphora. No border, no meander band, no text, no letters.
 
-Replace `{COLOUR}` with each advisor's colour below. They are the same colours the game uses for him.
+## Style block B: wall painting (alternative)
 
-## 1. Tertius Volusius, the haruspex (`priest.png`), colour: deep violet (#4a2a66)
+> Roman or Etruscan wall painting (fresco), like the tomb paintings of Tarquinia or the frescoes of Pompeii. A single standing figure, full length from head to feet, head in profile, upright formal pose. Flat areas of colour (ochre, terracotta red, black, cream) with a dark outline, no shading, no 3D; the plaster's soft texture visible. Plain background of {COLOUR}. Simple, few lines, naive and elegant. No border, no text, no letters.
 
-> A Roman haruspex, about 55 years old, lean, clean-shaven, a long solemn face. He wears a long tunic to the ground and a heavy fringed mantle pinned at the shoulder, and on his head the tall pointed cap of an Etruscan haruspex, tied under the chin. In his raised right hand the lituus, a staff curled at the top like a crook; in his left hand, held up to the light, a bronze model of a sheep's liver engraved with the regions of the gods (like the Liver of Piacenza). Beside his feet a small stone altar with a thin ribbon of smoke rising. Mood: mysterious, wise, a man who knows what is coming.
+**Negative prompt** (if your tool has one): `realistic, photorealistic, 3D, shading, gradient, muscles, dramatic lighting, rim light, digital painting, concept art, book illustration, detailed face, text, letters, frame, border, cropped feet`
 
-## 2. Marcus Antistius, prefect of the auxiliaries (`general.png`), colour: dark crimson (#6a1830)
+For style B, replace `{COLOUR}` with the advisor's colour below.
 
-> A Roman auxiliary prefect, about 45, short grey hair, clean-shaven, weathered face, firm jaw. He wears a bronze muscled cuirass over a red military tunic, leather strips (pteruges) at the shoulders and hips, a red officer's cloak over his left shoulder, military sandal-boots (caligae). An Imperial-Gallic style helmet with a short red crest is tucked under his left arm. In his right hand the knotted vine staff of command (vitis), held across his body. A gladius in its scabbard on his left hip. An oval auxiliary shield leans against his leg. Mood: disciplined, practical, utterly reliable.
+## The five advisors
 
-## 3. Epicadus the Liburnian, master of the fleet (`fleet.png`), colour: Adriatic blue (#24506a)
+Each prompt goes after the style block. They are deliberately short: a vase painter shows only what tells you who the man is.
 
-> An Illyrian sea captain from Liburnia, about 50, broad-shouldered and weathered, a thick dark beard going grey, a conical felt cap (pilos). He wears a short belted woollen tunic, bare strong forearms, a coil of rope over one shoulder, simple sandals, a small bronze amulet on a cord. With his right hand he holds upright a tall ship's steering oar (a Roman gubernaculum), taller than himself. Behind his legs, small, the curved prow of a liburna with a painted eye. Mood: blunt, superstitious, at home on the sea.
+### 1. Tertius Volusius, the haruspex (`priest.png`), colour for B: deep violet
 
-## 4. Nikandros of Epidaurum, adviser on trade (`economist.png`), colour: deep green (#2f5a3a)
+> A Roman priest who reads the future, an old lean man with no beard. He wears a tall pointed cap tied under the chin and a long mantle with a fringed edge reaching to his feet. In one hand a tall staff curled at the top like a crook; in the other, held up before his face, a sheep's liver. A small altar with a curl of smoke stands at his feet.
 
-> A Greek merchant of the Adriatic coast, about 40, clever lively eyes, a neat short beard, a wide-brimmed traveller's hat (petasos) pushed back on his head. He wears a knee-length chiton and a short cloak (chlamys) pinned at the right shoulder with a bronze brooch, and tall laced boots. In his outstretched right hand a bronze merchant's balance (libra) with two pans, one pan lower with a coin in it. At his feet a wine amphora with a stamped seal and a small sack of coins. Mood: shrewd, charming, always has a deal.
+### 2. Marcus Antistius, prefect of the auxiliaries (`general.png`), colour for B: dark red
 
-## 5. Felix, keeper of the treasury (`treasurer.png`), colour: dark bronze (#6a5020)
+> A Roman officer, a middle-aged man with short hair and no beard. He wears a breastplate, a short tunic with a fringe of leather strips, a cloak hanging from one shoulder, and laced military sandals. He holds a short knotted staff of vine wood across his chest; a crested helmet is under his other arm, and a sword hangs at his hip. A tall oval shield leans against his leg.
 
-> A Roman freedman steward (dispensator), about 45, close-cropped hair, clean-shaven, careful watchful face. He wears a plain long belted tunic, a heavy bunch of iron keys and a leather coin purse hanging from his belt. In his hands an open wooden wax tablet (a diptych) with lines of writing scratched into the wax, and a bronze stylus. Beside him an iron-bound wooden strongbox (arca), its lid open on a heap of silver denarii. Mood: precise, anxious about the tribute, honest to the last coin.
+### 3. Epicadus the Liburnian, master of the fleet (`fleet.png`), colour for B: sea blue
 
-## Later, if these work
+> An Illyrian sea captain, a strong man with a full curly beard and a pointed felt cap. He wears a short belted tunic and sandals, with a coil of rope over one shoulder. With one hand he holds upright a long steering oar, taller than himself. Small at his feet, the curved prow of a ship with a painted eye.
 
-The same style block can make more of the game's images: the Sanctuary of Cadmus and Harmonia (the religious victory), the screw press, a trireme, and each of the four victory endings. Ask Claude for those prompts when you want them.
+### 4. Nikandros of Epidaurum, adviser on trade (`economist.png`), colour for B: dark green
+
+> A Greek merchant, a man with a short neat beard and a wide-brimmed traveller's hat. He wears a short tunic, a short cloak pinned at the shoulder and high laced boots. In one outstretched hand a merchant's balance with two hanging pans. A tall amphora stands at his feet.
+
+### 5. Felix, keeper of the treasury (`treasurer.png`), colour for B: dark ochre
+
+> A Roman steward, a man with close-cropped hair and no beard. He wears a long plain belted tunic, with a bunch of keys and a purse hanging from the belt. He holds an open wax writing tablet in one hand and a pointed stylus in the other. Beside him stands a wooden strongbox bound with iron, full of coins.
+
+## If it still comes out too realistic
+
+- Add at the start: "flat 2D, in the exact style of an ancient Greek vase painting".
+- Attach the vase photo again and say: "copy this style exactly: flat colours, black outline, no shading".
+- Ask for "simpler, fewer lines" once more. The tools tend to add detail; keep taking it away.
