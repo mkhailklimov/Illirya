@@ -129,6 +129,12 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v14 (25 October 2026): walls on the ring, bigger fields
+
+- **The walls take no plot.** They are the ring round the town (zone `ring` in buildings.csv). All 12 town plots are free for buildings. Build them, or a second set of towers (+2 again), from any free town plot or by clicking the wall on the map.
+- **Half as many wheat terraces and vineyards, each twice the size.** Wheat: 2 at the start (was 4), at most 6, 1200 den and 4 timber; the harvest counts each terrace as two (BASE_WHEAT 2). Vineyard: at most 3, 800 den and 4 timber, 24 amphorae each Autumn. Food and wine are as before; the fields have two more free plots.
+- Old saves: the walls leave their plot, and the wheat and vineyards are halved (the oldest kept, rounded up).
+
 ## Rules v13 (25 October 2026): a battle in three throws, one die per lane
 
 - **1. Engines, slingers and archers together:** a d20 for each lane where any of them stand (+1 on a hill). At most 3 engines take the field (ballistae first); each adds to its lane's fire (ballista 0.10, scorpion 0.07; one with no enemy in front shoots at the biggest crowd). The lane's fire is the sum of its bands: sling 0.04 + 0.12 × density, archer 0.14 − 0.05 × density (militia 0.03 + 0.08 d, 0.10 − 0.04 d), ×1.25 on the walls, + javelins 0.05 if a cohort with pila stands in the line. Killed = fire × (1 / 0.4 / 1.5 / 0) × (½ in a wood, ×1.25 on a hill), at most 45%. Their heart falls by 0.9 × the share killed.

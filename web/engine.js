@@ -14,7 +14,7 @@
   const ARMY_PAY = 4, TRIBUTE = 3000, TRIBUTE_PAID_FAVOUR = 5, TRIBUTE_MISSED_FAVOUR = -20, TRIBUTE_DEBT_PENALTY = 1.5;
   const GRAIN_EATEN = 3, GRAIN_BASE_EATERS = 4600, GRAIN_PRICE = 500;
   const CITY = (D.cities || [{ id: "acruvium", name: "Acruvium", field_plots: 12, field_plots_max: 16, traits: "" }])[0];
-  const TOWN_PLOTS = 12, FIELD_PLOTS = +CITY.field_plots || 12, BASE_WHEAT = 4;
+  const TOWN_PLOTS = 12, FIELD_PLOTS = +CITY.field_plots || 12, BASE_WHEAT = 2;   // v14: half as many terraces, each twice the size
   const SHIP_LOAD = 40, GRAIN_LOAD = 10;  // a ship carries 40 loads; a month of grain is 10 of them
   const VOYAGE_DIE = 20, VOYAGE_TARGET = 5; // d20 + sailing advantage when a convoy comes home
   const LOYALTY_LOW_FOOD = -3, LOYALTY_HUNGER = -10, UNREST_BELOW = 30, UNREST_FAVOUR = -3, UPRISING_BELOW = 20;
@@ -77,7 +77,7 @@
   function newGame() {
     const s = Object.fromEntries(CORE.map((n) => [n, num(RULES[n].start)]));
     for (const g of GOODS_LIST) s[g.id] = num(g.start);
-    Object.assign(s, { version: 4, turn: 1, card_last: {}, calamity_turn: 0,
+    Object.assign(s, { version: 5, turn: 1, card_last: {}, calamity_turn: 0,
       troops: { slingers: 0, archers: 0, cavalry: 0, engines: 0 }, kit: {}, army_xp: 0, morale: 0, last_war: -9,
       tribes: Object.fromEntries(TRIBES.map((t) => [t.id, { state: "free", tries: 0, hostile_until: 0 }])), tax: "normal", buildings: startBuildings(), shipyard: [], convoys: [], tribute_debt: 0,
       field_plots: FIELD_PLOTS, clearing: [], wind: "E", current: 1, weather_turn: 0, forecast: null, hunger_streak: 0, last_festival: -9, once_fired: [], over: null,
@@ -114,6 +114,13 @@
     for (const k of s.shipyard) if (!k.name) k.name = newShipName(s);
     delete s.discontent; delete s.discontent_parts;   // rules v10: one number, loyalty
     s.restless = s.restless || 0;
+    if ((s.version || 0) < 5) {   // v14: the walls leave their plot; wheat and vineyards halved, each twice the size
+      for (const kind of ["wheat", "vineyard"]) {
+        const all = s.buildings.filter((b) => b.kind === kind).sort((a, b) => a.done - b.done), drop = new Set(all.slice(Math.ceil(all.length / 2)));
+        s.buildings = s.buildings.filter((b) => !drop.has(b));
+      }
+      s.version = 5;
+    }
     s.warships = s.warships || 0; s.navy = s.navy || [];
     s.justice = s.justice || { pardoned: 0, executed: 0 };
     s.inventions = s.inventions || [];
@@ -145,7 +152,7 @@
   /** Field plots open now: the twelve, the cleared hillside, and the land won from the tribes. */
   const fieldPlots = (s) => clearedPlots(s) + tribalPlots(s);
   const emperorOf = (turn) => EMPERORS.filter(([t]) => turn >= t).pop()[1];
-  const zonePlots = (s, zone) => (zone === "town" ? TOWN_PLOTS : zone === "hill" ? 1 : fieldPlots(s));
+  const zonePlots = (s, zone) => (zone === "town" ? TOWN_PLOTS : zone === "hill" ? 1 : zone === "ring" ? Infinity : fieldPlots(s));   // the walls (ring) take no plot
   /** Goods the passing merchants sell (no luxuries), and their price at the quay. */
   const MERCHANT_GOODS = ["grain"].concat(GOODS_LIST.filter((g) => g.origin !== "luxury").map((g) => g.id));
   const merchantPrice = (g) => Math.round((g === "grain" ? GRAIN_PRICE : num(GOOD[g].price)) * MERCHANT_MARKUP);

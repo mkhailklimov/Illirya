@@ -774,6 +774,9 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const SLIPS = [110, 170, 230];
     const keels = s.shipyard.slice(0, 3).map((t, k) => (t.war ? `<g opacity=".75">${triremeSVG(SLIPS[k], 556, .4)}</g>` : shipSVG(SLIPS[k], 556, .42, true)) + `<text x="${SLIPS[k]}" y="592" text-anchor="middle" font-family="Marcellus" font-size="10.5" fill="${MAP.ink}">${esc(t.name || "keel")} · ${t.done - s.turn}</text>`).join("");
     const poly = TOWN_POLY.map((p) => p.join(",")).join(" ");
+    const wallsAll = s.buildings.filter((b) => b.kind === "walls"), wallsDone = wallsAll.filter((b) => s.turn >= b.done).length;
+    const wallsLeft = Math.max(0, ...wallsAll.filter((b) => s.turn < b.done).map((b) => b.done - s.turn));
+    const wallsText = `The town walls: ${wallsDone ? (wallsDone > 1 ? "walls with extra towers" : "walls and towers") : "none standing"}${wallsLeft ? `, more towers ready in ${wallsLeft} season${wallsLeft > 1 ? "s" : ""}` : ""}. They take no plot.`;
     const BAY = "M0,0 H300 C316,50 326,100 330,128 L330,488 C300,522 262,545 200,560 C120,576 60,560 0,566Z";
     const RIVER = "M770,6 C708,58 656,108 602,138 C522,166 432,142 334,126", SPRING = "M690,412 C622,444 522,470 424,488 C384,496 352,494 332,490";
     const MOUNT = "M640,0 C662,90 704,180 694,262 C690,334 722,420 704,520 C700,560 712,600 712,600 H1000 V0Z";
@@ -821,7 +824,10 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       <polygon points="${poly}" fill="rgba(168,67,47,.07)"/>
       <polygon points="${poly}" fill="none" stroke="${MAP.ink}" stroke-width="6.5" stroke-linejoin="round"/>
       <polygon points="${poly}" fill="none" stroke="${MAP.paper}" stroke-width="2.2" stroke-linejoin="round"/>
+      ${wallsDone >= 2 ? TOWN_POLY.slice(0, -1).map(([x, y], k) => { const [x2, y2] = TOWN_POLY[k + 1], mx = (x + x2) / 2, my = (y + y2) / 2; return `<rect x="${mx - 7}" y="${my - 7}" width="14" height="14" fill="${MAP.red}" stroke="${MAP.ink}" stroke-width="1.4"/>`; }).join("") : ""}
       ${TOWN_POLY.map(([x, y]) => `<rect x="${x - 9}" y="${y - 9}" width="18" height="18" fill="${MAP.red}" stroke="${MAP.ink}" stroke-width="1.6"/><rect x="${x - 5}" y="${y - 5}" width="10" height="10" fill="none" stroke="${MAP.ink}" stroke-width=".7"/>`).join("")}
+      <g class="plot-hit" tabindex="0" role="button" aria-label="${wallsText}" data-zone="ring"><polygon points="${poly}" fill="none" stroke="transparent" stroke-width="18" stroke-linejoin="round" pointer-events="stroke"/>
+        ${wallsLeft ? `<g transform="translate(580,400)"><circle r="11" fill="${MAP.red}" stroke="${MAP.ink}"/><text y="4.5" text-anchor="middle" font-family="Marcellus" font-size="12" fill="${MAP.paper}">${wallsLeft}</text></g>` : ""}</g>
       <path d="${ZIG}" fill="none" stroke="${MAP.ink}" stroke-width="4" stroke-linejoin="round"/>
       <path d="${ZIG}" fill="none" stroke="${MAP.paper}" stroke-width="1.2" stroke-dasharray="3 4"/>
       <rect x="306" y="170" width="24" height="280" fill="${MAP.paper2}" stroke="${MAP.ink}" stroke-width="1.2"/>
@@ -1865,16 +1871,16 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
   function buildPicker(zone) {
     if (phase !== "orders") { toast("Orders are given after the season's cards are read."); return; }
     const base = E.validate(s, book)[0].length;
-    const rows = E.BUILDING_LIST.filter((b) => b.id !== "forum" && (!zone || b.zone === zone)).map((b) => {
+    const rows = E.BUILDING_LIST.filter((b) => b.id !== "forum" && (!zone || b.zone === zone || (zone === "town" && b.zone === "ring"))).map((b) => {
       const c = E.num(b.cost_treasury), mats = E.parseList(b.cost);
       const [ok, probs] = E.validate(s, book.concat([E.order("build", { building: b.id })]));
       const fits = ok.length === base + 1;
       const n = (k) => E.num(b[k]);
       const time = `${n("seasons_to_build")} season${n("seasons_to_build") !== 1 ? "s" : ""} to build${n("matures") ? `, first yield ${n("matures")} after` : ""}${n("ramp") > 1 ? `, full in ${n("ramp")} more` : ""}`;
       const cost = [c ? E.intc(c) + " den" : "", ...Object.entries(mats).map(([g, q]) => `<span class="${q > s[g] ? "short" : ""}">${q} ${esc(E.nameOf(g).toLowerCase())}</span>`)].filter(Boolean).join(", ");
-      return `<button class="pick" type="button" data-b="${b.id}" ${fits ? "" : "disabled"}>${icon(b.id, 38)}<span><span class="t">${esc(b.name)}</span> <span class="d">· ${b.zone === "town" ? "in town" : b.zone === "hill" ? "on the crag" : "in the fields"}</span><br><span class="d">${esc(clean(b.notes))} ${esc(time)}.</span>${fits ? "" : `<br><span class="d short">${esc(probs[probs.length - 1] || "")}</span>`}</span><span class="c">${cost || "free"}</span></button>`;
+      return `<button class="pick" type="button" data-b="${b.id}" ${fits ? "" : "disabled"}>${icon(b.id, 38)}<span><span class="t">${esc(b.name)}</span> <span class="d">· ${b.zone === "town" ? "in town" : b.zone === "ring" ? "on the town wall, no plot" : b.zone === "hill" ? "on the crag" : "in the fields"}</span><br><span class="d">${esc(clean(b.notes))} ${esc(time)}.</span>${fits ? "" : `<br><span class="d short">${esc(probs[probs.length - 1] || "")}</span>`}</span><span class="c">${cost || "free"}</span></button>`;
     }).join("");
-    openVeil(`<div class="dialog wide" role="dialog" aria-label="Build or plant"><h2>${zone === "town" ? "Build inside the walls" : zone === "field" ? "Build or plant in the fields" : zone === "hill" ? "Build on the crag" : "Build or plant"}</h2>
+    openVeil(`<div class="dialog wide" role="dialog" aria-label="Build or plant"><h2>${zone === "town" ? "Build inside the walls" : zone === "ring" ? "The town walls" : zone === "field" ? "Build or plant in the fields" : zone === "hill" ? "Build on the crag" : "Build or plant"}</h2>
       <div class="picklist">${rows}</div><div class="row"><button class="btn quiet" type="button" data-close>Cancel</button></div></div>`);
     $("veil").querySelectorAll("[data-b]").forEach((b) => (b.onclick = () => { addOrders([E.order("build", { building: b.dataset.b })]); closeVeil(); }));
   }
