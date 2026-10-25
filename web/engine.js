@@ -647,7 +647,7 @@
   const DENSITY = { tribes: 1, march: 1, rebels: 1, pirates: .5, brigands: .4 };
   const densityOf = (enemy) => Math.min(1, (DENSITY[enemy.kind] ?? .7) + (enemy.at === "walls" ? .3 : 0));   // an assault packs them at the gate
   const missileOf = (type, enemy) => { const d = densityOf(enemy);
-    return type === "sling" ? .04 + .12 * d : type === "militia_sling" ? .03 + .08 * d : MISSILE[type] || 0; };
+    return type === "sling" ? .04 + .12 * d : type === "militia_sling" ? .03 + .08 * d : type === "archer" ? .14 - .05 * d : type === "militia_archer" ? .10 - .04 * d : MISSILE[type] || 0; };
   const MISSILE_TYPES = ["sling", "archer", "militia_sling", "militia_archer"];
   const SHIELDS = ["cohort", "ally", "horse"];
   /** The year's conflict: at the first season of each year, decide whether and when it comes, and from where. */
@@ -677,7 +677,9 @@
     if (navy) men = Math.round(men * (1 - TRIREME_CUT * navy));   // our triremes sink some of their boats before they land
     const name = kind === "tribes" || kind === "march" ? `${E0.name}: the ${TRIBE[tribe].name}` : E0.name;
     const [where, say] = (AT_TEXT[kind] && AT_TEXT[kind][at]) || [E0.where, E0.say];
-    return { kind, tribe, name, men, share, fury: E0.fury, home: E0.home, terrain: E0.terrain, where, say: navy ? `${say} Our trireme${navy > 1 ? "s" : ""} caught them in the gulf and sank ${navy > 1 ? "several" : "some"} of their boats.` : say, who: E0.who, at, walled: at === "walls" && built(s, "walls"), navy };
+    const features = [], free = [0, 1, 2], nf = kind === "rebels" ? 0 : rint(0, 2);
+    for (let k = 0; k < nf; k++) features.push({ lane: free.splice(rint(0, free.length - 1), 1)[0], kind: GROUND[rint(0, GROUND.length - 1)] });
+    return { kind, tribe, name, men, share, fury: E0.fury, home: E0.home, terrain: E0.terrain, where, say: navy ? `${say} Our trireme${navy > 1 ? "s" : ""} caught them in the gulf and sank ${navy > 1 ? "several" : "some"} of their boats.` : say, who: E0.who, at, walled: at === "walls" && built(s, "walls"), navy, features, seed: rint(1, 99999) };
   }
   // the mixed army (rules v7)
   const SLING_GROUP = 25, ARCHER_GROUP = 30, CAVALRY_MIN = 5, ENGINES_MAX = 4;
@@ -729,8 +731,9 @@
     for (let k = 0; k < f.slingers; k++) units.push({ id: "s" + k, type: "sling", x: LANE_CX[big] + spread(f.slingers, k), y: 272 });
     const held = [0, 1, 2].filter((i) => give[i] || second === i), cover = (k) => (held.length ? held[k % held.length] : big);   // missiles only where a shield line stands
     for (let k = 0; k < f.archers; k++) units.push({ id: "a" + k, type: "archer", x: walls ? 120 + k * 230 : LANE_CX[cover(held.indexOf(big) + 1 + k)] + 40, y: walls ? 375 : 272 });
-    for (let k = 0; k < f.engines; k++) units.push({ id: "e" + k, type: "engine", x: LANE_CX[big] + 120 + k * 46, y: 418 });
-    for (let k = 0; k < f.ballistae; k++) units.push({ id: "b" + k, type: "ballista", x: LANE_CX[big] - 120 - k * 50, y: 418 });
+    const nb = Math.min(f.ballistae, MACHINES_MAX), ne = Math.min(f.engines, MACHINES_MAX - nb);   // three engines at most take the field
+    for (let k = 0; k < ne; k++) units.push({ id: "e" + k, type: "engine", x: LANE_CX[big] + 120 + k * 46, y: 418 });
+    for (let k = 0; k < nb; k++) units.push({ id: "b" + k, type: "ballista", x: LANE_CX[big] - 120 - k * 50, y: 418 });
     if (f.cavalry) units.push({ id: "h", type: "horse", x: lead === "self" ? 560 : big === 2 ? 860 : 40, y: lead === "self" ? 432 : 330 });
     if (f.militiaSling) units.push({ id: "ms", type: "militia_sling", x: LANE_CX[cover(held.indexOf(big) + 2)] - 40, y: 272 });
     if (f.militiaArcher) units.push({ id: "ma", type: "militia_archer", x: walls ? 720 : LANE_CX[cover(held.indexOf(big) + 3)] + 40, y: walls ? 375 : 272 });
@@ -739,7 +742,14 @@
   }
   // a small deterministic random source, so the odds shown stay still while you drag
   const seeded = (seed) => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  /** The lanes as they stand before the first stone flies: strength, enemy after missiles, morale, bonuses. */
+  // rules v13: a battle is four throws. 1) our engines, one die each (three at most); 2) our slingers and archers, one die per lane;
+  // 3) their charge, one die per lane; 4) our counter-attack, one die per lane. A lane is won when the enemy breaks, or keeps the lesser heart.
+  const MACHINES_MAX = 3, MACHINE_CUT = { engine: .07, ballista: .10 }, MISSILE_CAP = .45, EXPOSED_DC = 4, MACHINE_DC = 10;
+  const GROUND = ["rocks", "forest", "brook", "hill"];
+  const GROUND_TEXT = { rocks: "rocks break their ranks: their charge −1, and horsemen cannot strike here", forest: "a wood: stones and arrows lose half their force here",
+    brook: "a brook: they must wade it, their charge −2", hill: "we hold a low hill: +1 to us, and our missiles carry further" };
+  const hasGround = (enemy, i, k) => (enemy.features || []).some((x) => x.lane === i && x.kind === k);
+  /** The lanes as they stand before the first die: who stands where, the shooters, the engines, the bonuses, the ground. */
   function setup(s, enemy, plan, lead) {
     const f = forces(s), kit = s.kit || {};
     const common = [["the discipline of Rome", DISCIPLINE]];
@@ -750,73 +760,96 @@
     const bb = Math.trunc(stat(s, "battle_bonus")); if (bb) common.push(["drilled in the barracks", bb]);
     const xp = Math.min(3, Math.floor((s.army_xp || 0) / 2)); if (xp) common.push(["veterans of past battles", xp]);
     if (s.morale) common.push([s.morale > 0 ? "high spirits" : "low spirits after defeat", s.morale]);
-    const siege = plan.units.filter((u) => u.type === "ballista").length * 2 + (plan.units.some((u) => u.type === "engine") ? 1 : 0);
-    if (!enemy.home && siege) common.push(["the engines batter their stockade", Math.min(3, siege)]);
-    if (lead === "self") common.push(["the governor at their head", SELF_LEAD]);
-    else if (ADVISORS[lead]) { const st = lead === "fleet" ? "experience" : "strategy"; common.push([`${ADVISORS[lead].name.split(" ")[0]}'s ${st}`, num(ADVISORS[lead][st], 3) - 3]); }
     const menOf = (u) => u.type === "cohort" ? f.perCohort : u.type === "sling" ? f.perSling : u.type === "archer" ? f.perArcher : u.type === "horse" ? f.cavalry
       : u.type === "militia_sling" ? f.militiaSling : u.type === "militia_archer" ? f.militiaArcher : u.type === "ally" ? (u.men || 0) : 0;
     const placed = plan.units.map((u) => ({ ...u, lane: laneAt(u.x), row: rowAt(u, enemy, s), men: menOf(u) }));
-    const wallsMissile = placed.filter((u) => u.row === "walls").reduce((a, u) => a + (MISSILE[u.type] || 0) / 2, 0);
+    const machines = placed.filter((u) => u.type === "ballista").concat(placed.filter((u) => u.type === "engine")).slice(0, MACHINES_MAX);
+    const siege = machines.filter((u) => u.type === "ballista").length * 2 + (machines.some((u) => u.type === "engine") ? 1 : 0);
+    if (!enemy.home && siege) common.push(["the engines batter their stockade", Math.min(3, siege)]);
+    if (lead === "self") common.push(["the governor at their head", SELF_LEAD]);
+    else if (ADVISORS[lead]) { const st = lead === "fleet" ? "experience" : "strategy"; common.push([`${ADVISORS[lead].name.split(" ")[0]}'s ${st}`, num(ADVISORS[lead][st], 3) - 3]); }
     const horse = placed.find((u) => u.type === "horse");
     const strikeLane = horse && horse.row === "flank" ? (horse.x < 90 ? 0 : 2) : -1;
     const lanes = [0, 1, 2].map((i) => {
       const here = placed.filter((u) => u.lane === i);
-      const front = here.filter((u) => u.row === "front" || u.row === "line"), second = here.filter((u) => u.row === "second" && CLASH[u.type]);
-      // the stages before the clash: far (sling stones, ballistae), near (slings again, arrows, scorpions), then the javelins
-      const stage = { far: 0, near: wallsMissile, pila: 0 };
-      for (const u of here) {
-        if (u.row === "walls") continue;
-        const m = MISSILE[u.type] ? missileOf(u.type, enemy) : 0;
-        if (u.type === "sling" || u.type === "militia_sling") { stage.far += m / 2; stage.near += m / 2; }
-        else if (u.type === "ballista") stage.far += m; else if (m) stage.near += m;
-        if (u.type === "cohort" && u.row === "line" && kit.pila) stage.pila += CUT.pila;
-      }
-      const cut = Math.min(CUT.max, stage.far + stage.near + stage.pila);
+      const front = here.filter((u) => (u.row === "front" || u.row === "line") && CLASH[u.type]), second = here.filter((u) => u.row === "second" && CLASH[u.type]);
+      const shooters = here.filter((u) => MISSILE_TYPES.includes(u.type));
+      let fire = shooters.reduce((a2, u) => a2 + missileOf(u.type, enemy) * (u.row === "walls" ? 1.25 : 1), 0);
+      if (kit.pila && here.some((u) => u.type === "cohort" && u.row === "line")) fire += CUT.pila;   // the javelins, thrown just before the clash
       const shielded = here.some((u) => SHIELDS.includes(u.type) && u.row !== "pursue" && u.row !== "guard");
-      const exposed = !shielded && here.some((u) => MISSILE_TYPES.includes(u.type) && u.row !== "walls");
-      const foe0 = Math.round(enemy.men * enemy.share[i]), foe = Math.round(foe0 * (1 - cut) * (enemy.quality || 1));
+      const exposed = !shielded && shooters.some((u) => u.row !== "walls");
+      const foe0 = Math.round(enemy.men * enemy.share[i]), foe = Math.round(foe0 * (enemy.quality || 1));
       const mult = (u) => u.type === "cohort" ? (kit.gladius ? GLADIUS_MULT : CLASH.cohort) : CLASH[u.type] || 0;
-      const ours = Math.round(front.reduce((a, u) => a + u.men * mult(u), 0)), reserve = Math.round(second.reduce((a, u) => a + u.men * mult(u), 0));
-      const men = Math.round(front.reduce((a, u) => a + u.men, 0));
+      const ours = Math.round(front.reduce((a2, u) => a2 + u.men * mult(u), 0)), reserve = Math.round(second.reduce((a2, u) => a2 + u.men * mult(u), 0));
+      const men = Math.round(front.reduce((a2, u) => a2 + u.men, 0)), hd = Math.trunc(stat(s, "home_defence"));
       const parts = foe < 5 ? [] : ours ? [[ours / foe >= 1 ? `${Math.round(ours / foe * 10) / 10} to 1 in our favour` : `${Math.round(foe / ours * 10) / 10} to 1 against us`, Math.max(-6, Math.min(6, Math.round(4 * Math.log2(ours / foe))))]].concat(common)
-        : enemy.walled && Math.trunc(stat(s, "home_defence")) ? [[built(s, "arx") ? "only the walls and the citadel" : "only the walls and the townsmen", Math.trunc(stat(s, "home_defence")) + WALLS_ALONE]]
-        : enemy.home ? [["only the farmers with their pitchforks", FARMERS_ALONE]] : [["nobody holds this flank", -99]];
-      if (foe >= 5 && enemy.fury) parts.push(["their first wild charge (first round)", -enemy.fury]);
-      if (strikeLane === i && foe >= 5) parts.push(["our horsemen strike their flank (first round)", CAVALRY_STRIKE]);
-      if (exposed && foe >= 5) parts.push(["slingers and archers with no shield line to hide behind", -2]);
-      return { lane: LANES[i], i, foe0, foe, cut: Math.round(cut * 100), stage: Object.fromEntries(Object.entries(stage).map(([k, v]) => [k, Math.round(Math.min(CUT.max, v) * 100)])), exposed: exposed && foe >= 5, ours, reserve, men, parts, walls: !ours && foe >= 5 && ((enemy.walled && Math.trunc(stat(s, "home_defence")) > 0) || (enemy.home && !enemy.walled)),
-        empty: foe < 5, units: here.map((u) => u.type) };
+        : enemy.walled && hd ? [[built(s, "arx") ? "only the walls and the citadel" : "only the walls and the townsmen", hd + WALLS_ALONE]]
+        : enemy.home ? [["only the farmers with their pitchforks", FARMERS_ALONE]] : [["nobody holds this lane", -99]];
+      if (strikeLane === i && foe >= 5 && !hasGround(enemy, i, "rocks")) parts.push(["our horsemen strike their flank", CAVALRY_STRIKE]);
+      if (hasGround(enemy, i, "hill") && foe >= 5 && ours) parts.push(["we hold the hill", 1]);
+      const charge = foe < 5 ? [] : [enemy.fury ? ["their wild charge", enemy.fury] : null, hasGround(enemy, i, "brook") ? ["they wade the brook", -2] : null, hasGround(enemy, i, "rocks") ? ["the rocks break their ranks", -1] : null].filter(Boolean);
+      return { lane: LANES[i], i, foe0, foe, fire, shooters: shooters.length, exposed: exposed && foe >= 5, ours, reserve, men, parts, charge,
+        walls: !ours && foe >= 5 && ((enemy.walled && hd > 0) || (enemy.home && !enemy.walled)), empty: foe < 5, units: here.map((u) => u.type),
+        ground: (enemy.features || []).filter((x) => x.lane === i).map((x) => x.kind) };
     });
-    return { lanes, horse: horse ? horse.row : null, placed, f };
+    return { lanes, horse: horse ? horse.row : null, placed, f, machines };
   }
-  /** One battle, round by round. rnd is the random source; returns the lanes' fates and a record of every roll. */
+  const throwTier = (r, total, dc) => (r === 1 ? 0 : r === 20 ? 1.5 : total >= dc ? 1 : .4);
+  /** One battle in four throws. rnd is the random source; returns the lanes' fates and every die thrown, phase by phase. */
   function fight(s, enemy, st, rnd) {
     const d20 = () => 1 + Math.floor(rnd() * 20);
-    const L = st.lanes.map((l) => ({ ...l, ourMor: 100 + (s.morale || 0) * 10, foeMor: 100 + enemy.fury * 10 - l.cut * .8, now: l.ours, foeNow: l.foe, res: l.reserve, fate: l.empty ? "won" : null, lost: 0 }));
-    const rounds = [];
-    if (enemy.fury) L.forEach((l) => { if (!l.fate) l.ourMor -= enemy.fury * 8; });
-    for (let r = 1; r <= MELEE_ROUNDS; r++) {
-      const rec = [];
-      L.forEach((l, i) => {
-        if (l.fate) { rec.push(null); return; }
-        let bonus = l.parts.filter(([t]) => !/first round/.test(t) || r === 1).reduce((a, [, v]) => a + v, 0);
-        if (!l.walls && l.now > 0) bonus = bonus - l.parts[0][1] + Math.max(-6, Math.min(6, Math.round(4 * Math.log2(Math.max(1, l.now) / Math.max(1, l.foeNow)))));
-        if (L.some((x, j) => Math.abs(j - i) === 1 && x.fate === "won" && !x.empty)) bonus += 2;   // their neighbours have fled: we take them in the flank
-        bonus = Math.max(-BONUS_CAP - 2, Math.min(BONUS_CAP + 2, bonus));
-        const roll = d20(), total = roll + bonus, ok = bonus > -50 && (roll === 20 || (roll !== 1 && total >= BATTLE_DC)), margin = Math.min(8, Math.abs(total - BATTLE_DC));
-        if (ok) { l.foeNow *= 1 - Math.min(.32, .12 + .02 * margin); l.foeMor -= Math.min(50, HIT_FOE + 3 * margin) + (roll === 20 ? 20 : 0); const lossNow = l.now * .03; l.now -= lossNow; l.lost += lossNow; }
-        else { const lossNow = l.now * Math.min(.26, .08 + .02 * margin); l.now -= lossNow; l.lost += lossNow; l.ourMor -= Math.min(55, HIT_US + 3 * margin) + (roll === 1 ? 20 : 0); l.foeNow *= .97; }
-        if (l.ourMor < 50 && l.res > 0) { l.now += l.res; l.ourMor += 30; l.res = 0; l.relieved = r; }
-        if (l.foeMor <= 0 || l.foeNow < 5) l.fate = "won"; else if (l.ourMor <= 0) l.fate = "lost";
-        rec.push({ roll, bonus, total, ok, ourMor: Math.max(0, Math.round(l.ourMor)), foeMor: Math.max(0, Math.round(l.foeMor)), relieved: l.relieved === r, fate: l.fate });
-      });
-      rounds.push(rec);
-      const won = L.filter((l) => l.fate === "won").length, lost = L.filter((l) => l.fate === "lost").length;
-      if (won >= 2 || lost >= 2) break;
-    }
+    const L = st.lanes.map((l) => ({ ...l, ourMor: 100 + (s.morale || 0) * 10, foeMor: 100 + enemy.fury * 5, now: l.ours, foeNow: l.foe, res: l.reserve, fate: l.empty ? "won" : null, lost: 0, caught: false }));
+    const bonusOf = (l) => l.parts.reduce((a2, [, v]) => a2 + v, 0);
+    const snap = (l, x) => Object.assign(x, { ourMor: Math.max(0, Math.round(l.ourMor)), foeMor: Math.max(0, Math.round(l.foeMor)), fate: l.fate, foeLeft: Math.max(0, Math.round(l.foeNow)) });
+    const phases = [];
+    // 1. our engines: a die each
+    if (st.machines.length) phases.push({ id: "engines", rolls: st.machines.map((m) => {
+      let l = L[m.lane];
+      if (l.empty) l = L.filter((x) => !x.empty).sort((p, q) => q.foeNow - p.foeNow)[0] || l;   // an engine with no target turns to the biggest crowd
+      const r = d20(), k = Math.round(l.foeNow * MACHINE_CUT[m.type] * throwTier(r, r, MACHINE_DC));
+      l.foeNow -= k; l.foeMor -= Math.round(k / Math.max(1, l.foe) * 120);
+      return snap(l, { lane: l.i, who: m.type, roll: r, bonus: 0, dc: MACHINE_DC, ok: r === 20 || (r !== 1 && r >= MACHINE_DC), killed: k });
+    }) });
+    // 2. our slingers and archers: a die for each lane where they stand
+    const shots = L.filter((l) => !l.empty && l.fire > 0).map((l) => {
+      const b = hasGround(enemy, l.i, "hill") ? 1 : 0, r = d20(), tier = throwTier(r, r + b, BATTLE_DC);
+      const frac = Math.min(MISSILE_CAP, l.fire * tier * (hasGround(enemy, l.i, "forest") ? .5 : 1) * (hasGround(enemy, l.i, "hill") ? 1.25 : 1)), k = Math.round(l.foeNow * frac);
+      l.foeNow -= k; l.foeMor -= Math.round(frac * 90);
+      if (l.foeNow < 5) l.fate = "won";
+      return snap(l, { lane: l.i, who: "missiles", roll: r, bonus: b, dc: BATTLE_DC, ok: tier >= 1, killed: k });
+    });
+    if (shots.length) phases.push({ id: "missiles", rolls: shots });
+    // 3. their charge: a die for each lane
+    const charges = L.filter((l) => !l.fate).map((l) => {
+      const r = d20();
+      if (l.exposed) {   // slingers and archers with no shields before them: almost always cut down, and the lane with them
+        const caught = r >= EXPOSED_DC;
+        if (caught) { l.fate = "lost"; l.caught = true; l.ourMor = 0; l.lost = l.now; l.now = 0; }
+        return snap(l, { lane: l.i, who: "charge", roll: r, bonus: 0, dc: EXPOSED_DC, ok: caught, exposed: true });
+      }
+      const B = bonusOf(l), push = l.charge.reduce((a2, [, v]) => a2 + v, 0), total = r + push - B;
+      const ok = B <= -50 || r === 20 || (r !== 1 && total >= BATTLE_DC), m = Math.min(8, Math.abs(total - BATTLE_DC));
+      if (ok) { const loss = l.now * Math.min(.3, .1 + .02 * m); l.now -= loss; l.lost += loss; l.ourMor -= Math.min(60, 25 + 3 * m) + (r === 20 ? 20 : 0); if (!l.ours) l.ourMor = 0; }
+      else { l.foeNow *= 1 - Math.min(.2, .06 + .015 * m); l.foeMor -= Math.min(45, 15 + 3 * m) + (r === 1 ? 20 : 0); }
+      if (l.ourMor < 50 && l.res > 0) { l.now += l.res; l.ourMor += 30; l.res = 0; l.relieved = true; }
+      l.held = !ok;
+      if (l.ourMor <= 0) l.fate = "lost"; else if (l.foeMor <= 0 || l.foeNow < 5) l.fate = "won";
+      return snap(l, { lane: l.i, who: "charge", roll: r, bonus: push - B, dc: BATTLE_DC, ok, relieved: !!l.relieved });
+    });
+    if (charges.length) phases.push({ id: "charge", rolls: charges });
+    // 4. our counter-attack: a die for each lane where our line still stands
+    for (const l of L) if (!l.fate && !l.ours) l.fate = l.held ? "won" : "lost";   // the walls or the farmers held, or not
+    const back = L.filter((l) => !l.fate).map((l) => {
+      const B = bonusOf(l), r = d20(), total = r + B, ok = r === 20 || (r !== 1 && total >= BATTLE_DC), m = Math.min(8, Math.abs(total - BATTLE_DC));
+      if (ok) { l.foeNow *= 1 - Math.min(.34, .14 + .02 * m); l.foeMor -= Math.min(60, 28 + 3 * m) + (r === 20 ? 20 : 0); const lo = l.now * .03; l.now -= lo; l.lost += lo; }
+      else { const lo = l.now * Math.min(.24, .07 + .02 * m); l.now -= lo; l.lost += lo; l.ourMor -= Math.min(50, 18 + 3 * m) + (r === 1 ? 20 : 0); }
+      if (l.foeMor <= 0 || l.foeNow < 5) l.fate = "won"; else if (l.ourMor <= 0) l.fate = "lost";
+      return snap(l, { lane: l.i, who: "counter", roll: r, bonus: B, dc: BATTLE_DC, ok });
+    });
+    if (back.length) phases.push({ id: "counter", rolls: back });
+    // the day: in each lane still undecided, whoever keeps the better heart holds the field
     L.forEach((l) => { if (!l.fate) l.fate = l.ourMor >= l.foeMor ? "won" : "lost"; });
-    return { won: L.filter((l) => l.fate === "won").length >= 2, lanes: L, rounds };
+    return { won: L.filter((l) => l.fate === "won").length >= 2, lanes: L, phases, rounds: phases };
   }
   /** The odds of a deployment: the battle fought SIMS times in the mind's eye. */
   function battleOdds(s, enemy, plan, lead) {
@@ -882,7 +915,7 @@
       if (lead === "self") { s.favour += GLORY[0]; s.loyalty += GLORY[1]; notes.push("The town cheers the governor who fought in the front rank; the story reaches Rome."); }
       else cheer(s, lead, notes, "returns in triumph");
       spoils(s, enemy, st, notes);
-      notes.push(`Victory ${enemy.where} against ${lower(enemy.name)} (${enemy.men} men) after ${result.rounds.length} round${result.rounds.length > 1 ? "s" : ""}: ${leader}${helpers.length ? `, with ${helpers.join(" and ")}` : ""}; ${dead} of ours fell.${loot ? ` Their plunder brings ${intc(loot)} denarii${st.horse === "pursue" ? ", the horsemen running down the stragglers" : ""}.` : ""} The army gains experience (${s.army_xp}/${XP_MAX}).`);
+      notes.push(`Victory ${enemy.where} against ${lower(enemy.name)} (${enemy.men} men): ${leader}${helpers.length ? `, with ${helpers.join(" and ")}` : ""}; ${dead} of ours fell.${loot ? ` Their plunder brings ${intc(loot)} denarii${st.horse === "pursue" ? ", the horsemen running down the stragglers" : ""}.` : ""} The army gains experience (${s.army_xp}/${XP_MAX}).`);
     } else {
       s.favour -= 4; s.loyalty -= 5;
       s.army_xp = Math.max(0, (s.army_xp || 0) - 1); s.morale = -2;
@@ -935,7 +968,7 @@
     return false;
   }
   // --- Spoils, judgement and loyalty (rules v9-v10) ---
-  const EXPOSED_WON = .45, EXPOSED_LOST = .8, PRIZE_DC = 12, PRIZE_SALE = 500, GROVE_DC = 13;
+  const EXPOSED_WON = .45, EXPOSED_LOST = .9, PRIZE_DC = 12, PRIZE_SALE = 500, GROVE_DC = 13;
   /** What a victory brings besides the plunder: a pirate ship taken, or the tribes' vines and olives on the border. */
   function spoils(s, enemy, st, notes) {
     const r = rint(1, 20) + (st.horse === "pursue" ? 4 : 0);
@@ -2020,6 +2053,6 @@
     TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
     CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, harvestForecast, berthsUsed, SHIPS_MAX, TRIREME_UPKEEP, glory, GLORY_NEED, soldiersOf, tribesWon, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
-    tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS,
+    tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS, MACHINES_MAX, GROUND_TEXT, missileOf,
   };
 })();
