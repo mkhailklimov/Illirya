@@ -742,9 +742,9 @@
   }
   // a small deterministic random source, so the odds shown stay still while you drag
   const seeded = (seed) => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  // rules v13: a battle is four throws. 1) our engines, one die each (three at most); 2) our slingers and archers, one die per lane;
-  // 3) their charge, one die per lane; 4) our counter-attack, one die per lane. A lane is won when the enemy breaks, or keeps the lesser heart.
-  const MACHINES_MAX = 3, MACHINE_CUT = { engine: .07, ballista: .10 }, MISSILE_CAP = .45, EXPOSED_DC = 4, MACHINE_DC = 10;
+  // rules v13: a battle is three throws, one die per lane in each: 1) our engines (three at most), slingers and archers together;
+  // 2) their charge; 3) our counter-attack. A lane is won when the enemy breaks, or keeps the lesser heart.
+  const MACHINES_MAX = 3, MACHINE_CUT = { engine: .07, ballista: .10 }, MISSILE_CAP = .45, EXPOSED_DC = 4;
   const GROUND = ["rocks", "forest", "brook", "hill"];
   const GROUND_TEXT = { rocks: "rocks break their ranks: their charge −1, and horsemen cannot strike here", forest: "a wood: stones and arrows lose half their force here",
     brook: "a brook: they must wade it, their charge −2", hill: "we hold a low hill: +1 to us, and our missiles carry further" };
@@ -770,12 +770,17 @@
     else if (ADVISORS[lead]) { const st = lead === "fleet" ? "experience" : "strategy"; common.push([`${ADVISORS[lead].name.split(" ")[0]}'s ${st}`, num(ADVISORS[lead][st], 3) - 3]); }
     const horse = placed.find((u) => u.type === "horse");
     const strikeLane = horse && horse.row === "flank" ? (horse.x < 90 ? 0 : 2) : -1;
+    // each engine shoots with the slingers and archers of its lane; one with no enemy in front turns to the biggest crowd
+    const foeIn = [0, 1, 2].map((i) => Math.round(enemy.men * enemy.share[i])), biggest = foeIn.indexOf(Math.max(...foeIn));
+    const engineFire = [0, 0, 0], engineCount = [0, 0, 0];
+    for (const m of machines) { const i = foeIn[m.lane] >= 5 ? m.lane : biggest; engineFire[i] += MACHINE_CUT[m.type]; engineCount[i]++; }
     const lanes = [0, 1, 2].map((i) => {
       const here = placed.filter((u) => u.lane === i);
       const front = here.filter((u) => (u.row === "front" || u.row === "line") && CLASH[u.type]), second = here.filter((u) => u.row === "second" && CLASH[u.type]);
       const shooters = here.filter((u) => MISSILE_TYPES.includes(u.type));
       let fire = shooters.reduce((a2, u) => a2 + missileOf(u.type, enemy) * (u.row === "walls" ? 1.25 : 1), 0);
       if (kit.pila && here.some((u) => u.type === "cohort" && u.row === "line")) fire += CUT.pila;   // the javelins, thrown just before the clash
+      fire += engineFire[i];
       const shielded = here.some((u) => SHIELDS.includes(u.type) && u.row !== "pursue" && u.row !== "guard");
       const exposed = !shielded && shooters.some((u) => u.row !== "walls");
       const foe0 = Math.round(enemy.men * enemy.share[i]), foe = Math.round(foe0 * (enemy.quality || 1));
@@ -788,29 +793,21 @@
       if (strikeLane === i && foe >= 5 && !hasGround(enemy, i, "rocks")) parts.push(["our horsemen strike their flank", CAVALRY_STRIKE]);
       if (hasGround(enemy, i, "hill") && foe >= 5 && ours) parts.push(["we hold the hill", 1]);
       const charge = foe < 5 ? [] : [enemy.fury ? ["their wild charge", enemy.fury] : null, hasGround(enemy, i, "brook") ? ["they wade the brook", -2] : null, hasGround(enemy, i, "rocks") ? ["the rocks break their ranks", -1] : null].filter(Boolean);
-      return { lane: LANES[i], i, foe0, foe, fire, shooters: shooters.length, exposed: exposed && foe >= 5, ours, reserve, men, parts, charge,
+      return { lane: LANES[i], i, foe0, foe, fire, shooters: shooters.length, engines: engineCount[i], exposed: exposed && foe >= 5, ours, reserve, men, parts, charge,
         walls: !ours && foe >= 5 && ((enemy.walled && hd > 0) || (enemy.home && !enemy.walled)), empty: foe < 5, units: here.map((u) => u.type),
         ground: (enemy.features || []).filter((x) => x.lane === i).map((x) => x.kind) };
     });
     return { lanes, horse: horse ? horse.row : null, placed, f, machines };
   }
   const throwTier = (r, total, dc) => (r === 1 ? 0 : r === 20 ? 1.5 : total >= dc ? 1 : .4);
-  /** One battle in four throws. rnd is the random source; returns the lanes' fates and every die thrown, phase by phase. */
+  /** One battle in three throws. rnd is the random source; returns the lanes' fates and every die thrown, phase by phase. */
   function fight(s, enemy, st, rnd) {
     const d20 = () => 1 + Math.floor(rnd() * 20);
     const L = st.lanes.map((l) => ({ ...l, ourMor: 100 + (s.morale || 0) * 10, foeMor: 100 + enemy.fury * 5, now: l.ours, foeNow: l.foe, res: l.reserve, fate: l.empty ? "won" : null, lost: 0, caught: false }));
     const bonusOf = (l) => l.parts.reduce((a2, [, v]) => a2 + v, 0);
     const snap = (l, x) => Object.assign(x, { ourMor: Math.max(0, Math.round(l.ourMor)), foeMor: Math.max(0, Math.round(l.foeMor)), fate: l.fate, foeLeft: Math.max(0, Math.round(l.foeNow)) });
     const phases = [];
-    // 1. our engines: a die each
-    if (st.machines.length) phases.push({ id: "engines", rolls: st.machines.map((m) => {
-      let l = L[m.lane];
-      if (l.empty) l = L.filter((x) => !x.empty).sort((p, q) => q.foeNow - p.foeNow)[0] || l;   // an engine with no target turns to the biggest crowd
-      const r = d20(), k = Math.round(l.foeNow * MACHINE_CUT[m.type] * throwTier(r, r, MACHINE_DC));
-      l.foeNow -= k; l.foeMor -= Math.round(k / Math.max(1, l.foe) * 120);
-      return snap(l, { lane: l.i, who: m.type, roll: r, bonus: 0, dc: MACHINE_DC, ok: r === 20 || (r !== 1 && r >= MACHINE_DC), killed: k });
-    }) });
-    // 2. our slingers and archers: a die for each lane where they stand
+    // 1. our engines, slingers and archers: one die for each lane where any of them stand
     const shots = L.filter((l) => !l.empty && l.fire > 0).map((l) => {
       const b = hasGround(enemy, l.i, "hill") ? 1 : 0, r = d20(), tier = throwTier(r, r + b, BATTLE_DC);
       const frac = Math.min(MISSILE_CAP, l.fire * tier * (hasGround(enemy, l.i, "forest") ? .5 : 1) * (hasGround(enemy, l.i, "hill") ? 1.25 : 1)), k = Math.round(l.foeNow * frac);
@@ -819,7 +816,7 @@
       return snap(l, { lane: l.i, who: "missiles", roll: r, bonus: b, dc: BATTLE_DC, ok: tier >= 1, killed: k });
     });
     if (shots.length) phases.push({ id: "missiles", rolls: shots });
-    // 3. their charge: a die for each lane
+    // 2. their charge: a die for each lane
     const charges = L.filter((l) => !l.fate).map((l) => {
       const r = d20();
       if (l.exposed) {   // slingers and archers with no shields before them: almost always cut down, and the lane with them
@@ -837,7 +834,7 @@
       return snap(l, { lane: l.i, who: "charge", roll: r, bonus: push - B, dc: BATTLE_DC, ok, relieved: !!l.relieved });
     });
     if (charges.length) phases.push({ id: "charge", rolls: charges });
-    // 4. our counter-attack: a die for each lane where our line still stands
+    // 3. our counter-attack: a die for each lane where our line still stands
     for (const l of L) if (!l.fate && !l.ours) l.fate = l.held ? "won" : "lost";   // the walls or the farmers held, or not
     const back = L.filter((l) => !l.fate).map((l) => {
       const B = bonusOf(l), r = d20(), total = r + B, ok = r === 20 || (r !== 1 && total >= BATTLE_DC), m = Math.min(8, Math.abs(total - BATTLE_DC));
