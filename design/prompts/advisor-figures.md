@@ -2,71 +2,129 @@
 
 These pictures replace the line drawings in the game's big pop-ups (the enemy at the gates, the judgement, the haruspex's prophecy, the inventions, the advisors' special abilities). The round coin portraits on the council stay as they are.
 
-## The look we want (version 2, 24 October 2026)
+## Version 3 (28 October 2026): an ancient fresco, not a modern illustration
 
-The first try (realistic painted illustration, kept in `design/pieces/figures/drafts-realistic/`) looked like a plate from a history book: shading, muscles, 3D light. That is too much. We want **the way the ancients drew themselves**: a figure from a Greek painted vase or a Roman/Etruscan wall painting. That means:
+### What went wrong so far
+- **Version 1** (`design/pieces/figures/drafts-realistic/`): a realistic painted book illustration.
+- **Version 2** (`design/pieces/figures/drafts-too-detailed/`, made in ChatGPT with a vase reference): better colours, but still a modern illustration *about* antiquity, not antiquity itself:
+  - a dark background with a glowing vignette;
+  - engraved hatching and shading lines everywhere, like a banknote;
+  - a realistic face turned three-quarters, with wrinkles and a modelled jaw;
+  - muscles on the legs and arms;
+  - ornament on every edge (fringes, palmettes, a Medusa on the breastplate, winged thunderbolts on the shield).
 
-- **Flat colour, no shading.** No gradients, no light and shadow, no 3D. Each area is one colour.
-- **A bold contour line** around every shape, and a few thin lines for folds, hair and details. Drapery folds are parallel lines, not modelled cloth.
-- **Head in profile,** with the almond-shaped eye drawn as if seen from the front, as on the vases. Body upright, a stiff, formal, dignified pose.
-- **Few colours:** terracotta orange, black, cream and a little gold or dark red.
-- **Simple:** a child should be able to copy it. One or two objects in the hands, nothing else.
+The old prompts invited some of this: "fringed edge", "breastplate", "painted eye", "crested helmet" all ask for detail.
 
-This sits between the game's line drawings and the realistic pictures: as clear as a sketch, as rich as real ancient art.
+### What we want
+**A figure from an Etruscan tomb painting at Tarquinia, about 480 BC** (see `design/pieces/figures/references/fresco-B-tomb-of-the-leopards.png`). Those painters worked fast on wet plaster:
+- **Cream plaster background**, light, with a soft uneven texture and a few cracks. Not dark, no glow.
+- **Skin in one flat red-brown.** Clothes in one or two flat colours. No shading at all.
+- **One dark outline**, a little wobbly, drawn with a brush. Only a handful of inner lines: one or two for folds, one for the hair, one for the eye.
+- **The face in strict profile**, with a big almond eye seen from the front, a straight nose in one line with the forehead, and no wrinkles.
+- **Stiff, naive bodies**: smooth limbs without muscles, big hands, both feet in profile pointing the same way, as if walking.
+- **Objects drawn like a child would**: a liver is a rounded blob, a shield is an oval, coins are dots.
 
-## How to use the prompts
+**The one test:** could it be a photo of a real painted wall in a museum? If it looks like a poster, a book cover or a game card, it is wrong.
 
-1. Use **style block A** (red-figure vase) for all five. It suits the game's dark screens best. Style B (fresco) is the alternative if A feels too dark.
-2. Use **portrait 2:3** (Midjourney `--ar 2:3`; elsewhere 1024 × 1536). Draw the whole figure, feet included, with empty space left and right: the game shows it at 1:2 and trims the sides.
-3. **Give a style reference.** This matters more than the words. Download a photo of a real red-figure vase (for example the Berlin Painter's amphorae, or Achilles and Ajax playing dice by Exekias, black-figure) and attach it:
-   - in ChatGPT: "in the style of this image";
-   - in Midjourney: `--sref <image link>`, plus `--style raw --stylize 50` so it does not make it pretty.
-   Where to find reference pictures (most images on these pages are public domain; check the licence on the image's own page before you upload it anywhere):
-   - Red-figure vases: [Red-figure pottery](https://en.wikipedia.org/wiki/Red-figure_pottery), [the Berlin Painter](https://en.wikipedia.org/wiki/Berlin_Painter), or search Wikimedia Commons for [red-figure amphora](https://commons.wikimedia.org/w/index.php?search=red-figure+amphora).
-   - Black-figure (simpler still): [Exekias](https://en.wikipedia.org/wiki/Exekias), the amphora of Achilles and Ajax playing dice (Vatican Museums).
-   - Wall painting (style B): [Tomb of the Leopards, Tarquinia](https://en.wikipedia.org/wiki/Tomb_of_the_Leopards), or search Commons for [Pompeii fresco figure](https://commons.wikimedia.org/w/index.php?search=Pompeii+fresco+figure).
-   - **Ready to use:** eight of them are already saved as PNG in [`design/pieces/figures/references/`](../pieces/figures/references/), with credits and licences. Start with `vase-A-redfigure-berlin-painter-singer.png` (one standing figure on black); for the robed advisors try `vase-A-redfigure-berlin-painter-judge.png`, for Antistius `vase-A-redfigure-kleophrades-hoplite.png`.
-4. **Keep the five alike.** Make Tertius first. When he is right, use him as the style reference for the other four.
-5. Save the PNGs in `design/pieces/figures/` as `priest.png`, `general.png`, `fleet.png`, `economist.png`, `treasurer.png`, and tell Claude (or run `python web/build.py`).
+### The palette (the same for all five, so they belong together)
+| | Colour | Hex |
+|---|---|---|
+| Plaster (background) | warm cream | #EDE3CC |
+| Skin | red-brown ochre | #A0462A |
+| Outline and hair | brown-black | #2B1A12 |
+| Cloth | one advisor colour each, below | |
 
-## Style block A: red-figure vase (recommended)
+The advisor colours are:
+- **priest:** dark red, #7E2420;
+- **general:** ochre yellow, #C8952F;
+- **fleet:** blue, #2F5D8C;
+- **economist:** green, #4F7F5A;
+- **treasurer:** white with a red border.
 
-> Ancient Greek red-figure vase painting, 5th century BC style. A single standing figure, full length from head to feet, head in strict profile with the eye drawn frontally, upright formal pose. The figure is the orange-red colour of the clay, outlined with a bold black contour line; folds of the clothes, hair and details drawn with fine black lines; a little gold and dark red for the objects he holds. The background is flat glossy black. Completely flat: no shading, no gradients, no 3D, no perspective. Simple, elegant, few lines, like the painting on an amphora. No border, no meander band, no text, no letters.
+## How to use them (ChatGPT)
 
-## Style block B: wall painting (alternative)
+1. **Start a new chat for each figure.** A long chat drifts back to the detailed look.
+2. **Attach the reference first**, `design/pieces/figures/references/fresco-B-tomb-of-the-leopards.png`, and send: "Look at this ancient wall painting. Describe its painting style in 5 short points: lines, colours, faces, bodies, background." Let it answer. Saying the style back makes it follow it much better.
+3. **Paste the advisor's full prompt** below (each one is complete, with the style included). Ask for portrait 2:3 (1024 × 1536).
+4. **If it is still too detailed, don't start again: correct it in the same chat.** Send one fix at a time:
+   - "Remove all hatching and shading lines. Flat colour only."
+   - "Make the background light cream plaster, no dark vignette."
+   - "Make the face simpler: strict profile, one big almond eye, no wrinkles."
+   - "Half as many lines. A painter did this in ten minutes on wet plaster."
+   - "Remove every ornament and pattern from the clothes."
+5. **Keep the five alike.** When one is right, attach it to the next chat as the style reference instead of the tomb photo: "Same painter, same wall, same style exactly: [next prompt]".
+6. Save the PNGs in `design/pieces/figures/` as `priest.png`, `general.png`, `fleet.png`, `economist.png`, `treasurer.png`, and tell Claude (or run `python web/build.py`).
 
-> Roman or Etruscan wall painting (fresco), like the tomb paintings of Tarquinia or the frescoes of Pompeii. A single standing figure, full length from head to feet, head in profile, upright formal pose. Flat areas of colour (ochre, terracotta red, black, cream) with a dark outline, no shading, no 3D; the plaster's soft texture visible. Plain background of {COLOUR}. Simple, few lines, naive and elegant. No border, no text, no letters.
+In **Midjourney**, use the same prompt with `--ar 2:3 --style raw --stylize 0 --sref <link to the tomb photo>` and add `--no` with the negative list at the end.
 
-**Negative prompt** (if your tool has one): `realistic, photorealistic, 3D, shading, gradient, muscles, dramatic lighting, rim light, digital painting, concept art, book illustration, detailed face, text, letters, frame, border, cropped feet`
+**Negative list** (for tools that take one): `modern illustration, poster, book illustration, concept art, digital painting, engraving, hatching, cross-hatching, shading, gradient, vignette, glow, dark background, 3D, realistic face, three-quarter view, wrinkles, muscles, anatomy, ornament, pattern, fringe, jewellery, text, letters, border, frame, cropped feet`
 
-For style B, replace `{COLOUR}` with the advisor's colour below.
+## The five prompts
 
-## The five advisors
+Each block is complete: copy the whole block.
 
-Each prompt goes after the style block. They are deliberately short: a vase painter shows only what tells you who the man is.
+### 1. Tertius Volusius, the haruspex (`priest.png`)
 
-### 1. Tertius Volusius, the haruspex (`priest.png`), colour for B: deep violet
+```
+A photograph of an ancient Etruscan tomb wall painting from Tarquinia, about 480 BC: one standing figure painted on cream plaster. Not a modern illustration.
 
-> A Roman priest who reads the future, an old lean man with no beard. He wears a tall pointed cap tied under the chin and a long mantle with a fringed edge reaching to his feet. In one hand a tall staff curled at the top like a crook; in the other, held up before his face, a sheep's liver. A small altar with a curl of smoke stands at his feet.
+The figure: an old priest who reads the future from livers. Head in strict profile facing right, a big almond-shaped eye seen from the front, a straight nose, no beard, no wrinkles. On his head a tall pointed cap. He wears one long dark red mantle (#7E2420) from shoulders to ankles, drawn with two or three fold lines only. His right hand holds up a liver in front of his face, a simple rounded brown blob. His left hand holds a tall thin staff ending in a curl. A small plain block altar at his feet with one wavy line of smoke.
 
-### 2. Marcus Antistius, prefect of the auxiliaries (`general.png`), colour for B: dark red
+Style: flat colour, no shading, no hatching, no gradient. Skin in one flat red-brown ochre (#A0462A). One wobbly dark brown brush outline (#2B1A12) and very few inner lines. A stiff, naive body: smooth limbs, big hands, both feet in profile. Light cream plaster background (#EDE3CC) with a soft uneven texture and a few hairline cracks, no vignette. No ornament, no pattern, no fringe, no text. Full figure head to feet with space on both sides, portrait 2:3.
+```
 
-> A Roman officer, a middle-aged man with short hair and no beard. He wears a breastplate, a short tunic with a fringe of leather strips, a cloak hanging from one shoulder, and laced military sandals. He holds a short knotted staff of vine wood across his chest; a crested helmet is under his other arm, and a sword hangs at his hip. A tall oval shield leans against his leg.
+### 2. Marcus Antistius, prefect of the auxiliaries (`general.png`)
 
-### 3. Epicadus the Liburnian, master of the fleet (`fleet.png`), colour for B: sea blue
+```
+A photograph of an ancient Etruscan tomb wall painting from Tarquinia, about 480 BC: one standing figure painted on cream plaster. Not a modern illustration.
 
-> An Illyrian sea captain, a strong man with a full curly beard and a pointed felt cap. He wears a short belted tunic and sandals, with a coil of rope over one shoulder. With one hand he holds upright a long steering oar, taller than himself. Small at his feet, the curved prow of a ship with a painted eye.
+The figure: a Roman officer. Head in strict profile facing right, a big almond-shaped eye seen from the front, a straight nose, short dark hair drawn as one flat shape, no beard. He wears a plain ochre yellow body armour (#C8952F), just one flat shape with a single line at the waist, over a short white tunic, and a short dark red cloak hanging behind one shoulder. In his right hand a short straight stick held across his chest. His left hand rests on the rim of a big plain oval shield standing on the ground beside him, the shield a flat ochre oval with one dark ring. Bare legs, simple sandals.
 
-### 4. Nikandros of Epidaurum, adviser on trade (`economist.png`), colour for B: dark green
+Style: flat colour, no shading, no hatching, no gradient. Skin in one flat red-brown ochre (#A0462A). One wobbly dark brown brush outline (#2B1A12) and very few inner lines. A stiff, naive body: smooth limbs without muscles, big hands, both feet in profile. Light cream plaster background (#EDE3CC) with a soft uneven texture and a few hairline cracks, no vignette. No ornament, no pattern, no helmet crest, no text. Full figure head to feet with space on both sides, portrait 2:3.
+```
 
-> A Greek merchant, a man with a short neat beard and a wide-brimmed traveller's hat. He wears a short tunic, a short cloak pinned at the shoulder and high laced boots. In one outstretched hand a merchant's balance with two hanging pans. A tall amphora stands at his feet.
+### 3. Epicadus the Liburnian, master of the fleet (`fleet.png`)
 
-### 5. Felix, keeper of the treasury (`treasurer.png`), colour for B: dark ochre
+```
+A photograph of an ancient Etruscan tomb wall painting from Tarquinia, about 480 BC: one standing figure painted on cream plaster. Not a modern illustration.
 
-> A Roman steward, a man with close-cropped hair and no beard. He wears a long plain belted tunic, with a bunch of keys and a purse hanging from the belt. He holds an open wax writing tablet in one hand and a pointed stylus in the other. Beside him stands a wooden strongbox bound with iron, full of coins.
+The figure: a sea captain from the Illyrian coast. Head in strict profile facing right, a big almond-shaped eye seen from the front, a straight nose, a full round dark beard drawn as one flat shape, a small pointed cap. He wears a short blue tunic (#2F5D8C) belted at the waist, with two fold lines. With both hands he holds upright a long steering oar, taller than himself: a thin pole with a flat blade at the bottom. A coil of rope over one shoulder, drawn as three loops. Bare legs, bare feet.
 
-## If it still comes out too realistic
+Style: flat colour, no shading, no hatching, no gradient. Skin in one flat red-brown ochre (#A0462A). One wobbly dark brown brush outline (#2B1A12) and very few inner lines. A stiff, naive body: smooth limbs without muscles, big hands, both feet in profile. Light cream plaster background (#EDE3CC) with a soft uneven texture and a few hairline cracks, no vignette. Below his feet, three wavy blue lines for the sea. No ship, no ornament, no pattern, no text. Full figure head to feet with space on both sides, portrait 2:3.
+```
 
-- Add at the start: "flat 2D, in the exact style of an ancient Greek vase painting".
-- Attach the vase photo again and say: "copy this style exactly: flat colours, black outline, no shading".
-- Ask for "simpler, fewer lines" once more. The tools tend to add detail; keep taking it away.
+### 4. Nikandros of Epidaurum, adviser on trade (`economist.png`)
+
+```
+A photograph of an ancient Etruscan tomb wall painting from Tarquinia, about 480 BC: one standing figure painted on cream plaster. Not a modern illustration.
+
+The figure: a Greek merchant. Head in strict profile facing right, a big almond-shaped eye seen from the front, a straight nose, a short pointed dark beard, a flat wide-brimmed hat. He wears a short green tunic (#4F7F5A) and a short white cloak over one shoulder, two fold lines each. His right arm stretched forward holds a simple balance: a straight bar with two flat pans hanging on thin lines. Beside his feet a tall plain amphora, a flat ochre shape with two handles. Simple boots.
+
+Style: flat colour, no shading, no hatching, no gradient. Skin in one flat red-brown ochre (#A0462A). One wobbly dark brown brush outline (#2B1A12) and very few inner lines. A stiff, naive body: smooth limbs without muscles, big hands, both feet in profile. Light cream plaster background (#EDE3CC) with a soft uneven texture and a few hairline cracks, no vignette. No ornament, no pattern, no text. Full figure head to feet with space on both sides, portrait 2:3.
+```
+
+### 5. Felix, keeper of the treasury (`treasurer.png`)
+
+```
+A photograph of an ancient Etruscan tomb wall painting from Tarquinia, about 480 BC: one standing figure painted on cream plaster. Not a modern illustration.
+
+The figure: a household steward who keeps the money. Head in strict profile facing right, a big almond-shaped eye seen from the front, a straight nose, close-cropped dark hair drawn as one flat shape, no beard. He wears a long plain white tunic to the ankles with a dark red border at the hem (#7E2420), belted, with a small round purse hanging from the belt. In his left hand an open writing tablet, two plain rectangles. In his right hand a thin pointed stick. Beside him on the ground a small plain wooden chest, a brown box with a few yellow dots for coins on top.
+
+Style: flat colour, no shading, no hatching, no gradient. Skin in one flat red-brown ochre (#A0462A). One wobbly dark brown brush outline (#2B1A12) and very few inner lines. A stiff, naive body: smooth limbs, big hands, both feet in profile. Light cream plaster background (#EDE3CC) with a soft uneven texture and a few hairline cracks, no vignette. No ornament, no pattern, no keys, no text. Full figure head to feet with space on both sides, portrait 2:3.
+```
+
+## Alternative: the vase look
+
+If you prefer a vase after all, replace the first paragraph of any prompt with:
+
+```
+A museum photograph of a single figure on an ancient Greek red-figure vase, about 480 BC, the figure cut out flat from the painted surface. Not a modern illustration.
+```
+
+Then replace the style paragraph with:
+
+```
+Style: the figure is the flat orange colour of the clay, the background flat glossy black with no glow. Only a black outline and a few fine black lines for folds and hair. No shading, no hatching, no gradient, no ornament. Full figure head to feet, portrait 2:3.
+```
+
+Attach `vase-A-redfigure-berlin-painter-singer.png` as the reference. Keep the clothing colours out of the figure text, because a vase has only clay orange and black.
