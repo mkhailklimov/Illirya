@@ -16,3 +16,11 @@ All images come from Wikimedia Commons and may be reused. The ones marked CC BY 
 | `fresco-B-tomb-of-the-leopards.png` | Etruscan wall painting, Tomb of the Leopards, Tarquinia, about 470 BC: flat colours, dark outlines. The model for style B. | Photo: AlMare, [Public domain](https://commons.wikimedia.org/wiki/File:Tarquinia_Tomb_of_the_Leopards.jpg) |
 | `fresco-B-tomb-of-the-triclinium-dancer.png` | Etruscan wall painting, Tomb of the Triclinium, Tarquinia, 500-475 BC: a dancer, one full-length figure. | Photo: Sailko, [CC BY 3.0](https://commons.wikimedia.org/wiki/File:Pittore_forse_attico,_affreschi_della_tomba_del_triclinio,_500-475_ac_ca,_12_danzatrice.jpg) |
 | `fresco-B-etruscan-tomb-painting.png` | Etruscan tomb painting, Tarquinia (The Yorck Project). | The Yorck Project, [Public domain](https://commons.wikimedia.org/wiki/File:Etruskischer_Meister_002.jpg) |
+
+## Crops (28 October 2026)
+
+To use as the style reference in ChatGPT or Midjourney, cut from the two vase photos above, showing the figure only, padded to 2:3 on black:
+- `crop-vase-judge.png`: from `vase-A-redfigure-berlin-painter-judge.png`. Use it for the priest, the economist and the treasurer.
+- `crop-vase-hoplite.png`: from `vase-A-redfigure-kleophrades-hoplite.png`. Use it for the general and the fleet.
+
+Same credits and licences as their sources.
