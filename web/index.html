@@ -237,6 +237,7 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 
 /* report */
 .notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.record { margin-top: 16px; } .record summary { cursor: pointer; margin-bottom: 8px; } .record summary:hover { color: var(--gold-pale); }
 .notes li { padding-left: 18px; position: relative; max-width: 78ch; }
 .notes li::before { content: "◆"; position: absolute; left: 0; top: .1em; font-size: 10px; color: var(--gold); }
 .notes li.history { font: 400 16px/1.5 var(--f-voice); color: var(--mute); }
@@ -251,6 +252,8 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .kpis.goods { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
 .kpi { border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px 8px; background: rgba(44, 8, 25, .55); display: grid; gap: 1px; min-width: 0; }
+.kicon { vertical-align: -3px; margin-right: 6px; color: var(--gold); flex: none; }
+.kpi .k .kicon { display: inline-block; width: 18px; height: 18px; margin-top: 0; }
 .kpi .k { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kpi .v { font: 400 26px/1.15 var(--f-label); color: var(--gold-pale); font-variant-numeric: tabular-nums; }
 .kpis.goods .kpi .v { font-size: 20px; }
@@ -584,6 +587,16 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     listen_sages: '<path d="M-10,14c-6,-10 -4,-24 10,-26c14,2 16,16 10,26Z"/><circle cx="-4" cy="-5" r="3.5"/><circle cx="4" cy="-5" r="3.5"/><path d="M-2,1l2,3 2,-3M-12,-12l4,4M12,-12l-4,4"/>',
   };
   const orderIcon = (o, size = 30) => `<svg class="oi" viewBox="-20 -20 40 40" width="${size}" height="${size}" fill="none" stroke="#e2bd66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${o.id === "build" && I[o.building] ? I[o.building] : O[o.id] || ""}</svg>`;
+  // v21: an icon for each number in the top bar and on the season's cards
+  const KPI_I = { grain: "wheat", army: "recruit", ships: "build_ship", wine: "vineyard", oil: "olives", fleece: "pasture", cloth: "weavers", timber: "woodcutters", salt: "saltpans", fish: "fishery", iron: "mine", marble: "temple" };
+  const KPI_SVG = {
+    treasury: '<ellipse cx="0" cy="11" rx="12" ry="4"/><ellipse cx="0" cy="4" rx="12" ry="4"/><ellipse cx="0" cy="-3" rx="12" ry="4"/><ellipse cx="0" cy="-10" rx="12" ry="4"/>',
+    people: '<circle cx="-10" cy="-5" r="4"/><circle cx="10" cy="-5" r="4"/><circle cx="0" cy="-9" r="4.5"/><path d="M-17,12c0,-7 3,-10 7,-10M17,12c0,-7 -3,-10 -7,-10M-8,15c0,-11 4,-15 8,-15s8,4 8,15"/>',
+    loyalty: '<path d="M-5,16C-16,11 -18,-5 -9,-15M5,16C16,11 18,-5 9,-15"/><path d="M-12,8l-6,-1M-15,1l-6,-3M-15,-6l-4,-6M12,8l6,-1M15,1l6,-3M15,-6l4,-6"/>',
+    favour: '<path d="M0,17V-2M-17,-10c6,0 11,2 17,7c6,-5 11,-7 17,-7c-3,5 -9,8 -17,9c-8,-1 -14,-4 -17,-9Z"/><circle cx="0" cy="-11" r="3.5"/>',
+    tribute: '<ellipse cx="-5" cy="11" rx="10" ry="4"/><ellipse cx="-5" cy="4" rx="10" ry="4"/><path d="M13,-15V13M8,8l5,5 5,-5"/>',
+    goods: '<path d="M-4,-16h8M-3,-16v4c-8,3 -10,10 -8,18c1,5 6,9 11,11c5,-2 10,-6 11,-11c2,-8 0,-15 -8,-18v-4"/>' };
+  const kIcon = (n, size = 17) => `<svg class="kicon" viewBox="-20 -20 40 40" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${KPI_SVG[n] || I[KPI_I[n]] || O[KPI_I[n]] || KPI_SVG.goods}</svg>`;
   const icon = (k, size = 40) => `<svg viewBox="-20 -20 40 40" width="${size}" height="${size}" fill="none" stroke="#e2bd66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k] || ""}</svg>`;
 
   // ---------- ledger and stores ----------
@@ -595,11 +608,11 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       const warn = (n === "grain" && v < 3) || (n === "loyalty" && v < E.REBELLION_BELOW + 5) || (n === "favour" && v < 30);
       const delta = Math.abs(d) >= 0.05 ? `<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${E.fmt(n, Math.abs(d))}</span>` : "";
       const unit = n === "loyalty" ? `of 100 · rebellion below ${E.REBELLION_BELOW}${s.restless ? ` · restless ${s.restless}/2` : ""}` : n === "favour" ? "of 100" : n === "grain" ? "months of food" : r.unit;
-      if (n === "loyalty") return `<button type="button" class="num clickable${warn ? " warn" : ""}${changed(n) ? " changed" : ""}" id="loyalty"><span class="k">${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></button>`;
-      return `<div class="num${warn ? " warn" : ""}${changed(n) ? " changed" : ""}"><span class="k">${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></div>`;
+      if (n === "loyalty") return `<button type="button" class="num clickable${warn ? " warn" : ""}${changed(n) ? " changed" : ""}" id="loyalty"><span class="k">${kIcon(n)}${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></button>`;
+      return `<div class="num${warn ? " warn" : ""}${changed(n) ? " changed" : ""}"><span class="k">${kIcon(n)}${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></div>`;
     }).join("");
     const T = E.tributeInfo(s);
-    $("ledger").innerHTML = html + `<button type="button" class="num tribute${T.short && T.inTurns <= 1 ? " short" : ""}" id="tribute"><span class="k">Tribute to Rome</span><span class="v">${E.intc(T.due)}</span><span class="u">${T.inTurns === 0 ? "due this Summer" : `due in ${T.inTurns} season${T.inTurns > 1 ? "s" : ""} · every Summer`}</span></button>`;
+    $("ledger").innerHTML = html + `<button type="button" class="num tribute${T.short && T.inTurns <= 1 ? " short" : ""}" id="tribute"><span class="k">${kIcon("tribute")}Tribute to Rome</span><span class="v">${E.intc(T.due)}</span><span class="u">${T.inTurns === 0 ? "due this Summer" : `due in ${T.inTurns} season${T.inTurns > 1 ? "s" : ""} · every Summer`}</span></button>`;
     $("tribute").onclick = tributeDialog;
     $("loyalty").onclick = loyaltyDialog;
     lastVals = Object.fromEntries(E.CORE.map((n) => [n, s[n]]));
@@ -2053,8 +2066,12 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
       const d = s[n] - (before[n] || 0), big = n === "treasury" ? 500 : n === "people" ? 80 : 5;
       if (d >= big) wins.push(`${E.nameOf(n)} up by ${E.fmt(n, d)}.`); else if (d <= -big) woes.push(`${E.nameOf(n)} down by ${E.fmt(n, -d)}.`);
     }
-    const review = `<div class="review"><div class="wins"><h3>Achievements</h3>${wins.length ? `<ul>${wins.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : `<p class="sum" style="margin:0">None this season.</p>`}</div>
-      <div class="woes"><h3>Troubles</h3>${woes.length ? `<ul>${woes.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : `<p class="sum" style="margin:0">None this season.</p>`}</div></div>`;
+    // v21: only the three best things and the two worst, the rest stays in the scribe's record
+    const rank = (list, tiers) => list.map((n, i) => [tiers.findIndex((re) => re.test(n)), i, n]).map(([k, i, n]) => [k < 0 ? tiers.length : k, i, n]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
+    const best = rank(wins, [/^Victory|victory/i, /finished|is built and working|slides? into the harbour|is launched|cleared:/i, /profit \+|sails for Rome|liburna is taken/i, /triumph/i, /up by/i]).slice(0, 3);
+    const worst = rank(woes, [/disaster|uprising|revolt|rebels|were cut down|militia fell/i, /hungry|nowhere to live|not fully paid|only part of its tribute/i, /storm|pirates|shut the gates|: loss −/i, /down by/i]).slice(0, 2);
+    const review = `<div class="review"><div class="wins"><h3>What went well</h3>${best.length ? `<ul>${best.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : `<p class="sum" style="margin:0">Nothing worth a bonfire.</p>`}</div>
+      <div class="woes"><h3>What went badly</h3>${worst.length ? `<ul>${worst.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : `<p class="sum" style="margin:0">Nothing went wrong.</p>`}</div></div>`;
     const done = s.over;
     s.turn += 1;
     phase = "report";
@@ -2063,8 +2080,8 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season ends</p>
       <h2>${done ? (s.victory ? "Victory!" : "The end of your governorship") : "The scribe's report"}</h2>${done ? `<p class="voice">${esc(done)} You governed for ${s.turn - 1} seasons.</p>${scoreHTML()}` : ""}
-      ${dash}${review}<p class="eyebrow" style="margin:16px 0 6px">The scribe's record</p>
-      <ul class="notes">${list || "<li>A quiet season.</li>"}</ul>
+      ${review}${dash}<details class="record"><summary class="eyebrow">The scribe's full record</summary>
+      <ul class="notes">${list || "<li>A quiet season.</li>"}</ul></details>
       <div class="row" style="margin-top:14px"><button class="btn" type="button" id="next">${done ? "Govern again" : "Next season"}</button></div></section>`;
     $("next").onclick = () => { if (done) { s = E.newGame(); intro(); } else startSeason(); };
     $("cardsbar").scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
@@ -2085,7 +2102,7 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     const v = s[n], d = v - (before[n] || 0), unit = n === "grain" ? "months" : n === "loyalty" || n === "favour" ? "/100" : "";
     const pts = (s.history || []).map((h) => `${E.seasonOf(h.turn)[0].season} AD ${E.seasonOf(h.turn)[1]}: ${E.fmt(n, h[n] ?? 0)}`).join("\n");
     const flat = Math.abs(d) < .05, sign = flat ? "· no change" : `${d > 0 ? "▲ +" : "▼ −"}${E.fmt(n, Math.abs(d))}`;
-    return `<div class="kpi${warnIf ? " warn" : ""}" title="${esc(E.nameOf(n))}${pts ? "\n" + esc(pts) : ""}"><span class="k">${esc(E.nameOf(n))}</span><span class="v">${E.fmt(n, v)}${unit ? `<small>${unit}</small>` : ""}</span>
+    return `<div class="kpi${warnIf ? " warn" : ""}" title="${esc(E.nameOf(n))}${pts ? "\n" + esc(pts) : ""}"><span class="k">${kIcon(n, 18)}${esc(E.nameOf(n))}</span><span class="v">${E.fmt(n, v)}${unit ? `<small>${unit}</small>` : ""}</span>
       <span class="d ${flat ? "flat" : d > 0 ? "up" : "down"}">${sign}</span>${sparkSVG(n, v)}</div>`;
   }
   function dashboardHTML(before) {
