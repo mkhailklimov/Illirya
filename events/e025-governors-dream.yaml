@@ -3,7 +3,7 @@ deck: omen
 title: The governor's dream
 category: omen
 seasons: [Spring, Summer, Autumn]
-years: [30, 42]
+years: [30, 89]
 trigger: random
 chance: 0.07
 once: false

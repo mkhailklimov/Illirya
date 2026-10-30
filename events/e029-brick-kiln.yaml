@@ -1,0 +1,27 @@
+id: e029-brick-kiln
+deck: land
+title: Clay by the river
+category: locals
+seasons: [Spring, Summer]
+years: [30, 89]
+trigger: random
+chance: 0.05
+once: true
+effects: {}
+choice:
+  prompt: >-
+    A tile-maker from Aquileia has found good red clay by the river. With a
+    kiln he could fire bricks and roof tiles, and save the timber of the
+    mountains.
+  options:
+    - label: Build him a kiln
+      effects: {treasury: -600, timber: -10}             # DRAFT
+      invention: brick_kiln                              # v15: buildings need a quarter less timber; +60 a season
+    - label: Timber is cheap enough
+      effects: {}
+scribe_hint: He stamps every tile with his name, as they do in Italy.
+historical_note: >-
+  Fired brick and tile spread across the Roman world in the first century.
+  Tiles were often stamped with the name of the workshop, and stamped tiles
+  from Aquileia's kilns are found all along the Adriatic.
+source: "Vitruvius 2.3; tile stamps of the Pansiana workshop - check before publishing"

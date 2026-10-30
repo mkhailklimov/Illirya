@@ -1,0 +1,31 @@
+id: e036-lean-year
+deck: omen
+title: The liver shows a lean year
+category: council
+advisor: priest
+seasons: [Autumn, Winter, Spring]
+years: [30, 89]
+trigger: random
+chance: 0.06
+once: false
+cooldown: 8
+fate: 0.55                                               # v15: next summer's harvest at 55%, unless softened
+effects: {}
+choice:
+  prompt: >-
+    The lobe of the liver that belongs to Ceres was small and grey. Tertius
+    is certain: next summer's harvest will be thin, barely half of a good
+    year.
+  options:
+    - label: Buy grain now, while it is still cheap
+      effects: {treasury: -700, grain: 3}                # DRAFT
+    - label: Sow barley on the fallow as well
+      effects: {treasury: -250}
+      fate: 0.8                                          # the barley makes up part of the loss
+    - label: Thank him and wait
+      effects: {}
+scribe_hint: Tertius shows the liver to the farmers; nobody laughs.
+historical_note: >-
+  The bronze Liver of Piacenza divides the liver into regions, each belonging
+  to a god; a haruspex read the gods' intentions from the shape of each part.
+source: "The Liver of Piacenza (Museo Civico, Piacenza) - check before publishing"

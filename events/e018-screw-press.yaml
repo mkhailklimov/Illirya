@@ -3,7 +3,7 @@ deck: sea
 title: A Greek engineer and his new press
 category: trade
 seasons: [Spring, Summer]
-years: [30, 42]
+years: [30, 89]
 trigger: random
 chance: 0.06
 once: true

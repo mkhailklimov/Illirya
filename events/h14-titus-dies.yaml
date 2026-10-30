@@ -1,0 +1,24 @@
+id: h14-titus-dies
+deck: sea
+letter: true
+date: Autumn 81          # Titus died on 13 September AD 81
+title: "Letter from Rome: Titus is dead"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The Emperor Titus, loved by everyone, has died of a fever after only two
+    years. His brother Domitian, whom nobody loves, has gone straight to the
+    guard's camp to be hailed.
+  options:
+    - label: Hold games and sacrifices for Domitian
+      effects: {treasury: -600, favour: 9, loyalty: 2}   # DRAFT
+    - label: Send the oath of loyalty and nothing more
+      effects: {favour: 1}
+scribe_hint: The people weep for Titus; the officials watch what they say about Domitian.
+historical_note: >-
+  Titus died of a fever on 13 September AD 81, aged 41. His brother
+  Domitian, who ruled until 96, was suspicious of the Senate and the
+  governors.
+source: "Suetonius, Titus 10-11 and Domitian 2 - check before publishing"

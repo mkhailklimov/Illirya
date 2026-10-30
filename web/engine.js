@@ -37,8 +37,9 @@
   const CHECK_DC = { moderate: 6, risky: 11, own: 9, letbe_bad: 9, letbe: 4, option: 3 };
   const WIND_SEA = { N: [-3, "the bora is rising"], S: [-1, "a hot wind from Africa"], W: [1, "a gentle west wind"], SW: [-2, "the stormy Africus"], E: [0, ""], CALM: [3, "a flat calm"] };
   const BONUS_CAP = 8;
-  const END_TURN = 52;                               // Winter AD 42: Claudius sends a successor
-  const EMPERORS = [[1, "Tiberius"], [29, "Gaius"], [44, "Claudius"]];   // from turn: Spring 37, Winter 40
+  const END_TURN = 240;                              // v15: sixty years, Spring AD 30 to Winter AD 89, when the governor dies in his ninetieth year
+  const GOV_AGE0 = 31;                               // the governor's age in AD 30
+  const EMPERORS = [[1, "Tiberius"], [29, "Gaius"], [44, "Claudius"], [99, "Nero"], [154, "Galba"], [156, "Otho"], [157, "Vitellius"], [160, "Vespasian"], [198, "Titus"], [207, "Domitian"]];   // from turn: Spring 37, Winter 40, Autumn 54, Summer 68, Winter 68, Spring 69, Winter 69, Summer 79, Autumn 81
 
   const num = (v, d = 0) => { if (v === null || v === undefined) return d; if (typeof v === "number") return v; v = String(v).trim(); return v ? parseFloat(v) : d; };
   const byId = (rows) => Object.fromEntries(rows.map((r) => [r.id, r]));
@@ -74,6 +75,64 @@
   // --- Game state ---
   const startBuildings = () => BUILDING_LIST.flatMap((b) => Array.from({ length: num(b.start) }, () => ({ kind: b.id, done: -99 })));
   const newCouncil = () => Object.fromEntries(Object.keys(ADVISORS).map((a) => [a, { mood: MOOD_START, ignored: 0, used: null }]));
+  // v15: the council grows old. Each advisor has an age and six skills (advisors.csv) that grow with the years;
+  // he may die, and a younger, greener man takes his place. ADVISORS always holds the living council.
+  const SKILLS = ["experience", "decisions", "strategy", "administration", "persuasion", "logic"];
+  const BASE_ADVISORS = JSON.parse(JSON.stringify(ADVISORS));
+  const ADVISOR_AGE = { fleet: 46, general: 41, economist: 37, treasurer: 44, priest: 58 };
+  const SUCCESSORS = {
+    fleet: ["Bato of Rhizon", "Dasius the Liburnian", "Gentius of Issa", "Pleuratus of Lissus", "Verzo the Liburnian", "Tritus of Pharos"],
+    general: ["Lucius Vettius Rufus", "Gaius Petronius Celer", "Quintus Aelius Niger", "Titus Pomponius Bassus", "Sextus Valerius Crispus", "Aulus Caesius Lentus"],
+    economist: ["Demetrios of Issa", "Philon of Pharos", "Kallias of Dyrrachium", "Aristeas of Corcyra", "Menandros of Apollonia", "Theodoros of Epidaurum"],
+    treasurer: ["Eutychus", "Onesimus", "Chrestus", "Hermeros", "Philargyrus", "Primigenius"],
+    priest: ["Aulus Spurinna", "Lars Tarchna", "Vel Cicinna", "Arruns Velsna", "Gaius Larcius", "Sethre Ceisinie"] };
+  const SHORT_AT = { general: 1 };   // Marcus Antistius is "Antistius"; the others go by their first name
+  const shortName = (aid, name) => String(name).split(" ")[SHORT_AT[aid] || 0];
+  const DEATH_CHANCE = (age) => (age < 50 ? .01 : age < 60 ? .025 : age < 70 ? .06 : age < 80 ? .12 : .25);
+  const SKILL_CHANCE = .5;
+  const govAge = (s) => GOV_AGE0 + Math.floor((s.turn - 1) / 4);
+  /** A dead man's name, marked (an invisible word joiner) so the page does not give it to his successor. */
+  const keepName = (n) => String(n).replace(/\b(\w)/g, "$1⁠");
+  /** Copy the living council (names and skills) into ADVISORS, so every rule and every text uses them. */
+  function syncCouncil(s) {
+    for (const aid of Object.keys(ADVISORS)) {
+      const p = (s.council[aid] || {}).person;
+      for (const k of Object.keys(ADVISORS[aid])) delete ADVISORS[aid][k];
+      Object.assign(ADVISORS[aid], BASE_ADVISORS[aid], p ? { name: p.name, age: p.age, ...p.skills } : {});
+    }
+  }
+  function successor(s, aid) {
+    const used = new Set([...Object.values(s.council).map((c) => c.person && c.person.name), ...(s.council_dead || [])]);
+    const name = SUCCESSORS[aid].find((n) => !used.has(n)) || `${SUCCESSORS[aid][rint(0, SUCCESSORS[aid].length - 1)]} the younger`;
+    const skills = Object.fromEntries(SKILLS.map((k) => [k, Math.max(1, Math.min(5, num(BASE_ADVISORS[aid][k], 3) - rint(1, 2)))]));
+    skills.experience = 1;   // new to the office
+    return { name, age: rint(26, 38), skills, since: s.turn + 1 };
+  }
+  /** At the end of each year: everyone a year older, most a little wiser, and some die. */
+  function ageCouncil(s, notes) {
+    s.council_deaths = [];
+    for (const aid of COUNCIL_ORDER) {
+      const st = s.council[aid], p = st.person;
+      p.age += 1;
+      if (Math.random() < DEATH_CHANCE(p.age)) {
+        const heir = successor(s, aid);
+        (s.council_dead = s.council_dead || []).push(p.name);
+        s.council_deaths.push({ aid, dead: p.name, age: p.age, heir: heir.name, heirAge: heir.age, years: Math.round((s.turn + 1 - (p.since || 1)) / 4) });
+        notes.push(`${keepName(p.name)} has died, aged ${p.age}. ${heir.name}, ${heir.age}, takes his place as ${String(BASE_ADVISORS[aid].title).toLowerCase()}: eager, but new to the work.`);
+        st.person = heir; st.mood = MOOD_START; st.ignored = 0; st.used = null;
+        continue;
+      }
+      if (Math.random() < SKILL_CHANCE) {
+        const open = SKILLS.filter((k) => p.skills[k] < 5), main = GAMBLE_STAT[aid] || "experience";
+        if (open.length) {
+          const k = open.includes(main) && Math.random() < .4 ? main : open[rint(0, open.length - 1)];
+          p.skills[k] += 1;
+          notes.push(`${shortName(aid, p.name)} has learnt from the year: ${k} ${p.skills[k] - 1} → ${p.skills[k]}.`);
+        }
+      }
+    }
+    syncCouncil(s);
+  }
   function newGame() {
     const s = Object.fromEntries(CORE.map((n) => [n, num(RULES[n].start)]));
     for (const g of GOODS_LIST) s[g.id] = num(g.start);
@@ -114,6 +173,11 @@
     for (const k of s.shipyard) if (!k.name) k.name = newShipName(s);
     delete s.discontent; delete s.discontent_parts;   // rules v10: one number, loyalty
     s.restless = s.restless || 0;
+    for (const aid of Object.keys(s.council || {})) {   // v15: every advisor is a person with an age and skills
+      const st = s.council[aid], b = BASE_ADVISORS[aid];
+      if (!st.person && b) st.person = { name: b.name, age: ADVISOR_AGE[aid] + Math.floor(((s.turn || 1) - 1) / 4), skills: Object.fromEntries(SKILLS.map((k) => [k, num(b[k], 3)])), since: 1 };
+    }
+    syncCouncil(s);
     if ((s.version || 0) < 5) {   // v14: the walls leave their plot; wheat and vineyards halved, each twice the size
       for (const kind of ["wheat", "vineyard"]) {
         const all = s.buildings.filter((b) => b.kind === kind).sort((a, b) => a.done - b.done), drop = new Set(all.slice(Math.ceil(all.length / 2)));
@@ -230,7 +294,8 @@
     const mult = (side === "buy" ? t.sellsTo : t.buysFrom)[good];
     if (mult === undefined) return null;
     const base = good === "grain" ? GRAIN_PRICE : num(GOOD[good].price);
-    const factor = sailing(s, t.direction === "north")[0] + stat(s, "trade_bonus") + extra;
+    const tip = side === "sell" && s.tip && s.tip.town === townId && s.tip.good === good && s.turn <= s.tip.until ? s.tip.bonus : 0;
+    const factor = sailing(s, t.direction === "north")[0] + stat(s, "trade_bonus") + invSum(s, "trade") + tip + extra;
     return Math.max(1, Math.round(base * mult * (side === "buy" ? 1 - factor : 1 + factor)));
   }
   const loads = (o) => Object.values(o.sell || {}).reduce((a, b) => a + b, 0) + Object.entries(o.buy || {}).reduce((a, [g, q]) => a + q * (g === "grain" ? GRAIN_LOAD : 1), 0);
@@ -328,7 +393,11 @@
   const effectsOf = (d) => Object.fromEntries(CORE.filter((n) => String(d[n] ?? "").trim()).map((n) => [n, num(d[n])]));
   const order = (id, extra = {}) => ({ id, building: "none", ...extra });
   function costOf(s, o) {
-    if (o.id === "build" && BLD[o.building]) return [num(BLD[o.building].cost_treasury), parseList(BLD[o.building].cost)];
+    if (o.id === "build" && BLD[o.building]) {
+      const mats = parseList(BLD[o.building].cost), k = invSum(s, "cheaper");
+      if (k && mats.timber) mats.timber = Math.ceil(mats.timber * (1 - k));
+      return [num(BLD[o.building].cost_treasury), mats];
+    }
     const d = DECREE[o.id];
     let c = num(d.cost_treasury);
     if (o.id === "send_convoy" && o.town) c += buyCost(s, o);
@@ -1180,7 +1249,8 @@
     if (!(s.forecast && s.forecast.turn === t)) { s.forecast = drawWeather(t); s.forecast_turn = t; }
     const w = WINDS[s.forecast.wind], mult = num(w.harvest_mult, 1), later = { ...s, turn: t };
     const eaters = s.people + s.army + soldiersBesides(s);
-    const grain = Math.round((num(season.harvest_grain) * built(s, "wheat") / BASE_WHEAT * GRAIN_BASE_EATERS / eaters * mult + stat(s, "grain")) * 10) / 10;
+    const fate = s.harvest_fate && s.harvest_fate.turn === t ? num(s.harvest_fate.mult, 1) : 1;
+    const grain = Math.round((num(season.harvest_grain) * built(s, "wheat") / BASE_WHEAT * GRAIN_BASE_EATERS / eaters * mult * (1 + invSum(s, "harvest")) * fate + stat(s, "grain")) * 10) / 10;
     const goods = {};
     for (const B of BUILDING_LIST) {
       if (!B.produces || String(B.uses || "").trim()) continue;   // the farms and the sea; workshops depend on their stores
@@ -1212,6 +1282,21 @@
       why: "Have gifts ready for the new Caesar, and swear to him at once when the letter comes." },
     "h07-scribonianus": { kind: "revolt", sign: "a wolf that turns on the shepherd and is killed by the flock", what: "the governor of Dalmatia will rise against Caesar, and his own legions will abandon him within days", order: "honour_tiberius",
       why: "Declare your loyalty to Caesar loudly now, and do not follow the rebel." },
+    // v15: the letters to AD 89
+    "h08-claudius-dies": { kind: "emperor", sign: "an old eagle that eats from a dish of mushrooms and does not rise again", what: "the Emperor Claudius will die at his own table, and Nero, his wife's son, will take his place", order: "honour_rome",
+      why: "Send gifts to Rome before it happens: the new Caesar will remember who honoured him first." },
+    "h10-nero-dies": { kind: "emperor", sign: "a lyre that breaks in the singer's hands", what: "Nero will fall: the Senate will name him an enemy of the people, he will die by his own hand, and the old general Galba will be hailed", order: "honour_rome",
+      why: "Do not tie Acruvium to Nero. Have gifts ready for whoever wins." },
+    "h11-danube-legions": { kind: "revolt", sign: "eagles from the Danube flying south over the mountains", what: "the legions of the Danube and of Dalmatia will march on Italy for Vespasian", order: "recruit",
+      why: "Arm the town: in a year of four emperors the strong are remembered and the weak are plundered." },
+    "h12-vespasian-dies": { kind: "emperor", sign: "an old eagle that dies standing, as an emperor should", what: "Vespasian will die, and his son Titus will rule", order: "honour_rome",
+      why: "Honour Rome before the letter comes: Titus is generous to those who were loyal to his father." },
+    "h13-vesuvius": { kind: "disaster", sign: "a mountain in Campania with smoke for hair", what: "a mountain near Neapolis will burst and bury its towns, and Rome will ask the provinces for grain", order: "honour_rome",
+      why: "Keep the granaries full and the gifts ready: those who help Campania will be remembered." },
+    "h14-titus-dies": { kind: "emperor", sign: "a bright young eagle struck down by a fever", what: "Titus will die of a fever after two years, and his brother Domitian will take the purple", order: "honour_rome",
+      why: "Domitian is suspicious: show your loyalty early and loudly." },
+    "h15-dacian-war": { kind: "war", sign: "wolves crossing the frozen Danube", what: "the Dacians will cross the Danube, and Rome will call on Dalmatia for men and grain", order: "recruit",
+      why: "Raise men now: when the call comes, a town that can send soldiers keeps its own walls manned." },
   };
   const HEED_LOYALTY = 2, HEED_FAVOUR = 2;
   /** The most important thing the gods can tell this year, with one order to give. */
@@ -1221,7 +1306,7 @@
       const L = LETTER_SIGNS[c.id], t = c.date ? dateTurn(c.date) : null;
       if (L && t && near(t) && !(s.once_fired || []).includes(c.id)) {
         const pol = L.kind === "emperor" ? " When Caesar dies, the soldiers look for a strong man: if your town is great and your army loyal, they may look to you." : "";
-        return { kind: L.kind, title: L.kind === "emperor" ? "Caesar will die" : "A revolt against Caesar", text: `I saw ${L.sign}. In ${when(t)}, ${L.what}.${pol}`, order: order(L.order), why: L.why };
+        return { kind: L.kind, title: { emperor: "Caesar will die", revolt: "A revolt against Caesar", disaster: "A disaster in Italy", war: "War on the Danube" }[L.kind] || "A sign from the gods", text: `I saw ${L.sign}. In ${when(t)}, ${L.what}.${pol}`, order: order(L.order), why: L.why };
       }
     }
     if (s.loyalty < 58 || (s.restless || 0) > 0) {
@@ -1302,7 +1387,7 @@
   async function convoyHome(s, c, notes) {
     const t = TOWN[c.town];
     const [factor] = sailing(s, t.direction !== "north");   // the voyage home runs the other way
-    const bonus = Math.round(factor * 10) + (s.council.fleet.mood >= 4 ? 1 : 0) + (c.blessed ? 2 : 0);
+    const bonus = Math.round(factor * 10) + (s.council.fleet.mood >= 4 ? 1 : 0) + (c.blessed ? 2 : 0) + invSum(s, "voyage");
     const r = await roll(VOYAGE_DIE, bonus, VOYAGE_TARGET, `The ship from ${t.name}`, true);
     let share = 1, how = "safely";
     if (r.r === 1 && s.warships) how = "attacked by pirates off the coast, but a trireme drove them off";
@@ -1378,8 +1463,10 @@
     // grain: the wheat harvest, fisheries, and three months eaten
     const eaters = s.people + s.army + soldiersBesides(s);
     const mult = num(WINDS[s.wind].harvest_mult, 1);
-    let harvest = num(season.harvest_grain) * built(s, "wheat") / BASE_WHEAT * GRAIN_BASE_EATERS / eaters * mult;
+    const fate = s.harvest_fate && s.harvest_fate.turn === s.turn ? num(s.harvest_fate.mult, 1) : 1;
+    let harvest = num(season.harvest_grain) * built(s, "wheat") / BASE_WHEAT * GRAIN_BASE_EATERS / eaters * mult * (1 + invSum(s, "harvest")) * fate;
     if (harvest && mult !== 1) notes.push(`The wind made the harvest ${mult > 1 ? "richer" : "poorer"} (${pct(mult - 1)}).`);
+    if (harvest && fate !== 1) notes.push(fate < 1 ? `The lean year ${ADVISORS.priest.name} foretold: the harvest is ${pct(fate - 1)}.` : `The rich year ${ADVISORS.priest.name} foretold: the harvest is ${pct(fate - 1)}.`);
     harvest += stat(s, "grain");
     s.grain = Math.round((s.grain + harvest - GRAIN_EATEN) * 10) / 10;
     const hunger = s.grain <= 0;
@@ -1434,6 +1521,7 @@
         : `Warning: loyalty has fallen below ${REBELLION_BELOW} (${Math.round(s.loyalty)}). If it is still below ${REBELLION_BELOW} at the end of next season, the town rises in rebellion.`);
     } else s.restless = 0;
     s.army_peak = Math.max(s.army_peak || 150, Math.trunc(s.army));
+    if (season.season === "Winter") ageCouncil(s, notes);
     fleetNames(s);
     s.history = (s.history || []).concat([Object.fromEntries([["turn", s.turn], ...NUMBERS.map((n) => [n, Math.round(s[n] * 10) / 10])])]).slice(-12);
   }
@@ -1441,8 +1529,33 @@
   const INVENTIONS = {
     screw_press: { name: "The screw press", more: { oil: .3 }, rent: 50, rent_text: "from neighbours who press their olives here",
       text: "Olive oil +30% at every harvest; neighbours pay 50 denarii a season to use it." },
+    // v15: harvest = more grain, voyage = on the die when a convoy comes home, trade = better prices,
+    // cheaper = less timber for every building, health = fewer dead from plague, fever and wounds
+    heavy_plough: { name: "The wheeled plough", harvest: .25, text: "Every wheat harvest +25%: the heavy share turns the stony terraces deep." },
+    upright_loom: { name: "The upright loom", more: { cloth: .5 }, text: "The weavers make half as much cloth again from the same fleece." },
+    brick_kiln: { name: "The brick kiln", cheaper: .25, rent: 60, rent_text: "from bricks and roof tiles sold along the coast",
+      text: "Every building needs a quarter less timber, and bricks and tiles sell for 60 denarii a season." },
+    coast_charts: { name: "The pilot's charts", voyage: 2, text: "Every convoy coming home rolls +2: the shoals and the safe coves are written down." },
+    new_rig: { name: "The new rig", trade: .08, text: "Convoys trade 8% better: with a foresail our ships reach the markets first." },
+    physician: { name: "The physician's house", health: .5, text: "Plague, fever and the losses of hard seasons kill half as many." },
   };
   const inventionsOf = (s) => (s.inventions || []).map((id) => INVENTIONS[id]).filter(Boolean);
+  const invSum = (s, k) => inventionsOf(s).reduce((a, v) => a + (v[k] || 0), 0);
+  /** v15: the physician (and the haruspex's warning) halve the dead of a bad card. */
+  const healthOf = (s) => inventionsOf(s).reduce((a, v) => a * (1 - (v.health || 0)), 1) * ((s.ward_until || 0) >= s.turn ? .4 : 1);
+  function heal(s, eff) { const k = healthOf(s); if (k < 1) for (const n of ["people", "army"]) if (eff[n] < 0) eff[n] = Math.round(eff[n] * k); return eff; }
+  const nextSummer = (turn) => { let x = turn + 1; while (seasonOf(x)[0].season !== "Summer") x++; return x; };
+  /** v15: what a card's option sets going: a market tip, a foretold harvest softened, a drained marsh, a guard against plague. */
+  function cardExtras(s, opt, ok, notes) {
+    if (opt.tip && ok) {
+      const tp = opt.tip;
+      s.tip = { town: tp.town, good: tp.good, bonus: num(tp.bonus, .3), until: s.turn + num(tp.seasons, 4) };
+      notes.push(`For a year, ${nameOf(tp.good).toLowerCase()} sells ${pct(s.tip.bonus)} dearer in ${TOWN[tp.town].name}: send a convoy.`);
+    }
+    if (opt.fate !== undefined && s.harvest_fate) s.harvest_fate.mult = num(opt.fate, 1);
+    if (opt.plots && ok) { s.field_plots = clearedPlots(s) + num(opt.plots); notes.push(`The marsh is drained: a new field plot (${s.field_plots} now), and fewer fevers.`); }
+    if (opt.guard) s.ward_until = s.turn + num(opt.guard);
+  }
 
   // --- The season's cards ---
   function triggerHolds(s, trig) {
@@ -1465,7 +1578,7 @@
     const [season, year] = seasonOf(s.turn);
     const seasons = c.seasons ?? "any";
     if (seasons !== "any" && !seasons.includes(season.season)) return false;
-    const [lo, hi] = c.years || [30, 42];
+    const [lo, hi] = c.years || [30, 89];
     if (!(lo <= year && year <= hi) || (c.once && s.once_fired.includes(c.id))) return false;
     return triggerHolds(s, c.trigger);
   }
@@ -1477,6 +1590,8 @@
     for (const [deck] of DECKS) {
       const letter = deck === "sea" && CARDS.find((c) => c.date && dateTurn(c.date) === s.turn && !(s.once_fired || []).includes(c.id));
       if (letter) { drawn.push(letter); continue; }
+      const plague = deck === "land" && s.plague_due === s.turn && CARDS.find((c) => c.id === "e030-plague");
+      if (plague) { drawn.push(plague); s.plague_due = null; continue; }
       const seen = deck === "omen" && s.omen_next && s.omen_next.turn === s.turn ? CARDS.find((c) => c.id === s.omen_next.id) : null;
       if (seen && cardFits(s, seen)) { drawn.push(seen); s.omen_next = null; continue; }
       const pool = CARDS.filter((c) => c.deck === deck && cardFits(s, c));
@@ -1531,8 +1646,9 @@
       for (const [n, v] of Object.entries(concrete(r[ok ? "success" : "failure"]))) eff[n] = (eff[n] || 0) + v;
       notes.push(`${c.title}: you chose '${opt.label}' and the die says ${ok ? "success" : "failure"} (${effectsText(eff)}).`);
     } else notes.push(`${c.title}: you chose '${opt.label}' (${effectsText(eff)}).`);
-    applyEffects(s, eff);
+    applyEffects(s, heal(s, eff));
     invent(s, opt, true, notes);
+    cardExtras(s, opt, true, notes);
     if (isCalamity({}, eff)) s.calamity_turn = s.turn;
   }
   async function revealCards(s, notes) {
@@ -1747,9 +1863,11 @@
         for (const [n, v] of Object.entries(extra)) eff[n] = (eff[n] || 0) + v;
       } else if (tier === "disaster") eff = { ...scale(positives(eff), 0.5), ...scale(negatives(eff), 1.5) };
       else if (tier === "triumph") eff = { ...scale(positives(eff), 1.5), ...negatives(eff) };
+      heal(s, eff);
       notes.push(`${title}: you chose '${opt.label}', and the ${d.check.die} die says ${said} (${effectsText(eff)}).`);
       applyEffects(s, eff);
       invent(s, opt, tier !== "disaster", notes);
+      cardExtras(s, opt, tier !== "disaster", notes);
       if (isCalamity({}, eff)) s.calamity_turn = s.turn;
     } else {
       const neg = negatives(c.rolled || c.effects), pos = positives(c.rolled || c.effects), bad = cardTone(c) === "bad";
@@ -1803,12 +1921,14 @@
       const c = cards[i];
       await ui.turn(c, i);
       if (c.once) s.once_fired.push(c.id);
+      if (c.fate) s.harvest_fate = { turn: nextSummer(s.turn), mult: num(c.fate, 1) };   // v15: the haruspex sees the coming harvest
+      if (c.plague) s.plague_due = s.turn + rint(1, 3);                                  // ...or a plague on its way
       let pick;
       if (c.choice) {
         const opts = c.choice.options.map((o, k) => ({ label: o.label, sub: o.roll ? "" : effectsText(o.effects), check: checkFor(s, c, { kind: "option", i: k }) }));
         pick = { kind: "option", i: await ui.cardChoice(c, opts) };
       } else {
-        const eff = concrete(c.effects);
+        const eff = heal(s, concrete(c.effects));
         applyEffects(s, eff);
         if (!c.quiet) notes.push(`${c.title}: ${effectsText(eff)}.`);
         if (isCalamity(c, eff)) s.calamity_turn = s.turn;
@@ -1853,11 +1973,11 @@
     else if (built(s, "wonder")) declareVictory(s, "gods");
     else if (s.treasury >= GLORY_NEED.purse.treasury) declareVictory(s, "purse");
     else if (soldiersOf(s) >= GLORY_NEED.sword.soldiers && tribesWon(s) >= GLORY_NEED.sword.tribes) declareVictory(s, "sword");
-    else if (s.turn >= END_TURN) { s.over = "Your governorship ends in the winter of AD 42: Claudius sends a successor, and you sail for Rome."; s.finished = true; }
+    else if (s.turn >= END_TURN) { s.over = "In the winter of AD 89 the old governor dies in his sleep, in his ninetieth year, after sixty years at Acruvium. The town buries him by the Sea Gate, and Rome sends a successor."; s.finished = true; }
   }
   // --- Four paths to glory (rules v12): a victory ends the governorship early ---
   const GLORY_NEED = { purple: { favour: 90, loyalty: 70, soldiers: 500, people: 6000 }, sword: { soldiers: 1000, tribes: 3 }, purse: { treasury: 100000 } };
-  const EMPEROR_DEATHS = ["h03-tiberius-dies", "h06-claudius"];
+  const EMPEROR_DEATHS = ["h03-tiberius-dies", "h06-claudius", "h08-claudius-dies", "h10-nero-dies", "h12-vespasian-dies", "h14-titus-dies"];
   const soldiersOf = (s) => Math.trunc(s.army) + soldiersBesides(s);
   const tribesWon = (s) => TRIBES.filter((t) => tribeWon(s, t.id)).length;
   /** How far each path has come: the conditions, each with what you have and what it needs. */
@@ -2054,7 +2174,7 @@
     newGame, seasonOf, rollWeather, revealCards, council, plans, situation, validate, totals, describe, order, costOf, priceAt, loads,
     sailing, abilityState, updateMoods, applyDecrees, resolve, clampAndCheck, wordParse, fmt, intc, pct, housing, berths, shipsAtSea,
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
-    TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN,
+    TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN, GOV_AGE0, govAge, keepName, BASE_ADVISORS, SKILLS, shortName, syncCouncil, ageCouncil,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
     CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, harvestForecast, berthsUsed, SHIPS_MAX, TRIREME_UPKEEP, glory, GLORY_NEED, soldiersOf, tribesWon, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
     tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS, MACHINES_MAX, GROUND_TEXT, missileOf,

@@ -1,0 +1,25 @@
+id: e030-plague
+deck: land
+title: Plague in the harbour quarter
+category: nature
+seasons: [Summer, Autumn]
+years: [30, 89]
+trigger: random
+chance: 0.03
+once: false
+calamity: true
+effects: {}
+choice:
+  prompt: >-
+    A sickness came with a ship from the east. In the harbour quarter whole
+    families lie in fever, and the dead are carried out at night.
+  options:
+    - label: Close the quarter and burn the bedding
+      effects: {people: [-160, -80], loyalty: -3, treasury: -200}   # DRAFT
+    - label: Pray, and let the town go about its work
+      effects: {people: [-320, -180], army: [-20, -8], loyalty: -2}
+scribe_hint: The haruspex walks through the quarter with a torch and a sprig of rue.
+historical_note: >-
+  Epidemics travelled with ships along the trade routes. Tacitus records a
+  pestilence in Rome in AD 65 that filled the houses with the dead.
+source: "Tacitus, Annals 16.13 - check before publishing"

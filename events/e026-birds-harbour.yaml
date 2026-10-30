@@ -3,7 +3,7 @@ deck: omen
 title: Seabirds fly inland
 category: omen
 seasons: any
-years: [30, 42]
+years: [30, 89]
 trigger: "wind == S"
 chance: 0.15
 once: false

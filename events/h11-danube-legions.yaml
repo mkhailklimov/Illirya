@@ -1,0 +1,26 @@
+id: h11-danube-legions
+deck: sea
+letter: true
+date: Summer 69          # the Danube legions declared for Vespasian in July AD 69
+title: "Letter from the Danube: the legions march for Vespasian"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The legions of Pannonia, Moesia and Dalmatia have declared for
+    Vespasian against the Emperor Vitellius. Their general, Antonius Primus,
+    marches on Italy and asks every town on his road for grain and men.
+  options:
+    - label: Send grain and fifty men to Antonius Primus
+      effects: {grain: -2, army: -50, favour: 14}        # DRAFT: a gamble that pays, as Vespasian wins
+    - label: Stay loyal to Vitellius
+      effects: {favour: -10, loyalty: -2}
+    - label: Shut the gates and wait
+      effects: {favour: -4}
+scribe_hint: Soldiers of the Eleventh legion, from Burnum in Dalmatia, are seen on the coast road.
+historical_note: >-
+  In the summer of AD 69 the Danube legions declared for Vespasian. Their
+  general Antonius Primus did not wait for orders: he invaded Italy and
+  defeated Vitellius's army at Cremona in October.
+source: "Tacitus, Histories 2.85-86 and 3.1-35 - check before publishing"

@@ -1,0 +1,27 @@
+id: e035-cataract
+deck: omen
+title: The physician who restores sight
+category: council
+advisor: priest
+seasons: any
+years: [30, 89]
+trigger: random
+chance: 0.05
+once: true
+effects: {}
+choice:
+  prompt: >-
+    Tertius brings a Greek physician to the forum. With a fine needle he has
+    pushed the cloud from the eye of an old fisherman, who can see again.
+    He also knows the fevers and the wounds of war.
+  options:
+    - label: Give him a house by the temple, and pay him to stay
+      effects: {treasury: -500, loyalty: 3}              # DRAFT
+      invention: physician                               # v15: plague, fever and hard seasons kill half as many
+    - label: Pay him for the fisherman and let him go
+      effects: {treasury: -100, loyalty: 1}
+scribe_hint: The crowd follows the fisherman, who points at everything and names it.
+historical_note: >-
+  The Roman writer Celsus, about AD 30, describes the operation for cataract:
+  a needle pushed the clouded lens down out of the line of sight.
+source: "Celsus, On Medicine 7.7.14 - check before publishing"

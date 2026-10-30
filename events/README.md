@@ -21,7 +21,7 @@ Copy [_template.yaml](_template.yaml) to start a card. The two examples, [e001-d
 - **Effects use the ids from `../rules/numbers.csv`** (`grain`, `treasury`, `goods`, `wine_oil`, `people`, `loyalty`, `favour`, `army`). The engine applies them; the AI only narrates.
 - **Keep effects small and readable.** One to three numbers change; the card should matter, not decide the game.
 - **A choice must be a real dilemma.** Each option costs something different (money vs loyalty vs favour).
-- **History must fit AD 30–42.** Use peoples, places and rulers of the period (see the concept doc, section 6). The `historical_note` is one or two accurate sentences; put where you checked it in `source`.
+- **History must fit AD 30–89** (sixty years since rules v15). Use peoples, places and rulers of the period (see the concept doc, section 6). The `historical_note` is one or two accurate sentences; put where you checked it in `source`.
 - **Mix the categories** across the deck: Rome, locals, nature, raiders, trade, and the council.
 - **Council cards** come from one of the governor's five advisors (e003–e007 are one each). They are the best way to give the advisors a personality.
 
@@ -36,7 +36,13 @@ Copy [_template.yaml](_template.yaml) to start a card. The two examples, [e001-d
 | `category` | `rome`, `locals`, `nature`, `raiders`, `trade` or `council` |
 | `advisor` | For `council` cards: who brings it (`fleet`, `general`, `economist`, `treasurer`, `priest`; see `../rules/advisors.csv`) |
 | `seasons` | Seasons it can happen in (`any`, or a list) |
-| `years` | Earliest and latest year, e.g. `[30, 42]` |
+| `years` | Earliest and latest year, e.g. `[30, 89]` |
+| `fate` | v15, card: the haruspex foretells next Summer's harvest (0.55 lean, 1.4 rich); an option's `fate` changes it |
+| `plague` | v15, card: `true` brings the plague card (e030) within 1–3 seasons |
+| `tip` | v15, option: `{town, good, bonus, seasons}`: the good sells dearer in that town |
+| `plots` | v15, option: new field plots (a drained marsh) |
+| `guard` | v15, option: for this many seasons a card kills only 40% as many |
+| `invention` | option: a machine from the engine's list (screw_press, heavy_plough, upright_loom, brick_kiln, coast_charts, new_rig, physician) |
 | `trigger` | When it can fire: `random`, a condition on the numbers (`loyalty < 30`), or the wind (`wind == S`) |
 | `chance` | Weight when the season's card is drawn from its deck (only cards whose trigger holds take part) |
 | `once` | `true` if it can only happen once per game |

@@ -1,0 +1,26 @@
+id: e031-marsh-fever
+deck: land
+title: Fever from the marsh
+category: nature
+seasons: [Summer, Autumn]
+years: [30, 89]
+trigger: random
+chance: 0.05
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The flats where the spring runs into the bay have turned to marsh. Every
+    summer the families nearby shake with fever. Drained, it would be good
+    land.
+  options:
+    - label: Dig ditches and drain the marsh
+      effects: {treasury: -700, timber: -10, loyalty: 2}  # DRAFT
+      plots: 1                                           # v15: a new field plot
+    - label: Burn sulphur and keep away from it
+      effects: {treasury: -100, people: [-60, -30]}
+scribe_hint: The diggers sing to keep the mosquitoes away.
+historical_note: >-
+  Vitruvius warns against building near marshes, whose air brings disease;
+  draining marshland for farms was a mark of a good Roman landowner.
+source: "Vitruvius 1.4.1 and 1.4.11 - check before publishing"

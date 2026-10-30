@@ -129,6 +129,19 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v15 (30 October 2026): sixty years, a council that grows old, useful cards
+
+- **Sixty years.** The game runs from Spring AD 30 to Winter AD 89 (240 turns). The governor is 31 at the start and dies in his ninetieth year at the end; that is the normal end (score as before, "seasons governed" now counts up to 240). Victories still end it early.
+- **Emperors to AD 89:** Tiberius, Gaius (Spring 37), Claudius (Winter 40), Nero (Autumn 54), Galba (Summer 68), Otho (Winter 68), Vitellius (Spring 69), Vespasian (Winter 69), Titus (Summer 79), Domitian (Autumn 81). New letters: h08 Claudius dies, h09 the great fire, h10 Nero dies, h11 the Danube legions for Vespasian, h12 Vespasian dies, h13 Vesuvius, h14 Titus dies, h15 the Dacian war. The deaths of Caesar (h08, h10, h12, h14) are chances for the political victory, and the haruspex can foretell all of them.
+- **The council grows old.** Each advisor has an age (start: fleet 46, general 41, economist 37, treasurer 44, priest 58) and the six skills of advisors.csv (1–5). At the end of every year:
+  - each is a year older;
+  - with chance 1/2 one skill below 5 rises by 1 (his main skill, the one used on his advice, 40% of the time);
+  - he dies with chance 1% under 50, 2.5% in his fifties, 6% in his sixties, 12% in his seventies, 25% from 80.
+  A successor (from a list of period names per office) is 26–38, has experience 1 and each other skill 1–2 below the founder's. His mood starts afresh, his ability is ready. In a 60-year game about nine advisors die.
+- **Seven new inventions,** each from a card (once per game): the wheeled plough (wheat harvests +25%), the upright loom (cloth +50%), the brick kiln (buildings need 25% less timber; +60 a season), the pilot's charts (+2 on the voyage die), the new rig (convoys trade 8% better), the physician's house (the people and soldiers a card kills are halved). The screw press stays as before.
+- **New card fields:** a card's `fate` (the haruspex foretells next Summer's harvest: ×0.55 lean, ×1.4 rich; an option's `fate` softens it), `plague: true` (the plague card e030 comes within 1–3 seasons); an option's `tip` (a good sells dearer in a town for a year: oil or wine in Aquileia +40%), `plots` (a drained marsh gives a field plot), `guard` (for 4 seasons a card kills only 40% as many people).
+- **Older cards** now run to AD 89 (`years: [30, 89]`), except the comet (Tiberius) and Rome's praise (to AD 37).
+
 ## Rules v14 (25 October 2026): walls on the ring, bigger fields
 
 - **The walls take no plot.** They are the ring round the town (zone `ring` in buildings.csv). All 12 town plots are free for buildings. Build them, or a second set of towers (+2 again), from any free town plot or by clicking the wall on the map.

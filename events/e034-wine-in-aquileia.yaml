@@ -1,0 +1,28 @@
+id: e034-wine-in-aquileia
+deck: sea
+title: Thirsty soldiers in Aquileia
+category: council
+advisor: fleet
+seasons: [Spring, Summer, Autumn]
+years: [30, 89]
+trigger: "wine >= 10"
+chance: 0.07
+once: false
+cooldown: 8
+effects: {}
+choice:
+  prompt: >-
+    Epicadus hears from a captain that the legions are gathering at
+    Aquileia, and wine there fetches a price nobody has seen for years.
+  options:
+    - label: Load our wine for Aquileia
+      effects: {}
+      tip: {town: aquileia, good: wine, bonus: 0.4, seasons: 4}   # v15: wine +40% in Aquileia for a year
+    - label: Keep the wine for the festivals
+      effects: {loyalty: 1}
+scribe_hint: The captain swears the soldiers drink even the sour wine of Istria.
+historical_note: >-
+  Aquileia was the great supply base for the armies on the Danube; the
+  amphorae found there show wine and oil arriving from all over the
+  Adriatic.
+source: "General history of Aquileia - check before publishing"

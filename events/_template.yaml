@@ -4,7 +4,7 @@ deck: land              # land | sea | omen  (letters from Rome travel by sea)
 title: ""
 category: nature          # rome | locals | nature | raiders | trade
 seasons: any              # any, or a list: [Spring, Summer]
-years: [30, 42]
+years: [30, 89]
 trigger: random           # random, or e.g. "loyalty < 30", "grain < 2", "army < 100"
 chance: 0.10              # weight when the season's card is drawn from its deck
 once: false

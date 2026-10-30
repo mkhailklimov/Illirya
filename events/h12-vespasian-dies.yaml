@@ -1,0 +1,23 @@
+id: h12-vespasian-dies
+deck: sea
+letter: true
+date: Summer 79          # Vespasian died on 23 June AD 79
+title: "Letter from Rome: Vespasian is dead"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The old Emperor Vespasian died at his country house, joking to the last:
+    "Alas, I think I am becoming a god." He tried to stand, saying an
+    emperor ought to die on his feet. His son Titus rules.
+  options:
+    - label: Hold games and sacrifices for Titus
+      effects: {treasury: -600, favour: 9, loyalty: 3}   # DRAFT
+    - label: Send the oath of loyalty and nothing more
+      effects: {favour: 2}
+scribe_hint: The forum is quiet; everyone liked the old man's jokes.
+historical_note: >-
+  Vespasian died on 23 June AD 79 at Aquae Cutiliae. Suetonius records his
+  jokes about becoming a god and his wish to die standing.
+source: "Suetonius, Vespasian 23-24 - check before publishing"

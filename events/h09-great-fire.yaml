@@ -1,0 +1,25 @@
+id: h09-great-fire
+deck: sea
+letter: true
+date: Summer 64          # the fire broke out on 19 July AD 64
+title: "Letter from Rome: the city burns"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    Rome has burned for nine days. Of fourteen districts, three are ashes
+    and seven are ruins. Nero is building a new city, and a golden palace
+    in it, and the provinces are asked to give.
+  options:
+    - label: Send 1,500 denarii for the rebuilding
+      effects: {treasury: -1500, favour: 10}             # DRAFT
+    - label: Send timber from our mountains
+      effects: {timber: -20, favour: 6}
+    - label: Plead poverty
+      effects: {favour: -5}
+scribe_hint: The letter smells of smoke; the seal is a new one.
+historical_note: >-
+  The Great Fire of AD 64 destroyed much of Rome. Tacitus writes that Italy
+  was ransacked for funds for the rebuilding and the provinces were ruined.
+source: "Tacitus, Annals 15.38-45 - check before publishing"

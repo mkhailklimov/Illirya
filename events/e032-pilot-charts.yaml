@@ -1,0 +1,27 @@
+id: e032-pilot-charts
+deck: sea
+title: A pilot's book of the coast
+category: council
+advisor: fleet
+seasons: [Spring, Summer, Autumn]
+years: [30, 89]
+trigger: random
+chance: 0.05
+once: true
+effects: {}
+choice:
+  prompt: >-
+    An old Greek pilot offers Epicadus his book: every cape, shoal, spring
+    and safe cove from Aquileia to Brundisium, with the days between them.
+  options:
+    - label: Buy it and have it copied for every ship
+      effects: {treasury: -400}                          # DRAFT
+      invention: coast_charts                            # v15: +2 on the die when a convoy comes home
+    - label: Epicadus knows the coast by heart
+      effects: {}
+scribe_hint: Epicadus reads it slowly, nodding, then corrects one cove with his thumb.
+historical_note: >-
+  Greek sailors used written coastal guides, the periploi, listing harbours,
+  landmarks and sailing days; one for the Mediterranean survives under the
+  name of Scylax.
+source: "Periplus of Pseudo-Scylax - check before publishing"

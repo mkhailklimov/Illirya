@@ -1,0 +1,28 @@
+id: e037-rich-year
+deck: omen
+title: The liver shows a rich year
+category: council
+advisor: priest
+seasons: [Autumn, Winter, Spring]
+years: [30, 89]
+trigger: random
+chance: 0.05
+once: false
+cooldown: 8
+fate: 1.4                                                # v15: next summer's harvest +40%
+effects: {}
+choice:
+  prompt: >-
+    Ceres's lobe of the liver was large and bright. Tertius promises a rich
+    harvest next summer, more than the granaries can hold.
+  options:
+    - label: Sell the old grain now; the new will fill the granaries
+      effects: {grain: -2, treasury: 500}                # DRAFT
+    - label: Keep everything; one never knows
+      effects: {}
+scribe_hint: The farmers pour a little wine on the terraces for Ceres.
+historical_note: >-
+  Etruscan and Roman haruspices were consulted about harvests as well as
+  wars; Cicero, who doubted them, still records how much the farmers trusted
+  their readings.
+source: "Cicero, On Divination 1 and 2 - check before publishing"

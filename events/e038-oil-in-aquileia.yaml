@@ -1,0 +1,28 @@
+id: e038-oil-in-aquileia
+deck: omen
+title: Sell your oil in Aquileia
+category: council
+advisor: priest
+seasons: [Spring, Summer, Autumn]
+years: [30, 89]
+trigger: "oil >= 10"
+chance: 0.06
+once: false
+cooldown: 8
+effects: {}
+choice:
+  prompt: >-
+    Tertius sacrificed to Mercury and dreamt of empty oil jars in the market
+    of Aquileia. Nikandros asked a captain: it is true, the olive harvest in
+    Istria failed this year.
+  options:
+    - label: Load our oil for Aquileia
+      effects: {}
+      tip: {town: aquileia, good: oil, bonus: 0.4, seasons: 4}    # v15: oil +40% in Aquileia for a year
+    - label: We need our oil here
+      effects: {}
+scribe_hint: Nikandros is already counting.
+historical_note: >-
+  Istria was famous for its olive oil, and Aquileia was its market; when the
+  Istrian harvest failed, prices there rose for everyone.
+source: "Pliny, Natural History 15.8 - check before publishing"

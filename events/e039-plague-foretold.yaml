@@ -1,0 +1,30 @@
+id: e039-plague-foretold
+deck: omen
+title: A sickness is coming by sea
+category: council
+advisor: priest
+seasons: [Spring, Summer]
+years: [30, 89]
+trigger: random
+chance: 0.04
+once: false
+cooldown: 12
+plague: true                                             # v15: the plague card comes within three seasons
+effects: {}
+choice:
+  prompt: >-
+    The liver was spotted black on the side of the sea. Tertius warns: a
+    sickness will come on a ship within the year. Keep the strangers off the
+    quay and the deaths will be few.
+  options:
+    - label: Turn foreign ships away from the quay for a year
+      effects: {treasury: -400, loyalty: -1}             # DRAFT: lost harbour dues
+      guard: 4                                           # v15: if the plague comes, far fewer die
+    - label: Trust the gods
+      effects: {}
+scribe_hint: The harbour master grumbles but obeys; the fishermen are glad.
+historical_note: >-
+  Ancient cities knew that disease travelled with ships and strangers, and
+  sometimes closed their harbours; the Greek word for it was the same as for
+  a siege.
+source: "Thucydides 2.48 on the plague arriving at Piraeus - check before publishing"

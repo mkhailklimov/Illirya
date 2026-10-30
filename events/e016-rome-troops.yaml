@@ -3,7 +3,7 @@ deck: sea
 title: A letter from Rome demands troops
 category: rome
 seasons: [Spring, Summer]
-years: [30, 42]
+years: [30, 89]
 trigger: "army >= 120"
 chance: 0.08
 once: false

@@ -1,0 +1,25 @@
+id: h08-claudius-dies
+deck: sea
+letter: true
+date: Autumn 54          # Claudius died on 13 October AD 54
+title: "Letter from Rome: Claudius is dead"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The Emperor Claudius is dead. They say he ate a dish of mushrooms at
+    dinner and never rose again. The guard has hailed Nero, the son of his
+    wife Agrippina, a youth of sixteen; the philosopher Seneca writes his
+    speeches.
+  options:
+    - label: Hold games and sacrifices for the young Caesar
+      effects: {treasury: -600, favour: 9, loyalty: 3}   # DRAFT
+    - label: Send the oath of loyalty and nothing more
+      effects: {favour: 2}
+scribe_hint: The courier lowers his voice when he says the word mushrooms.
+historical_note: >-
+  Claudius died on 13 October AD 54, most ancient writers believed poisoned
+  by his wife Agrippina so that her son Nero, not Claudius's own son
+  Britannicus, would rule.
+source: "Tacitus, Annals 12.66-69; Suetonius, Claudius 44 - check before publishing"

@@ -1,0 +1,25 @@
+id: h10-nero-dies
+deck: sea
+letter: true
+date: Summer 68          # Nero died on 9 June AD 68
+title: "Letter from Rome: Nero is dead"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The legions in Spain have hailed their old general Galba. The Senate
+    declared Nero an enemy of the people, and Nero took his own life in a
+    freedman's villa outside the city. "What an artist dies with me," he
+    is supposed to have said.
+  options:
+    - label: Swear to Galba at once
+      effects: {favour: 6}                               # DRAFT
+    - label: Wait and see who holds Rome next month
+      effects: {favour: -3, loyalty: 2}
+scribe_hint: Nobody in the forum knows whose statue to take down first.
+historical_note: >-
+  Nero killed himself on 9 June AD 68 after the Senate declared him a public
+  enemy. His death began the Year of the Four Emperors: Galba, Otho,
+  Vitellius and Vespasian.
+source: "Suetonius, Nero 47-49 - check before publishing"

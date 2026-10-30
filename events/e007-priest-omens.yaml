@@ -4,7 +4,7 @@ title: The haruspex reads a dark omen
 category: council
 advisor: priest
 seasons: any
-years: [30, 42]
+years: [30, 89]
 trigger: "loyalty < 50"
 chance: 0.15
 once: false

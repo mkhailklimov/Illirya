@@ -3,7 +3,7 @@ deck: omen
 title: A serpent in the temple
 category: omen
 seasons: [Spring, Summer, Autumn]
-years: [30, 42]
+years: [30, 89]
 trigger: random
 chance: 0.08
 once: false

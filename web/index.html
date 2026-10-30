@@ -237,6 +237,7 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 
 /* report */
 .notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.hall { width: 100%; border-collapse: collapse; font-size: 14px; } .hall th, .hall td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--faint); } .hall .n { text-align: right; } .hall tr.me td { color: var(--gold-pale); }
 .record { margin-top: 16px; } .record summary { cursor: pointer; margin-bottom: 8px; } .record summary:hover { color: var(--gold-pale); }
 .notes li { padding-left: 18px; position: relative; max-width: 78ch; }
 .notes li::before { content: "◆"; position: absolute; left: 0; top: .1em; font-size: 10px; color: var(--gold); }
@@ -279,6 +280,8 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .figdlg .side { display: grid; gap: 10px; min-width: 0; }
 .figdlg ul.signs { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .figdlg:has(.deploy) { width: min(1000px, 100%); }
+.skills { border-collapse: collapse; font-size: 14px; } .skills td { padding: 2px 14px 2px 0; text-transform: capitalize; } .skills td:last-child { letter-spacing: 2px; } .skills tr.main td:first-child { color: var(--gold-pale); }
+.adv .age { color: var(--mute); font-size: 12px; }
 @media (max-width: 620px) { .figdlg { grid-template-columns: 110px minmax(0, 1fr); gap: 12px; } }
 .dialog .head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
 .dialog .head .coinwrap { --d: 80px; }
@@ -428,17 +431,19 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
         <button class="tab" role="tab" id="tab-sea" aria-selected="false" aria-controls="sheet-sea" type="button"><b>Adriatic</b> map</button>
         <button class="tab" role="tab" id="tab-war" aria-selected="false" aria-controls="sheet-war" type="button"><b>Battlefield</b></button>
         <button class="tab" role="tab" id="tab-glory" aria-selected="false" aria-controls="sheet-glory" type="button"><b>Glory</b> paths to victory</button>
+        <button class="tab" role="tab" id="tab-hall" aria-selected="false" aria-controls="sheet-hall" type="button"><b>Hall of fame</b> all governors</button>
       </div>
       <section class="sheet" id="sheet-city" role="tabpanel" aria-labelledby="tab-city"></section>
       <section class="sheet" id="sheet-sea" role="tabpanel" aria-labelledby="tab-sea" hidden></section>
       <section class="sheet" id="sheet-war" role="tabpanel" aria-labelledby="tab-war" hidden></section>
       <section class="sheet" id="sheet-glory" role="tabpanel" aria-labelledby="tab-glory" hidden></section>
+      <section class="sheet" id="sheet-hall" role="tabpanel" aria-labelledby="tab-hall" hidden></section>
     </div>
     <section class="panel"><p class="eyebrow">Your council</p><div class="council" id="council"></div></section>
   </div>
   <div class="stage" id="stage"></div>
   <footer>
-    <span>Phase 0 playtest · rules v14 · all numbers DRAFT</span>
+    <span>Phase 0 playtest · rules v15 · all numbers DRAFT</span>
     <span class="opts" id="opts"></span>
   </footer>
 </div>
@@ -453,7 +458,17 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
 (function () {
   const E = window.Engine, D = window.GAME_DATA;
   const $ = (id) => document.getElementById(id);
-  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // v15: when an advisor dies, his successor's name replaces his in every text the game shows (cards, remarks, letters)
+  let renames = [];
+  function updateRenames() {
+    renames = [];
+    for (const aid of E.COUNCIL_ORDER) {
+      const was = E.BASE_ADVISORS[aid].name, now = E.ADVISORS[aid].name;
+      if (was !== now) renames.push([new RegExp(`\\b${was}\\b`, "g"), now], [new RegExp(`\\b${E.shortName(aid, was)}\\b`, "g"), E.shortName(aid, now)]);
+    }
+  }
+  const escRaw = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));   // names of the dead, as they were
+  const esc = (t) => renames.reduce((x, [re, n]) => x.replace(re, n), String(t ?? "")).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const KEY = "illyria-web-save-v8", STONE_KEY = "illyria-die", SOUND_KEY = "illyria-sound";
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
   let s = null, wants = {}, say = {}, book = [], phase = "intro", stone = store.get(STONE_KEY) || "obsidian", sound = store.get(SOUND_KEY) !== "off";
@@ -617,7 +632,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     $("loyalty").onclick = loyaltyDialog;
     lastVals = Object.fromEntries(E.CORE.map((n) => [n, s[n]]));
     const [season, year] = E.seasonOf(s.turn);
-    $("when").innerHTML = `Turn <b>${s.turn}</b> · <b>${season.season}, AD ${year}</b> · taxes <b>${s.tax}</b>`;
+    $("when").innerHTML = `Turn <b>${s.turn}</b> · <b>${season.season}, AD ${year}</b> · governor aged <b>${E.govAge(s)}</b> · taxes <b>${s.tax}</b>`;
   }
   function loyaltyDialog() {
     const R = E.reputation(s), parts = s.loyalty_parts || E.loyaltyParts(s, false), B = E.REBELLION_BELOW;
@@ -1441,17 +1456,27 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       const a = E.ADVISORS[aid], st = s.council[aid], state = E.abilityState(s, aid);
       const leaves = Array.from({ length: E.MOOD_MAX }, (_, i) => `<i class="${i < st.mood ? "on" : ""}"></i>`).join("");
       return `<button class="adv" type="button" data-aid="${aid}" aria-label="Show ${esc(a.name)}'s card">${coin(aid)}
-        <span class="who"><span class="name">${esc(a.name)}</span><span class="leaves" title="Mood ${st.mood} of ${E.MOOD_MAX}">${leaves}</span></span>
+        <span class="who"><span class="name">${esc(a.name)} <small class="age">${a.age}</small></span><span class="leaves" title="Mood ${st.mood} of ${E.MOOD_MAX}">${leaves}</span></span>
         <span class="ab">${esc(a.title)} · <b>${esc(a.ability_name)}</b>: <span class="${state === "sulking" ? "sulk" : ""}">${state}</span></span>
         <span class="say">${say[aid] ? "“" + esc(say[aid]) + "”" : esc(a.voice)}</span></button>`;
     }).join("");
   }
   $("council").addEventListener("click", (e) => {
     const b = e.target.closest(".adv"); if (!b) return;
-    const a = E.ADVISORS[b.dataset.aid];
-    openVeil(`<div class="dialog" role="dialog" aria-label="${esc(a.name)}"><img class="fullcard" src="img/advisor-${b.dataset.aid}.webp" alt="${esc(a.name)}, ${esc(a.title)}">
-      <div class="row"><button class="btn" type="button" data-close>Close</button></div></div>`);
+    openVeil(advisorCard(b.dataset.aid));
   });
+
+  /** v15: an advisor's card, live: his figure, age, years in office, his six skills as they have grown, his ability. */
+  function advisorCard(aid) {
+    const a = E.ADVISORS[aid], p = s.council[aid].person, [, since] = E.seasonOf(p.since || 1);
+    const main = { general: "strategy", fleet: "experience", treasurer: "logic", economist: "persuasion", priest: "persuasion" }[aid];
+    const stars = (n) => Array.from({ length: 5 }, (_, i) => `<span style="color:${i < n ? "var(--gold-pale)" : "rgba(226,189,102,.22)"}">★</span>`).join("");
+    const rows = E.SKILLS.map((k) => `<tr${k === main ? ' class="main"' : ""}><td>${k}</td><td>${stars(p.skills[k])}</td></tr>`).join("");
+    return figureHTML(aid, `${a.name}, ${p.age}`, esc(a.voice), `<p class="sum" style="margin:0">In office since AD ${since}${E.BASE_ADVISORS[aid].name !== a.name ? `, after ${escRaw(E.BASE_ADVISORS[aid].name)} and those who followed him` : ""}. Skills grow with the years, up to five stars; <b style="font-weight:400;color:var(--gold-pale)">${main}</b> counts on his advice.</p>
+      <table class="skills"><tbody>${rows}</tbody></table>
+      <p style="margin:0"><b style="font-weight:400;color:var(--gold-pale)">${esc(a.ability_name)}</b>: ${esc(a.ability_text)}</p>
+      <div class="row"><button class="btn" type="button" data-close>Close</button></div>`);
+  }
 
   // ---------- corners: compass and die ----------
   const DIRS = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
@@ -1786,11 +1811,11 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   Object.assign(ui, warUI);
   E.setUI(ui);
 
-  function refresh(before) { ledger(before); councilView(); cityView(before); seaView(); if (phase !== "battle") warIdle(); gloryView(); compassView(); cornerDie(); }
+  function refresh(before) { updateRenames(); ledger(before); councilView(); cityView(before); seaView(); if (phase !== "battle") warIdle(); gloryView(); compassView(); cornerDie(); }
   function gloryView() {
     const paths = E.glory(s), fmtN = (n) => E.intc(n);
     $("sheet-glory").innerHTML = `<p class="eyebrow" style="margin:0">Four paths to glory</p>
-      <p style="margin:0">Govern well until the winter of AD 42 and you are judged by your score. Or win outright, and the game ends in triumph. Four ways:</p>
+      <p style="margin:0">Govern well until you die in the winter of AD 89, in your ninetieth year, and you are judged by your score. Or win outright, and the game ends in triumph. Four ways:</p>
       <div class="glory">${paths.map((p) => `<div class="path"><span class="kind">${esc(p.kind)}</span><h3>${esc(p.name)}</h3><p style="margin:0">${esc(p.goal)}</p>
         <div class="bar" role="img" aria-label="${p.pct}% of the way"><i class="${p.pct >= 100 ? "done" : ""}" style="width:${p.pct}%"></i></div>
         <ul>${p.parts.map(([label, now, need]) => `<li><span>${esc(label)}: <span class="n">${fmtN(now)}</span> of ${fmtN(need)}${now >= need ? " ✓" : ""}</span><div class="bar"><i class="${now >= need ? "done" : ""}" style="width:${Math.min(100, Math.round(100 * now / need))}%"></i></div></li>`).join("")}</ul>
@@ -1799,12 +1824,55 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
 
   // ---------- tabs ----------
   function showTab(which) {
-    for (const t of ["city", "sea", "war", "glory"]) { $("tab-" + t).setAttribute("aria-selected", String(t === which)); $("sheet-" + t).hidden = t !== which; }
+    for (const t of ["city", "sea", "war", "glory", "hall"]) { $("tab-" + t).setAttribute("aria-selected", String(t === which)); $("sheet-" + t).hidden = t !== which; }
   }
   $("tab-city").onclick = () => showTab("city");
   $("tab-sea").onclick = () => showTab("sea");
   $("tab-war").onclick = () => showTab("war");
   $("tab-glory").onclick = () => showTab("glory");
+  $("tab-hall").onclick = () => { showTab("hall"); hallView(); };
+
+  // ---------- the hall of fame (v15) ----------
+  // Each player's finished governorships live in one shared document, hall/<their id>, which everyone reads and only
+  // they write. Without shared data (the page opened from a file, or a visitor who may not write) the games are kept
+  // in this browser only.
+  const HALL_KEY = "illyria-hall", HALL_KEEP = 25;
+  let hallDb = null, hallUser = null, hallMe = null, hallAll = [], hallNote = "";
+  const localHall = () => { try { return JSON.parse(store.get(HALL_KEY) || "[]"); } catch (e) { return []; } };
+  const best = (list) => list.slice().sort((a, b) => b.score - a.score).slice(0, HALL_KEEP);
+  (async () => {
+    if (!window.claude || !window.claude.use) { hallNote = "Opened from a file: the hall shows the governorships played in this browser."; return; }
+    const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+    hallUser = user; hallMe = user ? await user.id() : null;
+    if (!db) { hallNote = "The shared hall is not available here: it shows the governorships played in this browser."; return; }
+    hallDb = db;
+    db.collection("hall").onSnapshot((snap) => {
+      hallAll = snap.docs.flatMap((d) => ((d.data() || {}).games || []).map((g) => ({ ...g, player: d.id })));
+      if (!$("sheet-hall").hidden) hallView();
+    }, () => { hallDb = null; hallNote = "The shared hall could not be reached: it shows the governorships played in this browser."; });
+  })();
+  /** At the end of a governorship: into the hall, in this browser and (when it can) for everyone. */
+  async function recordHall(entry) {
+    store.set(HALL_KEY, JSON.stringify(best(localHall().concat([entry]))));
+    if (!hallDb || !hallMe) return;
+    try {
+      const ref = hallDb.doc("hall/" + hallMe), snap = await ref.get();
+      await ref.set({ games: best(((snap.exists && snap.data().games) || []).concat([entry])) });
+    } catch (e) { hallNote = "Your result is kept in this browser; the shared hall did not accept it (you may only be able to view this page)."; }
+  }
+  async function hallView() {
+    const shared = hallDb && hallAll.length, rows = shared ? hallAll : localHall().map((g) => ({ ...g, player: hallMe }));
+    const top = rows.slice().sort((a, b) => b.score - a.score).slice(0, 50);
+    const names = hallUser && shared ? await hallUser.profiles([...new Set(top.map((g) => g.player).filter(Boolean))]) : {};
+    const who = (g) => (names[g.player] && names[g.player].name) || (!shared || (g.player && g.player === hallMe) ? "you" : "a governor");
+    $("sheet-hall").innerHTML = `<p class="eyebrow">The hall of fame</p>
+      <p style="margin:0">Every governorship that ended, ${shared ? "by everyone who plays this game" : "in this browser"}, best score first. The governor's name is the one chosen at the start; the player is who played.</p>
+      ${hallNote ? `<p class="sum" style="margin:0">${esc(hallNote)}</p>` : ""}
+      ${top.length ? `<div class="fleet-wrap"><table class="hall"><thead><tr><th>#</th><th>Governor</th><th>Player</th><th class="n">Score</th><th>Years</th><th>How it ended</th></tr></thead><tbody>
+        ${top.map((g, i) => `<tr${g.player && g.player === hallMe ? ' class="me"' : ""}><td>${i + 1}</td><td>${esc(g.name || "—")}</td><td class="pl"></td><td class="n">${E.intc(g.score)}</td><td>AD 30–${g.ad}</td><td>${esc(g.end)}</td></tr>`).join("")}</tbody></table></div>`
+        : `<p class="sum" style="margin:0">No governorship has ended yet. Yours could be the first.</p>`}`;
+    $("sheet-hall").querySelectorAll("td.pl").forEach((td, i) => (td.textContent = who(top[i])));   // other people's names as text
+  }
 
   // ---------- the season ----------
   function save() { store.set(KEY, JSON.stringify(s)); }
@@ -1917,7 +1985,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   async function askScribe(text, context) {
     const offline = () => { const r = E.wordParse(s, text); return { reply: r.reply, orders: r.orders.slice(0, 1) }; };
     if (!sampleFn) return offline();
-    const prompt = `You are the scribe of the Roman governor of Acruvium, a harbour town on the Gulf of Rhizon in the province of Dalmatia, in a strategy game set in AD 30-42.
+    const prompt = `You are the scribe of the Roman governor of Acruvium, a harbour town on the Gulf of Rhizon in the province of Dalmatia, in a strategy game set in AD 30-89.
 The governor speaks to you in their own words: an order, or a question.
 Answer as the scribe: loyal, frank, a little old-fashioned, at most 4 short sentences, no modern words. Use only the numbers in TOWN below; never invent resources or outcomes.
 If the governor gives an order, or asks you to choose one, turn it into at most ONE order from DECREES:
@@ -2076,7 +2144,11 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     s.turn += 1;
     phase = "report";
     refresh(before);
-    if (done) store.del(KEY); else save();
+    if (done) {
+      store.del(KEY);
+      const P = s.victory ? E.glory(s).find((x) => x.id === s.victory) : null;
+      recordHall({ name: s.gov_name || "", score: E.score(s).total, ad: year, end: P ? `Victory: ${P.name}` : s.finished ? `Died in old age, aged ${E.govAge({ turn: s.turn - 1 })}` : String(done).split(/[.:]/)[0], at: Date.now() });
+    } else save();
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">${season.season}, AD ${year} · the season ends</p>
       <h2>${done ? (s.victory ? "Victory!" : "The end of your governorship") : "The scribe's report"}</h2>${done ? `<p class="voice">${esc(done)} You governed for ${s.turn - 1} seasons.</p>${scoreHTML()}` : ""}
@@ -2113,6 +2185,12 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
   }
   /** After the report: the haruspex's reading, and what the inventions brought, as pop-ups. */
   async function afterSeason(turn) {
+    for (const d of s.council_deaths || []) {
+      gong();
+      await advisorSpeaks(d.aid, `${E.keepName(d.dead)} is dead`, `“I served under him, Governor. I will try to be worthy of his place.”`,
+        `<p style="margin:0">${escRaw(d.dead)} served Acruvium for ${d.years} year${d.years === 1 ? "" : "s"} and died aged ${d.age}. <b style="font-weight:400;color:var(--gold-pale)">${esc(d.heir)}</b>, ${d.heirAge}, takes his place: eager, but new to the work. His skills are lower now and will grow with the years.</p>`, "Welcome him");
+    }
+    if ((s.council_deaths || []).length) { s.council_deaths = []; save(); }
     const pr = s.prophecy;
     if (pr && pr.turn === turn) {
       gong();
@@ -2154,11 +2232,12 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, on the Gulf of Rhizon</p><h2>Tiberius sends you to govern Acruvium</h2>
       <p class="voice">Each turn is one season. Three cards are turned over one by one: the land, the sea and the gods. On each card two of your council propose what to do, one cautious and one bold, and you see the odds of each before you choose. When all three are decided, three dice are thrown together: opal for the land, aquamarine for the sea, onyx for the gods. Then one more order of your own, to make good the losses or make the most of a success.</p>
-      <p class="voice" style="margin-top:8px"><b style="font-weight:400;color:var(--gold-pale)">Four paths to victory</b> (see the Glory tab): be proclaimed Caesar when an Emperor dies, rule all Illyria by the sword, raise a wonder and be hailed a living god, or fill the chest with 100,000 denarii and buy the coast. Or simply govern well until AD 42.</p>
-      <p class="voice" style="margin-top:8px">Letters from Rome arrive on their true dates: the fall of Sejanus, the death of Tiberius, Caligula, Claudius. Beyond your fields live the Illyrian tribes; their land can be won with gifts or with the sword. Your governorship ends in the winter of AD 42.</p>
+      <p class="voice" style="margin-top:8px"><b style="font-weight:400;color:var(--gold-pale)">Four paths to victory</b> (see the Glory tab): be proclaimed Caesar when an Emperor dies, rule all Illyria by the sword, raise a wonder and be hailed a living god, or fill the chest with 100,000 denarii and buy the coast. Or simply govern well for sixty years, until you die in your ninetieth year, in AD 89.</p>
+      <p class="voice" style="margin-top:8px">Letters from Rome arrive on their true dates: the fall of Sejanus, the death of Tiberius, Caligula, Claudius, Nero, the year of the four emperors, Vesuvius, the Dacian war. Beyond your fields live the Illyrian tribes; their land can be won with gifts or with the sword. Your council grows old with you: advisors learn with the years, and when one dies a younger man takes his place. You are 31; you govern until you die, in your ninetieth year, in AD 89.</p>
       <p class="sum">Feed the people first: a town at peace grows every season, and more people pay more taxes. Things take time. A harbour takes two years to build and a temple three; vines give their first wine a year after planting. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
-      <div class="row"><button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;
-    $("begin").onclick = startSeason;
+      <div class="row"><label class="sum" for="govname">Your name, Governor</label><input id="govname" type="text" maxlength="40" placeholder="for the hall of fame" value="${esc(s.gov_name || "")}">
+        <button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;
+    $("begin").onclick = () => { s.gov_name = $("govname").value.trim().slice(0, 40); startSeason(); };
   }
 
   // ---------- options, new game, boot ----------

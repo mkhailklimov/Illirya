@@ -3,7 +3,7 @@ deck: land
 title: The springs run dry
 category: nature
 seasons: [Spring, Summer]
-years: [30, 42]
+years: [30, 89]
 trigger: "wind == S"     # Auster, the hot south wind
 chance: 0.40
 once: false

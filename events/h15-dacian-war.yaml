@@ -1,0 +1,26 @@
+id: h15-dacian-war
+deck: sea
+letter: true
+date: Winter 85          # the Dacians crossed the Danube in the winter of AD 85-86
+title: "Letter from Rome: the Dacians cross the Danube"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    The Dacians have crossed the frozen Danube and killed the governor of
+    Moesia. Domitian himself is coming to the front, and Dalmatia is to
+    send men and supplies.
+  options:
+    - label: Send a hundred men to the Danube
+      effects: {army: -100, favour: 12, loyalty: -2}     # DRAFT
+    - label: Send grain and timber instead
+      effects: {grain: -2, timber: -15, favour: 6}
+    - label: Plead that the pirates need every man here
+      effects: {favour: -6}
+scribe_hint: The order is sealed by the Emperor himself; Domitian reads the replies.
+historical_note: >-
+  In AD 85-86 the Dacians invaded Moesia and killed its governor, Oppius
+  Sabinus. Domitian went to the Danube himself, and the wars went on until
+  AD 89.
+source: "Suetonius, Domitian 6; Cassius Dio 67.6-7 - check before publishing"

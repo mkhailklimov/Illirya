@@ -3,7 +3,7 @@ deck: land
 title: Angry crowds in the forum
 category: locals
 seasons: any
-years: [30, 42]
+years: [30, 89]
 trigger: "loyalty < 40"
 chance: 0.30
 once: false

@@ -1,0 +1,27 @@
+id: e028-upright-loom
+deck: land
+title: A better loom
+category: trade
+seasons: any
+years: [30, 89]
+trigger: random
+chance: 0.05
+once: true
+effects: {}
+choice:
+  prompt: >-
+    A weaver from Salona shows how to set up a tall upright loom with two
+    beams. One woman weaves twice the length in a day, and the cloth is
+    finer.
+  options:
+    - label: Pay her to teach our weavers and build the looms
+      effects: {treasury: -350, timber: -8}              # DRAFT
+      invention: upright_loom                            # v15: cloth +50%
+    - label: Our weavers know their trade
+      effects: {}
+scribe_hint: The click of the new beams carries down the street of the weavers.
+historical_note: >-
+  The two-beam upright loom, on which the weaver sat or stood and rolled the
+  finished cloth on a lower beam, spread through the Roman provinces in the
+  first century.
+source: "J. P. Wild, Textile Manufacture in the Northern Roman Provinces - check before publishing"

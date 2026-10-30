@@ -3,7 +3,7 @@ deck: land
 title: The earth shakes
 category: nature
 seasons: any
-years: [30, 42]
+years: [30, 89]
 trigger: random
 chance: 0.012              # DRAFT: about once in a governorship, never twice within four years
 cooldown: 16               # seasons before it can come again

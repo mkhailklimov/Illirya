@@ -4,7 +4,7 @@ title: The garrison wants its pay raised
 category: council
 advisor: general
 seasons: any
-years: [30, 42]
+years: [30, 89]
 trigger: "army >= 100"
 chance: 0.10
 once: false

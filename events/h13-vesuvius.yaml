@@ -1,0 +1,27 @@
+id: h13-vesuvius
+deck: sea
+letter: true
+date: Autumn 79          # the eruption, traditionally 24 August AD 79, now often dated to October
+title: "Letter from Rome: a mountain buries Campania"
+category: rome
+once: true
+effects: {}
+choice:
+  prompt: >-
+    Mount Vesuvius has burst open. Pompeii and Herculaneum lie under ash and
+    stone, and the admiral of the fleet at Misenum, Pliny the Elder, died
+    trying to rescue the people. Titus asks the provinces to help the
+    survivors.
+  options:
+    - label: Send grain to Campania
+      effects: {grain: -2, favour: 10, loyalty: -1}      # DRAFT
+    - label: Send 1,000 denarii
+      effects: {treasury: -1000, favour: 8}
+    - label: We have our own hungry
+      effects: {favour: -4}
+scribe_hint: Sailors from the south say the sky over Italy was black at noon.
+historical_note: >-
+  Vesuvius erupted in AD 79 and buried Pompeii and Herculaneum. Pliny the
+  Younger described his uncle's death in two letters; Titus sent former
+  consuls to organise help for Campania.
+source: "Pliny the Younger, Letters 6.16 and 6.20; Suetonius, Titus 8 - check before publishing"

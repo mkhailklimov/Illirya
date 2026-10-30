@@ -1,0 +1,26 @@
+id: e033-new-rig
+deck: sea
+title: A foresail from Alexandria
+category: trade
+seasons: [Spring, Summer]
+years: [30, 89]
+trigger: random
+chance: 0.05
+once: true
+effects: {}
+choice:
+  prompt: >-
+    A grain ship from Alexandria shelters in the bay. Her captain shows a
+    small slanted sail on a mast over the bow: she steers closer to the wind
+    and runs faster than anything in the gulf.
+  options:
+    - label: Rig all our ships the same way
+      effects: {treasury: -500, timber: -8, cloth: -6}   # DRAFT
+      invention: new_rig                                 # v15: convoys trade 8% better
+    - label: Our ships sail well enough
+      effects: {}
+scribe_hint: The sail is called the artemon; Epicadus calls it the little sail and grumbles.
+historical_note: >-
+  Roman merchant ships carried a small foresail, the artemon, on a mast
+  leaning over the bow, which helped them steer and sail in difficult winds.
+source: "L. Casson, Ships and Seamanship in the Ancient World, ch. 11 - check before publishing"

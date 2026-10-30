@@ -1,0 +1,28 @@
+id: e027-wheeled-plough
+deck: land
+title: A plough on wheels
+category: council
+advisor: economist
+seasons: [Autumn, Winter, Spring]
+years: [30, 89]
+trigger: random
+chance: 0.05
+once: true
+effects: {}
+choice:
+  prompt: >-
+    Nikandros has seen, in the north, a heavy plough with two small wheels
+    and an iron share that turns the soil over instead of scratching it.
+    The smith says he can build them, if he has the iron.
+  options:
+    - label: Have the smith build ploughs for every terrace
+      effects: {treasury: -500, iron: -6, timber: -6}    # DRAFT
+      invention: heavy_plough                            # v15: every wheat harvest +25%
+    - label: The old ard has served our fathers
+      effects: {}
+scribe_hint: The farmers gather round the strange machine and argue about the wheels.
+historical_note: >-
+  Pliny describes a new plough with two small wheels used in Raetia, north
+  of the Alps. Iron shares made Roman ploughs far stronger than the old
+  wooden ard.
+source: "Pliny, Natural History 18.172 - check before publishing"
