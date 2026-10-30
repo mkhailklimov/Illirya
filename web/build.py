@@ -104,7 +104,8 @@ def images():
     for path in glob.glob(os.path.join(PIECES, "figures", "*.png")):   # full-length advisors (design/prompts/advisor-figures.md), shown at 1:2
         im = Image.open(path).convert("RGB")
         w, h = im.size
-        if w * 2 > h: im = im.crop(((w - h // 2) // 2, 0, (w - h // 2) // 2 + h // 2, h))
+        if w * 2 > h:   # too wide for 1:2: pad top and bottom with the vase's black rather than cut off what he holds
+            pad = Image.new("RGB", (w, w * 2), im.getpixel((2, 2))); pad.paste(im, (0, (w * 2 - h) // 2)); im = pad
         im = im.resize((480, 960), Image.LANCZOS)
         im.save(os.path.join(IMG, "figure-" + os.path.basename(path)[:-4] + ".webp"), quality=86)
     for path in glob.glob(os.path.join(PIECES, "winds", "*.png")):
