@@ -129,6 +129,11 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v16 (3 November 2026): mercy that recruits, softness that invites raids
+
+- **Turncoats.** When you pardon pirates or brigands after a victory, some may ask to join the garrison: always if the two judgements before were executions, otherwise with chance 1/2 (stern but just), 0.4 (fair, or not yet known), 1 (cruel), 0.15 (soft). They are 20–30% of the band (at least 5), armed already: 6 denarii a man, army +n, loyalty −1, and no townsmen are taken. You may send them away.
+- **A soft judge** (more than half pardoned, after at least three judgements): besides loyalty −2 a season and brigands more likely (+3 weight), pirates are now more likely too (+2 weight), and Roman favour falls by 1 every season.
+
 ## Rules v15 (30 October 2026): sixty years, a council that grows old, useful cards
 
 - **Sixty years.** The game runs from Spring AD 30 to Winter AD 89 (240 turns). The governor is 31 at the start and dies in his ninetieth year at the end; that is the normal end (score as before, "seasons governed" now counts up to 240). Victories still end it early.

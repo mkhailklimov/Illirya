@@ -735,7 +735,7 @@
   }
   /** Who comes this year, and whether they storm the town or raid the fields. */
   function rollConflict(s) {
-    const w = { pirates: Math.max(1, 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0) - (s.warships || 0)), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0) + (reputation(s).id === "weak" ? 3 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
+    const w = { pirates: Math.max(1, 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0) - (s.warships || 0) + (reputation(s).id === "weak" ? 2 : 0)), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0) + (reputation(s).id === "weak" ? 3 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
     const kind = choices(Object.keys(w), Object.values(w));
     const at = kind === "pirates" ? (rint(1, 2) === 1 ? "walls" : "fields") : kind === "tribes" ? (rint(1, 5) <= 2 ? "walls" : "fields") : "fields";
     return { kind, at };
@@ -1076,10 +1076,27 @@
   async function judgement(s, enemy, notes) {
     const J = (s.justice = s.justice || { pardoned: 0, executed: 0 }), rep0 = reputation(s), who = CAPTIVES[enemy.kind] || "the prisoners";
     const pick = await ui.choose(`Judgement on ${who}`,
-      `They stand in chains in the forum. So far you have pardoned ${J.pardoned} and executed ${J.executed}: ${rep0.text}. A wise ruler pardons about one in three or four; never pardoning makes a tyrant, pardoning too often makes a weak one.`,
-      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is frightened (loyalty −2)" }, { label: "Pardon them", sub: "loyalty +3; they swear never to return" }], "general");
+      `They stand in chains in the forum. So far you have pardoned ${J.pardoned} and executed ${J.executed}: ${rep0.text}. A wise ruler pardons about one in three or four; never pardoning makes a tyrant, pardoning too often makes a weak one: then pirates and brigands come more often, and Rome thinks less of you every season.`,
+      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is frightened (loyalty −2)" }, { label: "Pardon them", sub: TURNCOAT_KINDS.includes(enemy.kind) ? "loyalty +3; they swear never to return, and some may ask to serve you" : "loyalty +3; they swear never to return" }], "general");
+    const streak = (J.recent || []).slice(-2).filter((x) => x === "x").length;   // how many of the last two were executed
+    J.recent = (J.recent || []).concat([pick === 1 ? "p" : "x"]).slice(-6);
     if (pick === 1) { J.pardoned++; s.loyalty += 3; notes.push(`You pardon ${who}: they kneel and swear by their gods. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
     else { J.executed++; s.favour += 1; s.loyalty -= 2; notes.push(`${who.replace(/^./, (m) => m.toUpperCase())} are executed outside the Sea Gate. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
+    if (pick === 1 && TURNCOAT_KINDS.includes(enemy.kind)) await turncoats(s, enemy, rep0, streak, notes);
+  }
+  // v16: mercy from a stern judge is worth something. Pardoned pirates or brigands may ask to serve: always after two
+  // executions in a row, often from a just judge, seldom from a soft one. 20-30% of the band, armed already, for a bounty.
+  const TURNCOAT_KINDS = ["pirates", "brigands"], TURNCOAT_PRICE = 6, TURNCOAT_SHARE = [20, 30];
+  const turncoatChance = (rep, streak) => (streak >= 2 ? 1 : { cruel: 1, just: .5, fair: .4, unknown: .4, weak: .15 }[rep.id] ?? .4);
+  async function turncoats(s, enemy, rep0, streak, notes) {
+    if (Math.random() >= turncoatChance(rep0, streak)) return;
+    const n = Math.max(5, Math.round(enemy.men * rint(...TURNCOAT_SHARE) / 100)), cost = n * TURNCOAT_PRICE, what = enemy.kind === "pirates" ? "pirates" : "brigands";
+    const why = streak >= 2 ? `You hanged the last two bands, Governor, and spared this one. They believe your mercy means something.` : `They have heard that your word holds.`;
+    const pick = await ui.choose(`${n} of the ${what} ask to serve you`, `${why} ${n} of them kneel at the Sea Gate and ask to join the garrison. They have their own weapons; they want a bounty of ${TURNCOAT_PRICE} denarii a man and their pay.`,
+      [{ label: `Take them into the cohorts`, sub: `${intc(cost)} denarii; army +${n}, no townsmen taken; the town is wary (loyalty −1)` }, { label: "Send them away", sub: "they leave the coast, as they swore" }], "general");
+    if (pick !== 0 || s.treasury < cost) { notes.push(pick === 0 ? `The chest cannot pay the ${what}' bounty: they leave the coast.` : `The pardoned ${what} leave the coast, as they swore.`); return; }
+    s.treasury -= cost; s.army += n; s.loyalty -= 1;
+    notes.push(`${n} former ${what} take the oath and join the cohorts: hard men who know the coast (${intc(cost)} denarii).`);
   }
   const REBELLION_BELOW = 50, PARLEY_DC = 15, REBEL_SHARE = .12, PEACE_UNTIL = 60, PEACE_LOYALTY = 2;
   const REP_LABEL = { just: "stern but just", cruel: "a cruel tyrant", weak: "a weak ruler" };
@@ -1511,6 +1528,7 @@
     s.loyalty += lparts.reduce((a, [, v]) => a + v, 0);
     s.loyalty_parts = lparts;
     s.favour += stat(s, "favour");
+    if (reputation(s).id === "weak") { s.favour -= 1; notes.push("Rome hears that the governor lets pirates and brigands go: favour −1."); }   // v16
     if (s.loyalty < UNREST_BELOW) { s.favour += UNREST_FAVOUR; notes.push("Unrest in the streets; Rome hears of it."); }
     if (s.army < ORDER_ARMY) s.favour += ORDER_FAVOUR;
     if (s.morale && s.turn - (s.last_war ?? -9) >= 4 && s.turn % 2 === 0) s.morale += s.morale > 0 ? -1 : 1;   // spirits settle with time
@@ -2174,7 +2192,7 @@
     newGame, seasonOf, rollWeather, revealCards, council, plans, situation, validate, totals, describe, order, costOf, priceAt, loads,
     sailing, abilityState, updateMoods, applyDecrees, resolve, clampAndCheck, wordParse, fmt, intc, pct, housing, berths, shipsAtSea,
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
-    TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN, GOV_AGE0, govAge, keepName, BASE_ADVISORS, SKILLS, shortName, syncCouncil, ageCouncil,
+    TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN, GOV_AGE0, govAge, keepName, judgement, BASE_ADVISORS, SKILLS, shortName, syncCouncil, ageCouncil,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
     CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, harvestForecast, berthsUsed, SHIPS_MAX, TRIREME_UPKEEP, glory, GLORY_NEED, soldiersOf, tribesWon, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
     tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS, MACHINES_MAX, GROUND_TEXT, missileOf,
