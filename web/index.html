@@ -136,28 +136,46 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .card .back span { font: 400 30px var(--f-display); color: var(--gold); letter-spacing: .1em; }
 .card .back em { font: 400 14px var(--f-voice); letter-spacing: .08em; color: var(--mute); }
 .card:not(.flip):hover .back { box-shadow: inset 0 0 0 2px var(--gold-pale), 0 0 26px rgba(246,227,161,.25); }
-.card.next .back { animation: beckon 1.6s ease-in-out infinite; }
-.cards .card:not(.flip):not(.next) .back { filter: brightness(.6); }
+.card.next .back { animation: beckon 1.6s ease-in-out infinite; overflow: hidden; }
+.cards .card:not(.flip):not(.next) .back { filter: brightness(.42) saturate(.6); }
 .card .eff.done { color: var(--good); letter-spacing: .06em; text-transform: none; font-size: 13.5px; }
-@keyframes beckon { 0%, 100% { box-shadow: inset 0 0 0 2px var(--gold), 0 0 6px rgba(246,227,161,.15); } 50% { box-shadow: inset 0 0 0 3px var(--gold-pale), 0 0 28px rgba(246,227,161,.55); } }
+.card { --glow: 255, 196, 64; } .card[data-deck="sea"] { --glow: 64, 214, 255; } .card[data-deck="omen"] { --glow: 246, 92, 226; }
+@keyframes beckon { 0%, 100% { box-shadow: inset 0 0 0 3px rgb(var(--glow)), 0 0 18px rgba(var(--glow), .55), 0 0 44px rgba(var(--glow), .3); } 50% { box-shadow: inset 0 0 0 5px #fff4c8, 0 0 34px rgb(var(--glow)), 0 0 90px rgba(var(--glow), .75); } }
+@keyframes lift { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes sweep { 0% { transform: translateX(-130%) skewX(-18deg); } 60%, 100% { transform: translateX(230%) skewX(-18deg); } }
+.card.next { animation: lift 1.6s ease-in-out infinite; z-index: 2; }
+.card.next .back::after { content: ""; position: absolute; inset: -10% auto -10% 0; width: 42%; background: linear-gradient(90deg, transparent, rgba(255, 244, 200, .55), transparent); animation: sweep 1.9s ease-in-out infinite; }
+.card.next .back span { color: #fff4c8; text-shadow: 0 0 18px rgb(var(--glow)); }
 .card.active { z-index: 1; }
 .card.active > div { animation: chosen 1.4s ease-in-out infinite; }
-@keyframes chosen { 0%, 100% { box-shadow: 0 0 0 3px var(--gold-pale), 0 0 18px rgba(246,227,161,.35); } 50% { box-shadow: 0 0 0 4px #fff4c8, 0 0 44px rgba(246,227,161,.75); } }
-.cards.deciding .card:not(.active) .face { filter: brightness(.45) saturate(.6); transition: filter .3s; }   /* on the face, not the card: opacity or a filter on the card breaks the 3D flip */
+@keyframes chosen { 0%, 100% { box-shadow: 0 0 0 3px rgb(var(--glow)), 0 0 26px rgba(var(--glow), .7), 0 0 60px rgba(var(--glow), .35); } 50% { box-shadow: 0 0 0 5px #fff4c8, 0 0 44px rgb(var(--glow)), 0 0 110px rgba(var(--glow), .8); } }
+.card.flip.active { transform: rotateY(180deg) scale(1.05); }
+.cards.deciding .card:not(.active) .face { filter: brightness(.32) saturate(.4); transition: filter .3s; }   /* on the face, not the card: opacity or a filter on the card breaks the 3D flip */
 #decide { border-color: var(--gold); box-shadow: 0 0 30px rgba(246,227,161,.18); }
 .card .face { transform: rotateY(180deg); background: var(--wine); display: grid; grid-template-rows: auto auto 1fr auto; }
-.card .art { height: 96px; border-bottom: 1px solid var(--line); }
-.card[data-deck="land"] .art { background: linear-gradient(180deg, rgba(109,90,30,.35), rgba(44,8,25,0)); }
-.card[data-deck="sea"] .art { background: linear-gradient(180deg, rgba(17,72,90,.45), rgba(44,8,25,0)); }
-.card[data-deck="omen"] .art { background: linear-gradient(180deg, rgba(90,22,64,.5), rgba(44,8,25,0)); }
+.card .art { height: 168px; border-bottom: 1px solid var(--line); }
+.card[data-deck="land"] .art { background: linear-gradient(180deg, rgba(196,146,34,.72), rgba(44,8,25,.1)); }
+.card[data-deck="sea"] .art { background: linear-gradient(180deg, rgba(20,136,178,.72), rgba(44,8,25,.1)); }
+.card[data-deck="omen"] .art { background: linear-gradient(180deg, rgba(176,40,132,.72), rgba(44,8,25,.1)); }
 .card .art svg { width: 100%; height: 100%; display: block; }
 .card .band { padding: 7px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--gold-pale); }
 .card[data-deck="land"] .band { background: var(--land); } .card[data-deck="sea"] .band { background: var(--seacard); } .card[data-deck="omen"] .band { background: var(--omen); }
 .card .band svg { width: 22px; height: 22px; }
 .card .body { padding: 10px 14px; display: grid; align-content: start; gap: 6px; min-width: 0; }
-.card .title { font-size: 19px; line-height: 1.25; color: var(--gold-pale); text-wrap: balance; }
+.card .title { font-size: 20px; line-height: 1.25; color: var(--gold-pale); text-wrap: balance; text-align: center; }
 .card .hint { font: 400 15px/1.4 var(--f-voice); color: var(--mute); }
-.card .eff { padding: 8px 14px; border-top: 1px solid var(--line); font-size: 14px; }
+.card .eff { padding: 8px 14px; border-top: 1px solid var(--line); font-size: 14px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+/* v17: pictures and numbers in place of sentences */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px 2px 7px; border-radius: 999px; font-size: 13.5px; font-variant-numeric: tabular-nums; border: 1px solid var(--line); color: var(--gold-pale); background: rgba(246, 227, 161, .06); white-space: nowrap; }
+.chip .kicon { margin: 0; vertical-align: 0; }
+.chip.up { color: #a8f0bd; border-color: rgba(159, 220, 174, .55); background: rgba(159, 220, 174, .1); } .chip.down { color: #ffb0b0; border-color: rgba(255, 122, 122, .55); background: rgba(255, 122, 122, .1); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; margin-top: 12px; }
+.tile { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 12px 8px; border: 1px solid var(--line); border-radius: 12px; background: rgba(44, 8, 25, .55); color: var(--gold-pale); font-size: 14px; line-height: 1.2; }
+.tile svg { width: 40px; height: 40px; color: var(--gold); }
+details.more { margin-top: 10px; color: var(--mute); font-size: 14.5px; } details.more > summary { cursor: pointer; color: var(--gold); letter-spacing: .08em; font-size: 13px; } details.more[open] > summary { margin-bottom: 8px; }
+.prop:hover:not(:disabled), .opt:hover:not(:disabled), .tile:hover { box-shadow: 0 0 22px rgba(246, 227, 161, .35); }
+.vs { font: 400 22px var(--f-label); color: var(--gold-pale); }
 .card .eff.decide { color: var(--gold); letter-spacing: .14em; text-transform: uppercase; font-size: 12.5px; }
 .card.quiet .face { opacity: .8; }
 .choice { display: grid; gap: 8px; }
@@ -414,7 +432,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
 .score td { padding: 4px 8px; border-bottom: 1px solid var(--faint); } .score td:last-child { text-align: right; }
 .score tr.total td { color: var(--gold); font: 400 22px var(--f-display); border: 0; }
 @media (prefers-reduced-motion: reduce) { .card.quake, .num.changed .v { animation: none; } }
-@media (prefers-reduced-motion: reduce) { .card { transition: none; } .card.next .back, .card.active > div { animation: none; } .spin .die svg, .corner.die.spin svg { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .card.next .back, .card.active > div { animation: none; } .spin .die svg, .corner.die.spin svg { animation: none; } .card.next, .card.next .back::after { animation: none; } }
 </style>
 
 <div class="wrap">
@@ -427,11 +445,11 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   <div class="table">
     <div class="board">
       <div class="tabs" role="tablist">
-        <button class="tab" role="tab" id="tab-city" aria-selected="true" aria-controls="sheet-city" type="button"><b>Acruvium</b> city sheet</button>
-        <button class="tab" role="tab" id="tab-sea" aria-selected="false" aria-controls="sheet-sea" type="button"><b>Adriatic</b> map</button>
+        <button class="tab" role="tab" id="tab-city" aria-selected="true" aria-controls="sheet-city" type="button"><b>Acruvium</b></button>
+        <button class="tab" role="tab" id="tab-sea" aria-selected="false" aria-controls="sheet-sea" type="button"><b>Adriatic</b></button>
         <button class="tab" role="tab" id="tab-war" aria-selected="false" aria-controls="sheet-war" type="button"><b>Battlefield</b></button>
-        <button class="tab" role="tab" id="tab-glory" aria-selected="false" aria-controls="sheet-glory" type="button"><b>Glory</b> paths to victory</button>
-        <button class="tab" role="tab" id="tab-hall" aria-selected="false" aria-controls="sheet-hall" type="button"><b>Hall of fame</b> all governors</button>
+        <button class="tab" role="tab" id="tab-glory" aria-selected="false" aria-controls="sheet-glory" type="button"><b>Glory</b></button>
+        <button class="tab" role="tab" id="tab-hall" aria-selected="false" aria-controls="sheet-hall" type="button"><b>Hall of fame</b></button>
       </div>
       <section class="sheet" id="sheet-city" role="tabpanel" aria-labelledby="tab-city"></section>
       <section class="sheet" id="sheet-sea" role="tabpanel" aria-labelledby="tab-sea" hidden></section>
@@ -443,7 +461,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   </div>
   <div class="stage" id="stage"></div>
   <footer>
-    <span>Phase 0 playtest · rules v16 · all numbers DRAFT</span>
+    <span>Phase 0 playtest · rules v17 · all numbers DRAFT</span>
     <span class="opts" id="opts"></span>
   </footer>
 </div>
@@ -516,6 +534,24 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
         o.type = "sawtooth"; o.frequency.value = f0 * d;
         vib.frequency.value = 5.2; vg.gain.value = f0 * .006; vib.connect(vg).connect(o.frequency);
         o.connect(lp); o.start(t); o.stop(t + len + .2); vib.start(t); vib.stop(t + len + .2);
+      });
+      lp.connect(g).connect(out);
+    });
+  }
+  function horn() {     // land cards (v17): a military trumpet call, four brass notes rising, with an echo off the mountain
+    const a = audio(); if (!a) return;
+    const out = a.createGain(); out.gain.value = .2; out.connect(a.destination);
+    const echo = a.createDelay(1), back = a.createGain(); echo.delayTime.value = .24; back.gain.value = .3;
+    out.connect(echo); echo.connect(back); back.connect(a.destination);
+    [[196, 0, .16], [196, .2, .16], [262, .4, .22], [392, .66, .8]].forEach(([f0, t0, len]) => {
+      const t = a.currentTime + t0, lp = a.createBiquadFilter(), g = a.createGain();
+      lp.type = "lowpass"; lp.Q.value = 3;
+      lp.frequency.setValueAtTime(600, t); lp.frequency.linearRampToValueAtTime(3200, t + .05); lp.frequency.exponentialRampToValueAtTime(1800, t + len);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + .03); g.gain.setValueAtTime(.85, t + len - .05); g.gain.exponentialRampToValueAtTime(.001, t + len + .14);
+      [1, 1.005, .5].forEach((d) => {
+        const o = a.createOscillator();
+        o.type = "sawtooth"; o.frequency.setValueAtTime(f0 * d * .97, t); o.frequency.linearRampToValueAtTime(f0 * d, t + .03);
+        o.connect(lp); o.start(t); o.stop(t + len + .2);
       });
       lp.connect(g).connect(out);
     });
@@ -603,7 +639,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   };
   const orderIcon = (o, size = 30) => `<svg class="oi" viewBox="-20 -20 40 40" width="${size}" height="${size}" fill="none" stroke="#e2bd66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${o.id === "build" && I[o.building] ? I[o.building] : O[o.id] || ""}</svg>`;
   // v21: an icon for each number in the top bar and on the season's cards
-  const KPI_I = { grain: "wheat", army: "recruit", ships: "build_ship", wine: "vineyard", oil: "olives", fleece: "pasture", cloth: "weavers", timber: "woodcutters", salt: "saltpans", fish: "fishery", iron: "mine", marble: "temple" };
+  const KPI_I = { advice: "hear_petitions", order: "build", sword: "march_tribe", grain: "wheat", army: "recruit", ships: "build_ship", wine: "vineyard", oil: "olives", fleece: "pasture", cloth: "weavers", timber: "woodcutters", salt: "saltpans", fish: "fishery", iron: "mine", marble: "temple" };
   const KPI_SVG = {
     treasury: '<ellipse cx="0" cy="11" rx="12" ry="4"/><ellipse cx="0" cy="4" rx="12" ry="4"/><ellipse cx="0" cy="-3" rx="12" ry="4"/><ellipse cx="0" cy="-10" rx="12" ry="4"/>',
     people: '<circle cx="-10" cy="-5" r="4"/><circle cx="10" cy="-5" r="4"/><circle cx="0" cy="-9" r="4.5"/><path d="M-17,12c0,-7 3,-10 7,-10M17,12c0,-7 -3,-10 -7,-10M-8,15c0,-11 4,-15 8,-15s8,4 8,15"/>',
@@ -622,12 +658,12 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       const r = E.RULES[n], v = s[n], d = before ? v - before[n] : 0;
       const warn = (n === "grain" && v < 3) || (n === "loyalty" && v < E.REBELLION_BELOW + 5) || (n === "favour" && v < 30);
       const delta = Math.abs(d) >= 0.05 ? `<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${E.fmt(n, Math.abs(d))}</span>` : "";
-      const unit = n === "loyalty" ? `of 100 · rebellion below ${E.REBELLION_BELOW}${s.restless ? ` · restless ${s.restless}/2` : ""}` : n === "favour" ? "of 100" : n === "grain" ? "months of food" : r.unit;
+      const unit = n === "loyalty" ? `of 100${s.restless ? ` · restless ${s.restless}/2` : ""}` : n === "favour" ? "of 100" : n === "grain" ? "months" : r.unit;
       if (n === "loyalty") return `<button type="button" class="num clickable${warn ? " warn" : ""}${changed(n) ? " changed" : ""}" id="loyalty"><span class="k">${kIcon(n)}${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></button>`;
       return `<div class="num${warn ? " warn" : ""}${changed(n) ? " changed" : ""}"><span class="k">${kIcon(n)}${esc(r.name)}</span><span class="v">${E.fmt(n, v)}</span><span class="u">${esc(unit)} ${delta}</span></div>`;
     }).join("");
     const T = E.tributeInfo(s);
-    $("ledger").innerHTML = html + `<button type="button" class="num tribute${T.short && T.inTurns <= 1 ? " short" : ""}" id="tribute"><span class="k">${kIcon("tribute")}Tribute to Rome</span><span class="v">${E.intc(T.due)}</span><span class="u">${T.inTurns === 0 ? "due this Summer" : `due in ${T.inTurns} season${T.inTurns > 1 ? "s" : ""} · every Summer`}</span></button>`;
+    $("ledger").innerHTML = html + `<button type="button" class="num tribute${T.short && T.inTurns <= 1 ? " short" : ""}" id="tribute"><span class="k">${kIcon("tribute")}Tribute to Rome</span><span class="v">${E.intc(T.due)}</span><span class="u">${T.inTurns === 0 ? "due now" : `in ${T.inTurns} season${T.inTurns > 1 ? "s" : ""}`}</span></button>`;
     $("tribute").onclick = tributeDialog;
     $("loyalty").onclick = loyaltyDialog;
     lastVals = Object.fromEntries(E.CORE.map((n) => [n, s[n]]));
@@ -675,16 +711,18 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   // Field plots: four on the river shore, four below the spring, then four terraces to clear on the mountain.
   const PS = .85, PW = 80 * PS, PH = 66 * PS;
   const corner = ([x, y]) => [x - PW / 2, y - PH / 2];
-  const BAND = 120;   // the strip of tribal land drawn above the plan
+  const BAND = 300;   // v17: the map of the hinterland, drawn above the plan
   const TOWN_POLY = [[335, 135], [580, 205], [665, 300], [580, 400], [335, 475]];
   const TOWN_SLOTS = [[385, 198], [385, 262], [385, 326], [385, 390], [463, 213], [463, 274], [463, 335], [463, 396], [541, 236], [541, 302], [541, 368], [600, 300]].map(corner);
   const FIELD_SLOTS = [[400, 66], [476, 66], [552, 66], [628, 66], [430, 540], [506, 540], [582, 540], [658, 540],
     [737, 372], [813, 402], [889, 432], [955, 470]].map(corner);
   const HILL_SLOT = corner([862, 168]);
   const down = ([x, y]) => [x, y + BAND];
-  const TRIBE_BOX = [[20, 330], [345, 655], [670, 980]];
-  /** Plot slots in each tribe's land, in the band. */
-  const tribeSlots = (k) => Array.from({ length: E.TRIBES[k].plots }, (_, j) => [TRIBE_BOX[k][0] + 50 + j * 74, 72]);
+  // v17: where each tribe's villages stand on the map of the hinterland (the centre of each plot)
+  const VILLAGE_AT = { labeatae: [[238, 62], [298, 150], [362, 238]], docleatae: [[486, 72], [592, 130], [486, 190], [606, 238]], pirustae: [[770, 58], [892, 112], [778, 190]] };
+  const TERRITORY = { labeatae: { poly: "132,6 424,6 402,120 426,205 404,296 304,296 226,170", label: [350, 32] }, docleatae: { poly: "428,6 660,6 648,130 672,296 408,296 430,205 406,120", label: [535, 32] }, pirustae: { poly: "664,6 992,6 992,296 676,296 652,130", label: [895, 32] } };
+  /** Plot slots in each tribe's land. */
+  const tribeSlots = (k) => VILLAGE_AT[E.TRIBES[k].id] || [];
   /** Small roofs inside the walls, one per 120 people: where they can stand (not on plots, streets or the forum). */
   const inPoly = ([x, y], poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
   /** Small roofs inside the walls, one per 120 people, in the lanes between the plots. */
@@ -808,6 +846,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const wallsLeft = Math.max(0, ...wallsAll.filter((b) => s.turn < b.done).map((b) => b.done - s.turn));
     const wallsText = `The town walls: ${wallsDone ? (wallsDone > 1 ? "walls with extra towers" : "walls and towers") : "none standing"}${wallsLeft ? `, more towers ready in ${wallsLeft} season${wallsLeft > 1 ? "s" : ""}` : ""}. They take no plot.`;
     const BAY = "M0,0 H300 C316,50 326,100 330,128 L330,488 C300,522 262,545 200,560 C120,576 60,560 0,566Z";
+    const BAY_EDGE = BAY.replace("M0,0 H300 ", "M300,0 ").replace(/Z$/, "");
     const RIVER = "M770,6 C708,58 656,108 602,138 C522,166 432,142 334,126", SPRING = "M690,412 C622,444 522,470 424,488 C384,496 352,494 332,490";
     const MOUNT = "M640,0 C662,90 704,180 694,262 C690,334 722,420 704,520 C700,560 712,600 712,600 H1000 V0Z";
     const ZIG = "M665,300 L702,262 L684,236 L744,212 L724,190 L804,174 L846,170";
@@ -821,9 +860,9 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     }
     peaks.sort((a, b) => a[1] - b[1]);
     const waves = [[40, 110], [120, 150], [200, 120], [60, 250], [180, 270], [40, 470], [150, 500], [250, 520], [210, 180]].map(([x, y]) => `<path d="M${x},${y}q5,-5 10,0t10,0" fill="none" stroke="${MAP.seaInk}" stroke-width="1.1"/>`).join("");
-    const lining = [36, 27, 19, 12, 6].map((w) => `<path d="${BAY}" fill="none" stroke="${MAP.seaInk}" stroke-width="${w}" stroke-opacity=".5"/><path d="${BAY}" fill="none" stroke="${MAP.sea}" stroke-width="${w - 1.4}"/>`).join("");
+    const lining = [36, 27, 19, 12, 6].map((w) => `<path d="${BAY_EDGE}" fill="none" stroke="${MAP.seaInk}" stroke-width="${w}" stroke-opacity=".5"/><path d="${BAY_EDGE}" fill="none" stroke="${MAP.sea}" stroke-width="${w - 1.4}"/>`).join("");
     const lbl = (x, y, t, o = {}) => `<text x="${x}" y="${y}" ${o.anchor ? `text-anchor="${o.anchor}"` : ""} font-family="${o.font || "Marcellus"}" font-size="${o.size || 11}" letter-spacing="${o.ls ?? 2}" fill="${o.fill || MAP.ink}" ${o.italic ? 'font-style="italic"' : ""} ${o.rot ? `transform="rotate(${o.rot} ${x} ${y})"` : ""}>${t}</text>`;
-    return `<svg viewBox="0 0 1000 ${600 + BAND}" role="img" aria-label="Old map of Acruvium, drawn as Kotor: the bay and the Sea Gate to the west, the walled triangle between the river and the spring, the mountain and the crag to the east, the narrow fields, and the tribes' land beyond the mountains">
+    return `<svg viewBox="0 0 1000 ${600 + BAND}" role="img" aria-label="Old map of Acruvium, drawn as Kotor: the bay and the Sea Gate to the west, the walled triangle between the river and the spring, the mountain and the crag to the east, the narrow fields, and above them the land of the three tribes: the Labeatae on the coast, the Docleatae and the Pirustae inland">
       <defs>
       <pattern id="scaff" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0,5H10" stroke="rgba(61,43,26,.28)" stroke-width="1.6"/></pattern>
       <filter id="newglow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>
@@ -841,7 +880,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       <path d="${MOUNT}" fill="none" stroke="${MAP.ink2}" stroke-width="1" stroke-dasharray="2 3"/>
       <path d="${BAY}" fill="${MAP.sea}"/>
       <g clip-path="url(#bayclip)">${lining}</g>
-      <path d="${BAY}" fill="none" stroke="${MAP.ink}" stroke-width="1.6"/>
+      <path d="${BAY_EDGE}" fill="none" stroke="${MAP.ink}" stroke-width="1.6"/>
       ${waves}
       <path d="${RIVER}" fill="none" stroke="${MAP.seaInk}" stroke-width="8" stroke-linecap="round"/><path d="${RIVER}" fill="none" stroke="${MAP.sea}" stroke-width="5" stroke-linecap="round"/>
       <path d="${SPRING}" fill="none" stroke="${MAP.seaInk}" stroke-width="5.5" stroke-linecap="round"/><path d="${SPRING}" fill="none" stroke="${MAP.sea}" stroke-width="3" stroke-linecap="round"/>
@@ -880,7 +919,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       </g>
       ${(() => { const at = townSlots(town); return TOWN_SLOTS.map(down).map(([x, y], j) => plotSVG(at[j] >= 0 ? town[at[j]] : undefined, x, y, "town", at[j])).join(""); })()}
       ${plotSVG(hill[0], HILL_SLOT[0], HILL_SLOT[1] + BAND, "hill", 0)}
-      ${fieldLayout().map((p, i) => p.kind === "open" ? plotSVG(p.k >= 0 ? fields[p.k] : undefined, p.x, p.y, "field", p.k) : p.kind === "scrub" ? scrubSVG(p.x, p.y, p.left) : lockedSVG(p.x, p.y, p.tribe)).join("")}
+      ${fieldLayout().map((p, i) => p.kind === "open" ? plotSVG(p.k >= 0 ? fields[p.k] : undefined, p.x, p.y, "field", p.k) : p.kind === "scrub" ? scrubSVG(p.x, p.y, p.left) : lockedSVG(p.x, p.y, p.tribe, p.name)).join("")}
       <g pointer-events="none"><rect width="1000" height="${600 + BAND}" filter="url(#stain)"/><rect width="1000" height="${600 + BAND}" filter="url(#paper)"/><rect width="1000" height="${600 + BAND}" fill="url(#vign)"/>
         <rect x="3" y="3" width="994" height="${594 + BAND}" fill="none" stroke="${MAP.ink}" stroke-width="2"/>
         <rect x="7.5" y="7.5" width="985" height="${585 + BAND}" fill="none" stroke="${MAP.ink}" stroke-width="3.4" stroke-dasharray="24 24"/>
@@ -895,8 +934,8 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       if (i < cleared) out.push({ kind: "open", x, y, k: k++ });
       else { const j = i - cleared; out.push({ kind: "scrub", x, y, left: j < clearing.length ? clearing[j] - s.turn : 0 }); }
     });
-    E.TRIBES.forEach((t, ti) => tribeSlots(ti).map(corner).forEach(([x, y]) => {
-      out.push(E.tribeWon(s, t.id) ? { kind: "open", x, y, k: k++, far: true } : { kind: "locked", x, y, tribe: t.id });
+    E.TRIBES.forEach((t, ti) => tribeSlots(ti).map(corner).forEach(([x, y], j) => {
+      out.push(E.tribeWon(s, t.id) ? { kind: "open", x, y, k: k++, far: true } : { kind: "locked", x, y, tribe: t.id, name: t.villages[j] });
     }));
     // fisheries and salt pans take the open plots nearest the bay; everything else the rest, in order
     const fields = sortedPlots("field"), opens = out.filter((p) => p.kind === "open"), used = new Set();
@@ -908,34 +947,42 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     fields.forEach((b, bi) => { if (!SHORE.includes(b.kind)) { const p = opens.find((q) => !used.has(q)); if (p) { p.k = bi; used.add(p); } } });
     return out;
   }
-  function lockedSVG(x, y, tribe) {
-    const t = E.TRIBE[tribe], hostile = E.hostile(s, tribe), col = hostile ? MAP.red : MAP.ink2;
-    return `<g class="plot-hit" tabindex="0" role="button" aria-label="Land of the ${esc(t.name)}: not ours yet" data-tribe="${tribe}" transform="translate(${x},${y}) scale(${PS})">
-      <rect class="plot-frame" width="80" height="66" rx="4" fill="rgba(61,43,26,.06)" stroke="${col}" stroke-width="1.2" stroke-dasharray="3 4"/>
-      <g transform="translate(40,30)" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round"><path d="M-12,12L12,-12M12,12L-12,-12"/><path d="M-12,-12l-2,5 5,-2M12,-12l2,5 -5,-2"/></g>
-      <text x="40" y="59" text-anchor="middle" font-family="Marcellus" font-size="11" fill="${col}">${hostile ? "hostile" : "theirs"}</text></g>`;
+  /** A village not yet ours: a palisade and its roofs on the map. Red when the tribe is hostile. */
+  function lockedSVG(x, y, tribe, name) {
+    const t = E.TRIBE[tribe], hostile = E.hostile(s, tribe), col = hostile ? MAP.red : MAP.ink, cx = x + PW / 2, cy = y + PH / 2;
+    const roofs = [[-13, 5], [0, -7], [13, 4], [-2, 9]].map(([a, b]) => `<path d="M${a - 7},${b + 4}L${a},${b - 5}L${a + 7},${b + 4}Z" fill="${hostile ? MAP.red : MAP.ink2}" stroke="${col}" stroke-width=".8"/>`).join("");
+    return `<g class="plot-hit" tabindex="0" role="button" aria-label="The village of ${esc(name || "")}, land of the ${esc(t.name)}${hostile ? ", hostile" : ""}" data-tribe="${tribe}" transform="translate(${cx},${cy})">
+      <rect class="plot-frame" x="-30" y="-24" width="60" height="48" rx="6" fill="transparent" stroke="none"/>
+      <ellipse rx="25" ry="18" fill="rgba(236,220,180,.5)" stroke="${col}" stroke-width="1.5" stroke-dasharray="3 2.5"/>${roofs}</g>`;
   }
-  /** The band of tribal land above the plan, beyond the mountains: three territories, each with its plots and its state. */
+  /** v17: the land beyond the fields as a map: the sea and the coast of the Labeatae, the lake and the river Zeta of the Docleatae, the iron mountains of the Pirustae. */
   function bandSVG() {
-    const label = { free: "free tribe", ally: "our allies", conquered: "conquered" };
-    const ridge = Array.from({ length: 26 }, (_, k) => { const x = 20 + k * 38, y = BAND - 2, h = 9 + (k % 3) * 3;
+    const label = { free: "free", ally: "joined Acruvium", conquered: "conquered" };
+    const land = `<rect width="1000" height="${BAND}" fill="#e6d6ab"/><rect width="1000" height="${BAND}" fill="url(#stipple)"/>`;
+    const sea = `<path d="M0,0 H130 C150,60 188,100 214,150 C240,200 284,244 300,${BAND} H0Z" fill="${MAP.sea}"/><path d="M130,0 C150,60 188,100 214,150 C240,200 284,244 300,${BAND}" fill="none" stroke="${MAP.seaInk}" stroke-width="9" stroke-opacity=".3"/><path d="M130,0 C150,60 188,100 214,150 C240,200 284,244 300,${BAND}" fill="none" stroke="${MAP.ink}" stroke-width="1.6"/>`
+      + [[30, 60], [70, 120], [110, 190], [60, 240], [170, 260]].map(([x, y]) => `<path d="M${x},${y}q5,-5 10,0t10,0" fill="none" stroke="${MAP.seaInk}" stroke-width="1.1"/>`).join("");
+    const water = `<path d="M652,4 C606,50 542,84 534,150 C528,204 506,232 478,250" fill="none" stroke="${MAP.seaInk}" stroke-width="6" stroke-linecap="round"/><path d="M652,4 C606,50 542,84 534,150 C528,204 506,232 478,250" fill="none" stroke="${MAP.sea}" stroke-width="3.6" stroke-linecap="round"/>
+      <path d="M422,268 C430,246 490,240 528,258 C548,270 520,290 470,288 C440,288 418,282 422,268Z" fill="${MAP.sea}" stroke="${MAP.seaInk}" stroke-width="1.5"/>
+      <text x="476" y="272" text-anchor="middle" font-family="Marcellus" font-style="italic" font-size="11" fill="${MAP.seaInk}">Lacus Labeatis</text><text x="545" y="112" font-family="Marcellus" font-style="italic" font-size="11" fill="${MAP.seaInk}" transform="rotate(-62 545 112)">Zeta</text>`;
+    const roads = `<path d="M238,62 L298,150 L362,238 M486,72 L592,130 L486,190 L606,238 M770,58 L892,112 L778,190 M298,150 L486,190 M592,130 L770,58 M606,238 L778,190 M606,238 L650,${BAND}" fill="none" stroke="${MAP.ink2}" stroke-width="1.3" stroke-dasharray="6 5"/>`;
+    const peaks = [[420, 56], [404, 116], [430, 176], [412, 214], [650, 58], [662, 124], [652, 190], [690, 250], [700, 126], [830, 48], [955, 70], [840, 150], [950, 170], [880, 230], [960, 262], [800, 262]].map((p, k) => peakSVG(p, k)).join("");
+    const ridge = Array.from({ length: 19 }, (_, k) => { const x = 318 + k * 38, y = BAND - 2, h = 9 + (k % 3) * 3;
       return `<path d="M${x - 16},${y} Q${x - 6},${y - h * .6} ${x},${y - h} Q${x + 6},${y - h * .5} ${x + 16},${y}" fill="${MAP.paper2}" stroke="${MAP.ink}" stroke-width="1"/>`; }).join("");
-    return `<rect width="1000" height="${BAND}" fill="#dfc996"/>
-      ${ridge}
-      ${E.TRIBES.map((t, k) => { const [x0, x1] = TRIBE_BOX[k], st = E.tribeState(s, t.id).state, hostile = E.hostile(s, t.id), won = E.tribeWon(s, t.id), col = hostile ? MAP.red : won ? MAP.green : MAP.ink;
-        return `<g class="plot-hit" tabindex="0" role="button" aria-label="The ${esc(t.name)}: ${esc(label[st])}${hostile ? ", hostile" : ""}" data-tribe="${t.id}">
-          <rect x="${x0}" y="16" width="${x1 - x0}" height="${BAND - 32}" rx="4" fill="${won ? "rgba(93,122,58,.12)" : "rgba(236,220,180,.35)"}" stroke="${col}" stroke-width="1.3" stroke-dasharray="${won ? "0" : "9 3 2 3"}"/>
-          <text x="${x0 + 12}" y="36" font-family="Caesar Dressing, Marcellus" font-size="17" letter-spacing="1.5" fill="${col}">${esc(t.name.toUpperCase())}</text>
-          <text x="${x1 - 12}" y="36" text-anchor="end" font-family="Marcellus" font-size="11.5" letter-spacing="1" font-style="italic" fill="${col}">${hostile ? "hostile" : label[st]}</text></g>`; }).join("")}`;
+    const lands = E.TRIBES.map((t) => { const T = TERRITORY[t.id], st = E.tribeState(s, t.id).state, hostile = E.hostile(s, t.id), won = E.tribeWon(s, t.id), col = hostile ? MAP.red : won ? MAP.green : MAP.ink, just = E.hasJustCause(s, t.id) && !won;
+      return `<g class="plot-hit" tabindex="0" role="button" aria-label="The ${esc(t.name)}: ${esc(label[st])}${hostile ? ", hostile" : ""}${just ? ", just cause" : ""}" data-tribe="${t.id}">
+        <polygon points="${T.poly}" fill="${won ? "rgba(93,122,58,.16)" : hostile ? "rgba(168,67,47,.1)" : "rgba(236,220,180,.01)"}" stroke="${col}" stroke-width="1.5" stroke-dasharray="${won ? "0" : "10 4 2 4"}"/>
+        <text x="${T.label[0]}" y="${T.label[1]}" text-anchor="middle" font-family="Caesar Dressing, Marcellus" font-size="19" letter-spacing="2" fill="${col}">${esc(t.name.toUpperCase())}</text>
+        <text x="${T.label[0]}" y="${T.label[1] + 16}" text-anchor="middle" font-family="Marcellus" font-size="11.5" font-style="italic" fill="${just ? MAP.red : col}">${hostile ? "hostile" : just ? "just cause" : label[st]}</text></g>`; }).join("");
+    const names = E.TRIBES.flatMap((t) => (VILLAGE_AT[t.id] || []).map(([x, y], j) => `<text x="${x}" y="${y + PH / 2 + 12}" text-anchor="middle" font-family="Marcellus" font-size="11.5" fill="${MAP.ink}" stroke="#e6d6ab" stroke-width="2.6" paint-order="stroke" pointer-events="none">${esc(t.villages[j] || "")}</text>`)).join("");
+    return land + sea + water + roads + lands + peaks + ridge + names;
   }
   function cityView(before) {
     const free = Math.max(0, Math.trunc(s.ships) - E.shipsAtSea(s));
     $("sheet-city").innerHTML = `<div class="mapwrap" id="citymap">${citySVG()}</div>
-      <p class="sum" style="margin:0"><b style="color:var(--gold-pale);font-weight:400">${esc(E.CITY.name)}:</b> ${esc(E.CITY.traits)}</p>
-      <div class="legend"><span>${E.plotsUsed(s, "town")}/${E.TOWN_PLOTS} plots in town, ${E.plotsUsed(s, "field")}/${E.fieldPlots(s)} in the fields (${E.FIELD_PLOTS_MAX} at most without the tribes' land)</span>
-      <span>Houses for ${E.intc(E.housing(s))} people</span><span>${Math.trunc(s.ships)} merchant galleys: ${free} in harbour${E.shipsAtSea(s) ? `, ${E.shipsAtSea(s)} at sea` : ""}${s.warships ? `; ${s.warships} trireme${s.warships > 1 ? "s" : ""}` : ""}; ${E.berthsUsed(s)} of ${E.berths(s)} berths used</span>
-      <span><i style="background:#2c0819;border:1px dashed #e2bd66"></i>being built</span><span><i style="background:#1f3a22;border:1px solid #9fdcae"></i>growing</span></div>
-      <div class="inventions"><p class="eyebrow" style="margin:0 0 4px">Inventions</p>${E.inventionsOf(s).length ? E.inventionsOf(s).map((v) => `<div><b style="font-weight:400;color:var(--gold-pale)">${esc(v.name)}</b>: working. ${esc(v.text)}</div>`).join("") : `<div class="sum">None yet. Engineers and inventors arrive by sea (the sea cards): a new machine keeps paying every season.</div>`}</div>
+      <div class="chips" style="margin:8px 0">
+        <span class="chip" title="Plots in town">${icon("forum", 18)}${E.plotsUsed(s, "town")}/${E.TOWN_PLOTS}</span><span class="chip" title="Plots in the fields">${kIcon("grain", 16)}${E.plotsUsed(s, "field")}/${E.fieldPlots(s)}</span>
+        <span class="chip" title="Houses for this many people">${icon("houses", 18)}${E.intc(E.housing(s))}</span><span class="chip" title="Merchant galleys in harbour, of all; berths">${kIcon("ships", 16)}${free}/${Math.trunc(s.ships)}${s.warships ? ` + ${s.warships}` : ""} · ${E.berthsUsed(s)}/${E.berths(s)}</span></div>
+      ${E.inventionsOf(s).length ? `<div class="chips">${E.inventionsOf(s).map((v) => `<span class="chip up" title="${esc(v.text)}">${esc(v.name)}</span>`).join("")}</div>` : ""}
       ${storesHTML(before)}`;
     $("citymap").querySelectorAll(".plot-hit").forEach((g) => {
       const go = () => (g.dataset.tribe ? tribeDialog(g.dataset.tribe) : g.dataset.clear ? clearHere() : g.dataset.zone ? buildPicker(g.dataset.zone) : plotInfo(g.dataset.plot));
@@ -949,19 +996,19 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const matText = (m) => Object.entries(m).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`).join(", ");
     const can = phase === "orders";
     const treatProblem = E.canDo(s, E.order("treat_tribe", { tribe: id })), marchProblem = E.canDo(s, E.order("march_tribe", { tribe: id }));
-    openVeil(`<div class="dialog wide" role="dialog" aria-label="The ${esc(t.name)}"><p class="eyebrow" style="margin:0">Beyond the fields · ${esc(t.land)}</p><h2 style="margin:0">The ${esc(t.name)}</h2>
-      <p style="margin:0">${esc(clean(t.notes))}</p>
-      <p class="sum" style="margin:0">${won ? `Their land is ours: ${t.plots} field plots.` : `Their land would give ${t.plots} new field plots.`} ${E.hostile(s, id) ? "They are hostile: raids are three times as likely." : ""}</p>
-      ${won ? "" : `<div class="ways">
-        <button class="way" type="button" data-way="treat" ${can && !treatProblem ? "" : "disabled"}><h3>${orderIcon({ id: "treat_tribe" }, 28)} Diplomacy and gold</h3>
-          <span>Gifts to the chiefs: ${E.intc(od.treat.cost)} denarii${Object.keys(od.treat.mats).length ? ", " + esc(matText(od.treat.mats)) : ""}. ${esc(E.ADVISORS[od.talker].name)} speaks for you.</span>
-          <span class="odds">d20 ${od.treat.bonus >= 0 ? "+" : "−"} ${Math.abs(od.treat.bonus)}, need ${od.treat.target}: about ${od.treat.chance}%. Success: their land and their friendship. Failure: the gifts are gone, but they listen better next time.</span>
+    const just = E.hasJustCause(s, id), goodwill = st.goodwill || 0;
+    openVeil(`<div class="dialog wide" role="dialog" aria-label="The ${esc(t.name)}"><p class="eyebrow" style="margin:0">${esc(t.land)}</p><h2 style="margin:0">The ${esc(t.name)}</h2>
+      <div class="chips"><span class="chip">${kIcon("people", 15)}${E.intc(t.people)}</span><span class="chip">${kIcon("grain", 15)}${t.plots} plots</span><span class="chip" title="Their villages">${esc(t.villages.join(", "))}</span>
+        ${won ? `<span class="chip up">${st.state === "ally" ? "Joined Acruvium" : "Conquered"}</span>` : ""}${E.hostile(s, id) ? `<span class="chip down">Hostile</span>` : ""}${goodwill ? `<span class="chip up" title="Gifts make them likelier to join">Goodwill ${"★".repeat(goodwill)}</span>` : ""}</div>
+      ${won ? (st.seized ? `<p style="margin:0;color:#ff9b9b">The villagers fled to the high valleys. They send no one to fight beside you.</p>` : "") : `<div class="ways">
+        <button class="way" type="button" data-way="treat" ${can && !treatProblem ? "" : "disabled"}><h3>${orderIcon({ id: "treat_tribe" }, 28)} Gifts to the chiefs</h3>
+          <span class="chips"><span class="chip down">${kIcon("treasury", 15)}−${E.intc(od.treat.cost)}</span>${Object.entries(od.treat.mats).map(([g, q]) => `<span class="chip down">${kIcon(g, 15)}−${q}</span>`).join("")}<span class="chip">${od.treat.chance}%</span></span>
+          <span class="sum">Goodwill: after you beat off an attack, they are likelier to join you.</span>
           ${treatProblem ? `<span class="short" style="font-size:13px">${esc(treatProblem)}</span>` : ""}</button>
-        <button class="way" type="button" data-way="march" ${can && !marchProblem ? "" : "disabled"}><h3>${orderIcon({ id: "march_tribe" }, 28)} Sword and fire</h3>
-          <span>Antistius marches with the garrison: ${E.intc(od.march.cost)} denarii for supplies, at least ${od.march.army} soldiers.</span>
-          <span class="odds">d20 ${od.march.bonus >= 0 ? "+" : "−"} ${Math.abs(od.march.bonus)}, need ${od.march.target}. Victory: their land and loot, Rome pleased, but they raid us for ${E.HOSTILE_SEASONS / 4} years. Defeat: 25–50 men lost.</span>
-          ${marchProblem ? `<span class="short" style="font-size:13px">${esc(marchProblem)}</span>` : ""}</button></div>
-        ${can ? "" : `<p class="sum" style="margin:0">You can choose a way when you give your own order, after the season's cards.</p>`}`}
+        <button class="way" type="button" data-way="march" ${can && !marchProblem ? "" : "disabled"}><h3>${orderIcon({ id: "march_tribe" }, 28)} March on them</h3>
+          <span class="chips"><span class="chip down">${kIcon("treasury", 15)}−${E.intc(od.march.cost)}</span><span class="chip">${kIcon("army", 15)}${od.march.army}+</span><span class="chip up">+${t.plots} plots</span>${just ? `<span class="chip up">Just cause</span>` : `<span class="chip down">No just cause</span>`}</span>
+          <span class="sum">${just ? "They struck first. A hard war, but their land and villages will be rightly yours." : "They have done us no wrong, and do not expect it. The mountains will remember."}</span>
+          ${marchProblem ? `<span class="short" style="font-size:13px">${esc(marchProblem)}</span>` : ""}</button></div>`}
       <div class="row"><button class="btn quiet" type="button" data-close>Close</button></div></div>`);
     $("veil").querySelectorAll("[data-way]").forEach((b) => (b.onclick = () => { addOrders([E.order(b.dataset.way === "treat" ? "treat_tribe" : "march_tribe", { tribe: id })]); closeVeil(); }));
   }
@@ -1185,7 +1232,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     // the title box, the legend, the flank names and the scale, as on a campaign map
     const head = `<rect x="0" y="-74" width="900" height="74" fill="${BM.paper}"/>
       <g transform="translate(10,-66)"><rect width="330" height="58" fill="${BM.paper}" stroke="${BM.ink}" stroke-width="1.6"/><rect x="3" y="3" width="324" height="52" fill="none" stroke="${BM.ink}" stroke-width=".6"/>
-        <text x="165" y="25" text-anchor="middle" font-family="Caesar Dressing, Marcellus" font-size="19" letter-spacing="1.5" fill="${BM.ink}">${esc(enemy.where.replace(/^./, (m) => m.toUpperCase()))}</text>
+        <text x="165" y="25" text-anchor="middle" font-family="Caesar Dressing, Marcellus" font-size="${enemy.where.length > 30 ? 13 : enemy.where.length > 24 ? 15 : 19}" letter-spacing="1" fill="${BM.ink}">${esc(enemy.where.replace(/^./, (m) => m.toUpperCase()))}</text>
         <text x="165" y="45" text-anchor="middle" font-family="Marcellus" font-size="12" fill="${BM.ink2}">${esc(season.season)}, AD ${year} · ${enemy.men} ${word}</text></g>
       <g transform="translate(356,-66)" font-family="Marcellus" font-size="11" fill="${BM.ink}"><rect width="534" height="58" fill="${BM.paper}" stroke="${BM.ink}" stroke-width="1.2"/>
         <g transform="translate(14,18)"><rect x="0" y="-7" width="26" height="12" fill="${BM.red}" stroke="${BM.redD}"/><path d="M2,-3H24M2,1H24" stroke="${BM.paper}" stroke-width="1.2"/><text x="32" y="3">Cohorts</text></g>
@@ -1212,14 +1259,13 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const cell = (n, label, sub) => `<div class="good${n ? "" : " zero"}"><span class="n">${label}</span><span class="q">${n} <small style="color:var(--mute)">${sub}</small></span></div>`;
     return `<div class="stores"><p class="eyebrow" style="margin:6px 0 0">Your army</p><div class="stores-row">
       ${cell(Math.trunc(s.army), "Infantry", `${E.unitsOf(s)} cohorts`)}${cell(t.slingers, "Slingers", "men")}${cell(t.archers, "Archers", "townsmen")}${cell(t.cavalry, "Horsemen", "riders")}${cell(t.engines, "Scorpions", "bolt-throwers")}${cell(t.ballistae, "Ballistae", "stone-throwers")}</div>
-      <p class="sum" style="margin:0">Kit: ${k.pila ? "javelins (pila)" : "no javelins"}, ${k.gladius ? "short swords (gladii)" : "old swords"}. Experience ${stars} (+${Math.min(3, Math.floor(xp / 2))} on the dice). Morale: ${m > 0 ? "high (+" + m + ")" : m < 0 ? "low (" + m + ")" : "steady"}. New troops and kit are orders, under "The garrison" in All actions. When the enemy comes you can also call the village militia.</p></div>`;
+      <div class="chips"><span class="chip ${k.pila ? "up" : ""}">${k.pila ? "Javelins" : "No javelins"}</span><span class="chip ${k.gladius ? "up" : ""}">${k.gladius ? "Short swords" : "Old swords"}</span><span class="chip">${stars}</span><span class="chip ${m > 0 ? "up" : m < 0 ? "down" : ""}">Morale ${m > 0 ? "high" : m < 0 ? "low" : "steady"}</span></div></div>`;
   }
   function warIdle() {
     const lb = s.last_battle, seen = s.conflict && s.conflict.foretold ? s.conflict : null, rumour = seen ? `The haruspex foretold it: ${{ pirates: "pirates", brigands: "brigands", tribes: "the tribes" }[seen.kind]} will come in ${E.seasonOf(seen.turn)[0].season} AD ${E.seasonOf(seen.turn)[1]}, ${E.AT_NAME[seen.at] || ""}.` : s.conflict ? { pirates: "Fishermen speak of strange sails beyond the gulf.", brigands: "Shepherds say armed men camp in the gorge.", tribes: "The hill people are restless; smoke rises beyond the mountains." }[s.conflict.kind] : "";
     $("sheet-war").innerHTML = `<p class="eyebrow">The battlefield</p>
-      <p style="margin:0">${rumour ? `<b style="color:#ffb3a0;font-weight:400">Rumours this year:</b> ${esc(rumour)} ` : "No rumours of war this year. "}Once a year, as a rule, the town must fight: pirates, brigands, or the tribes beyond the mountains. A march you order against a tribe is fought here too.</p>
+      ${s.horde ? `<p style="margin:0;color:#ff9b9b">Smoke on every ridge: the hill people are gathering, from every valley.</p>` : rumour ? `<p style="margin:0;color:#ffb3a0">${esc(rumour)}</p>` : ""}
       ${armyHTML()}
-      <p class="sum" style="margin:0">${s.buildings.some((b) => b.kind === "walls") ? "When the enemy storms the town, the walls count and hold an empty flank, and archers and slingers can stand on them. When they raid the open fields, the walls cannot help: fight in the open or shut the gates. " : ""}${s.buildings.some((b) => b.kind === "arx" && s.turn >= b.done) ? "The citadel stands: at home the town can hardly be taken." : "No citadel yet: build one on the crag above the town."}</p>
       ${lb && lb.plan && lb.plan.units ? `<div class="mapwrap">${warSVG(lb.enemy, null, lb.plan, { fates: lb.fates, turn: lb.turn })}</div><p class="sum" style="margin:0">The last battle, in ${E.seasonOf(lb.turn)[0].season} AD ${E.seasonOf(lb.turn)[1]}: ${lb.won ? "a victory" : "a defeat"} against ${esc(lb.enemy.name.replace(/^./, (m) => m.toLowerCase()))} ${esc(lb.enemy.where)} (${lb.enemy.men} men).</p>` : ""}`;
   }
   /** The army in marching order along the second line: nothing placed yet, every block for you to move. */
@@ -1242,8 +1288,9 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     if (has("engine") || has("ballista")) lines.push(`The engines behind the ${L[big]}, where the crowd is thickest.`);
     if (has("horse")) lines.push(`The horsemen can guard you by the standard, or ride round the ${L[few]} flank, where they are fewest${(enemy.features || []).some((x) => x.lane === few && x.kind === "rocks") ? ", though the rocks there will stop them" : ""}.`);
     if (has("sling") || has("archer") || has("militia_sling") || has("militia_archer")) lines.push("Above all: never leave slingers or archers in a lane without a cohort, allies or horsemen in front of them. Alone, they are cut down.");
-    return figureHTML("general", "How I would deploy", "“You command, Governor. This is how I see the field.”", `<ul class="signs deploy">${lines.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-      <div class="mapwrap">${warSVG(enemy, null, plan)}</div>
+    return figureHTML("general", "How I would deploy", "", `<div class="mapwrap deploy">${warSVG(enemy, null, plan)}</div>
+      <ul class="signs">${lines.slice(0, 2).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+      <details class="more"><summary>What else he says</summary><ul class="signs">${lines.slice(2).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details>
       <div class="row"><button class="btn" type="button" data-i="1">Deploy as he advises</button><button class="btn quiet" type="button" data-i="0">I will deploy them myself</button></div>`);
   }
   const warUI = {
@@ -1255,14 +1302,14 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
         const odds = E.battleOdds(s, enemy, E.defaultPlan(s, enemy, enemy.who), enemy.who), a = E.ADVISORS[enemy.who];
         const m = s.militia || {}, allies = m.allies || [];
         $("sheet-war").innerHTML = `<div class="war-call"><p class="eyebrow" style="margin:0;color:#ffb3a0">To arms · ${E.seasonOf(s.turn)[0].season}, AD ${E.seasonOf(s.turn)[1]}</p>
-          <h2 style="margin:0">${esc(enemy.name)}, ${esc(enemy.where)}</h2><p style="margin:0">${esc(enemy.say)} Scouts count about <b>${enemy.men}</b> men against our ${Math.trunc(s.army)} infantry${E.troopsOf(s).slingers + E.troopsOf(s).archers ? ` and ${E.troopsOf(s).slingers + E.troopsOf(s).archers} slingers and archers` : ""}.</p>
+          <h2 style="margin:0">${esc(enemy.name)}, ${esc(enemy.where)}</h2><p class="vs" style="margin:0">${enemy.men} <span style="color:var(--mute);font-size:15px">against</span> ${Math.trunc(s.army)}${E.troopsOf(s).slingers + E.troopsOf(s).archers ? ` + ${E.troopsOf(s).slingers + E.troopsOf(s).archers}` : ""}</p>
           ${allies.length ? `<p style="margin:0;color:#9fdcae">Our allies answer the call: ${allies.map((x) => `${x.men} warriors of the ${esc(x.name)}`).join(", ")}.</p>` : ""}
           ${m.called ? `<p style="margin:0">${m.slingers || m.archers ? `<span style="color:#9fdcae">The villages come: ${m.slingers} slingers from the fishing villages of the gulf and ${m.archers} bowmen from the shepherds' hamlets.</span>` : `<span style="color:#ff9b9b">The riders come back alone: the villages did not come in time.</span>`}</p>`
             : enemy.home ? `<button class="btn quiet small" type="button" id="w-muster" ${s.treasury < 80 ? "disabled" : ""}>Send riders to the villages for slingers and bowmen · 80 denarii, loyalty −1 · d20 + ${Math.floor(s.loyalty / 20)} (loyalty) needs 8</button>` : ""}
-          <p style="margin:0">${enemy.walled ? `<b style="font-weight:400;color:#9fdcae">They come ${esc(E.AT_NAME.walls)}:</b> the walls count in every lane${s.buildings.some((b) => b.kind === "arx" && s.turn >= b.done) ? ", and the citadel" : ""}, and archers and slingers can shoot from them.` : E.canShut(enemy) ? `<b style="font-weight:400;color:#ffb3a0">They come ${esc(E.AT_NAME.fields)}:</b> out there the walls cannot help. Meet them in the open, or shut the gates and let them plunder.` : ""}${enemy.foretold ? " The haruspex foretold it: the men are ready (+1)." : ""}</p>
-          <div class="war-ways"><button type="button" id="w-send"><b>Send ${esc(a.name)}</b><span class="sum">He deploys the army; you hear the result when the dust settles. If he loses, he comes back wounded.</span></button>
-            <button type="button" id="w-self"><b>Lead them yourself</b><span class="sum">You place every block on the field and stand in the front rank (+3). A victory brings glory. <span style="color:#ff9b9b">If you lose, you fall or are taken and the game ends${E.troopsOf(s).cavalry >= 5 ? ", unless your horsemen by the standard carry you off (60%)" : ""}.</span></span></button>
-            ${E.canShut(enemy) ? `<button type="button" id="w-gates"><b>Shut the gates</b><span class="pc">no battle</span><span class="sum">Nobody of ours falls. They burn ${E.SHUT.burn} field building${E.SHUT.burn > 1 ? "s" : ""} and carry off ${E.SHUT.grain} month${E.SHUT.grain > 1 ? "s" : ""} of grain; the farmers curse you (loyalty ${E.SHUT.loyalty}) and Rome hears you hid (favour ${E.SHUT.favour}).</span></button>` : ""}</div></div>
+          <div class="chips">${enemy.walled ? `<span class="chip up">The walls count</span>` : E.canShut(enemy) ? `<span class="chip down">No walls out there</span>` : ""}${enemy.foretold ? `<span class="chip up">Foretold, +1</span>` : ""}</div>
+          <div class="war-ways"><button type="button" id="w-send"><b>Send ${esc(a.name)}</b></button>
+            <button type="button" id="w-self"><b>Lead them yourself</b><span class="sum">Glory, +3. <span style="color:#ff9b9b">If you lose, you die.</span></span></button>
+            ${E.canShut(enemy) ? `<button type="button" id="w-gates"><b>Shut the gates</b><span class="pc">no battle</span><span class="chips"><span class="chip down">${kIcon("grain", 15)}−${E.SHUT.grain}</span><span class="chip down">${kIcon("loyalty", 15)}−${Math.abs(E.SHUT.loyalty)}</span><span class="chip down">${kIcon("favour", 15)}−${Math.abs(E.SHUT.favour)}</span><span class="chip down">a field burned</span></span></button>` : ""}</div></div>
           ${armyHTML()}<div class="mapwrap">${warSVG(enemy, odds, E.defaultPlan(s, enemy, enemy.who))}</div>`;
         const mb = $("w-muster");
         if (mb) mb.onclick = () => { const r = E.muster(s); toast(r.came ? `The villages come (d20: ${r.r} + ${r.bonus})` : `Nobody comes in time (d20: ${r.r} + ${r.bonus})`); clatter(); draw(); };
@@ -1294,10 +1341,11 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
           }).join("");
           $("sheet-war").innerHTML = `<p class="eyebrow" style="margin:0">Your order of battle · ${esc(enemy.name)} ${esc(enemy.where)} · drag the blocks</p>
             <div class="mapwrap" id="warmap">${warSVG(enemy, odds, plan, { drag: true })}</div>
-            <div class="war-total"><span>Two lanes of three win the day. Three throws, one die for each lane: our engines, slingers and archers; their charge; our counter-attack.</span><button class="btn quiet small" type="button" id="w-advice">Ask ${esc(E.ADVISORS.general.name)}</button></div>
-            <div class="lanes-odds">${odds.lanes.map((l) => `<div><b>${l.lane}</b>: ${l.men} men against ${l.foe0}${l.shooters ? `; ${l.shooters} band${l.shooters > 1 ? "s" : ""} of slingers or archers` : ""}${l.engines ? `; ${l.engines} engine${l.engines > 1 ? "s" : ""} shooting here` : ""}${l.reserve ? `; second line ready` : ""}${(l.ground || []).length ? `<br>ground: ${l.ground.map((g) => esc(E.GROUND_TEXT[g])).join("; ")}` : ""}${l.exposed ? `<br><span class="exposed">No shields here: these slingers and archers will almost certainly be cut down when the enemy charges, and the lane lost with them. Put them behind a cohort, or on the walls.</span>` : ""}<br>${l.empty ? "no enemy here" : `us: ${l.parts.map(([t, v]) => `${esc(t)} ${v > 0 ? "+" : "−"}${Math.abs(v)}`).join(" · ")}${l.charge && l.charge.length ? `<br>their charge: ${l.charge.map(([t, v]) => `${esc(t)} ${v > 0 ? "+" : "−"}${Math.abs(v)}`).join(" · ")}` : ""}`}</div>`).join("")}</div>
-            <div class="units">${rows}</div>
-            <p class="sum" style="margin:0">Drag a block on the map, or use its buttons. The battle is three throws, one die for each lane (left, centre, right): <b style="font-weight:400;color:var(--gold-pale)">1</b> our engines (${E.MACHINES_MAX} at most take the field), slingers and archers shoot together in their lane: slingers hit hardest when the enemy comes in a dense mass, archers aim and do better against a scattered one; <b style="font-weight:400;color:var(--gold-pale)">2</b> their charge; <b style="font-weight:400;color:var(--gold-pale)">3</b> our counter-attack. A lane is won when the enemy breaks, or when our line keeps the better heart; two lanes of three win the day. <b style="font-weight:400;color:var(--bad)">Slingers and archers must stand behind a cohort</b> (or allies, or horsemen) in their lane, or on the walls: alone, they are almost always cut down, and the lane with them. Shield lines count ${(s.kit || {}).gladius ? "2.1" : "1.75"} of theirs; the second line steps in when the front wavers; horsemen on a flank strike that lane (+2), by the standard they guard you. ${enemy.walled ? "They storm the town: the walls count, and hold an empty lane; archers and slingers may stand on them." : enemy.home ? "In the open fields the walls cannot help: an empty lane is held only by the farmers (−1)." : "On a march an empty lane is lost; ballistae batter their stockade."}</p>
+            ${odds.lanes.some((l) => l.exposed) ? `<p class="exposed" style="margin:0;color:var(--bad)">Slingers or archers ${odds.lanes.filter((l) => l.exposed).map((l) => `on the ${l.lane}`).join(" and ")} have no shields in front of them: they will be cut down.</p>` : ""}
+            <div class="lanes-odds">${odds.lanes.map((l) => `<div><b>${l.lane}</b> <span class="vs" style="font-size:17px">${l.men} : ${l.foe0}</span><div class="chips">${l.shooters ? `<span class="chip">${kIcon("army", 14)}${l.shooters} band${l.shooters > 1 ? "s" : ""}</span>` : ""}${l.engines ? `<span class="chip">${l.engines} engine${l.engines > 1 ? "s" : ""}</span>` : ""}${l.reserve ? `<span class="chip">second line</span>` : ""}${(l.ground || []).map((g) => `<span class="chip" title="${esc(E.GROUND_TEXT[g])}">${esc(g)}</span>`).join("")}</div></div>`).join("")}</div>
+            <div class="row"><button class="btn quiet small" type="button" id="w-advice">Ask ${esc(E.ADVISORS.general.name)}</button></div>
+            <details class="more"><summary>Place with buttons</summary><div class="units">${rows}</div></details>
+            <details class="more"><summary>The rules of battle</summary>Three throws, one die for each lane: <b style="font-weight:400;color:var(--gold-pale)">1</b> our engines (${E.MACHINES_MAX} at most), slingers and archers; slingers hit a dense mass hardest, archers aim and do better against a scattered enemy; <b style="font-weight:400;color:var(--gold-pale)">2</b> their charge; <b style="font-weight:400;color:var(--gold-pale)">3</b> our counter-attack. Two lanes of three win the day. Slingers and archers must stand behind a cohort (or allies, or horsemen) in their lane, or on the walls. The second line steps in when the front wavers; horsemen on a flank strike that lane (+2), by the standard they guard you. ${enemy.walled ? "The walls count, and hold an empty lane." : enemy.home ? "An empty lane is held only by the farmers (−1)." : "On a march an empty lane is lost."}${odds.lanes.map((l) => l.empty ? "" : `<br>${esc(l.lane)}: ${l.parts.map(([t, v]) => `${esc(t)} ${v > 0 ? "+" : "−"}${Math.abs(v)}`).join(" · ")}`).join("")}</details>
             <div class="row"><button class="btn" type="button" id="w-go">Sound the trumpets</button></div>`;
           // drag and drop on the map
           const svg = $("warmap").querySelector("svg");
@@ -1458,7 +1506,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       return `<button class="adv" type="button" data-aid="${aid}" aria-label="Show ${esc(a.name)}'s card">${coin(aid)}
         <span class="who"><span class="name">${esc(a.name)} <small class="age">${a.age}</small></span><span class="leaves" title="Mood ${st.mood} of ${E.MOOD_MAX}">${leaves}</span></span>
         <span class="ab">${esc(a.title)} · <b>${esc(a.ability_name)}</b>: <span class="${state === "sulking" ? "sulk" : ""}">${state}</span></span>
-        <span class="say">${say[aid] ? "“" + esc(say[aid]) + "”" : esc(a.voice)}</span></button>`;
+        ${say[aid] ? `<span class="say">“${esc(say[aid])}”</span>` : ""}</button>`;
     }).join("");
   }
   $("council").addEventListener("click", (e) => {
@@ -1622,6 +1670,19 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       "e024-sacred-snake": `<path d="M30,74h140M40,66h120M50,58h100"/>` + `<path d="M76,52c-10,0 -10,-10 0,-10h44c10,0 10,-10 0,-10h-36c-8,0 -8,-8 0,-8h20" stroke="#9fdcae" stroke-width="3"/><circle cx="106" cy="24" r="3" fill="#9fdcae" stroke="none"/>`,
       "e025-governors-dream": `<path d="M84,14a20,20 0 1 0 22,30a16,16 0 1 1 -22,-30Z" fill="rgba(246,227,161,.3)"/>` + [[130, 16], [150, 30], [40, 24], [60, 12], [170, 14]].map(([x, y]) => `<path d="M${x - 4},${y}h8M${x},${y - 4}v8"/>`).join("") + `<path d="M70,70c10,-8 50,-8 60,0"/><path d="M84,62c4,3 10,3 14,0M102,62c4,3 10,3 14,0"/>`,
       "e026-birds-harbour": `<path d="M0,26 C40,10 80,30 120,14 C150,4 180,20 200,12V0H0Z" fill="rgba(90,22,64,.6)" stroke="none"/>` + [[40, 40], [62, 48], [80, 36], [100, 52], [120, 40], [138, 50], [156, 38], [176, 46]].map(([x, y], i) => bird(x, y, i % 2 ? .7 : 1)).join("") + waves(78, .6),
+      "e027-wheeled-plough": `<circle cx="62" cy="62" r="13"/><circle cx="62" cy="62" r="3" fill="#e2bd66"/><circle cx="96" cy="62" r="13"/><circle cx="96" cy="62" r="3" fill="#e2bd66"/><path d="M40,34L128,50L150,74L120,62M128,50L122,32"/><path d="M0,76H200" opacity=".5"/><path d="M150,74l22,2l-18,-14Z" fill="#e2bd66"/>`,
+      "e028-upright-loom": `<path d="M60,14V80M140,14V80M52,22H148M56,70H144"/>` + [70, 80, 90, 100, 110, 120, 130].map((x) => `<path d="M${x},22V70"/>`).join("") + `<path d="M64,34H136M64,42H136M64,50H136" stroke="#b8324f" stroke-width="3"/>`,
+      "e029-brick-kiln": `<path d="M60,78V46a30,30 0 0 1 60,0V78Z" fill="rgba(226,189,102,.14)"/><path d="M78,78V60a12,12 0 0 1 24,0V78" fill="#b8324f"/>` + [[132, 72], [152, 72], [142, 62], [162, 62], [152, 52]].map(([x, y]) => `<path d="M${x},${y}h18v9h-18Z" fill="#a8432f"/>`).join("") + smoke(90, 14),
+      "e030-plague": [46, 72, 98, 124, 150].map((x, i) => person(x, 76, i % 2 === 1)).join("") + `<path d="M0,26 C50,8 100,30 200,14V0H0Z" fill="rgba(120,20,40,.6)" stroke="none"/><path d="M100,46V24M92,32h16" stroke="#b8324f" stroke-width="3.4"/>`,
+      "e031-marsh-fever": `<path d="M0,66 q12.5,-6 25,0 t25,0 t25,0 t25,0 t25,0 t25,0 t25,0 t25,0" stroke="#7fb6d4"/>` + [30, 56, 92, 128, 160].map((x, i) => `<path d="M${x},68V${34 + (i % 2) * 10}M${x},46l-8,-8M${x},52l8,-8"/><ellipse cx="${x}" cy="${30 + (i % 2) * 10}" rx="2.6" ry="7" fill="#e2bd66"/>`).join("") + `<circle cx="172" cy="20" r="11" fill="#b8324f" stroke="none" opacity=".7"/>`,
+      "e032-pilot-charts": scroll(52, 18, true) + `<path d="M66,30c14,8 6,18 22,22c12,3 8,12 22,14" stroke="#7fb6d4" stroke-width="2.4"/><circle cx="80" cy="42" r="2.4" fill="#e2bd66"/><circle cx="106" cy="60" r="2.4" fill="#e2bd66"/>` + ship(158, 62, .5),
+      "e033-new-rig": ship(96, 62, 1) + `<path d="M126,50L152,20M136,40c10,-8 18,-12 24,-10c-2,8 -10,14 -22,14Z" fill="#f6e3a1"/>` + waves(80, .6),
+      "e034-wine-in-aquileia": amphora(46, 74) + amphora(78, 74, .85) + `<path d="M112,74V24M104,30h16"/><path d="M104,24c2,-8 6,-10 8,-14c2,4 6,6 8,14c-4,-2 -12,-2 -16,0Z" fill="#e2bd66"/>` + grapes(152, 40),
+      "e035-cataract": `<path d="M44,46s24,-28 56,-28s56,28 56,28s-24,28 -56,28s-56,-28 -56,-28Z"/><circle cx="100" cy="46" r="17" fill="rgba(246,227,161,.25)"/><circle cx="100" cy="46" r="7" fill="#f6e3a1"/><path d="M186,12L112,42" stroke="#f6e3a1" stroke-width="1.6"/>`,
+      "e036-lean-year": sheaf(78, 76) + `<path d="M116,74c4,-22 2,-42 12,-58M136,74c-2,-18 6,-30 12,-46" opacity=".6"/><path d="M36,30c8,-12 26,-12 32,0c-4,12 -24,14 -32,0Z" fill="#b8324f"/>`,
+      "e037-rich-year": sheaf(46, 76) + sheaf(78, 76) + sheaf(110, 76) + sheaf(142, 76) + `<circle cx="172" cy="20" r="11" fill="#f6e3a1" stroke="none"/>`,
+      "e038-oil-in-aquileia": amphora(38, 74) + amphora(66, 74, .85) + sea + ship(142, 56, .8),
+      "e039-plague-foretold": `<path d="M30,44c12,-24 52,-24 62,0c-8,24 -52,26 -62,0Z" fill="#6d5a1e"/>` + [[50, 38], [64, 48], [74, 36], [46, 50]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.6" fill="#10060a" stroke="none"/>`).join("") + sea + ship(146, 56, .8),
       "q-land": hills(.6) + `<path d="M110,70c0,-6 10,-8 20,-6c4,-6 10,-6 10,-2l4,8M114,70v6M136,70v6M140,62l4,-4"/>` + `<path d="M30,74h140"/>`,
       "q-omen": altar(100, 74) + `<path d="M100,56V20" opacity=".7"/>`,
       "q-sea": sea + ship(70, 60, .5) + ship(140, 62, .45),
@@ -1634,15 +1695,22 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     const art = A[c.id] || (c.letter ? A.letter : "") || A["q-" + c.deck] || "";
     return `<svg viewBox="0 0 200 90" preserveAspectRatio="xMidYMid meet" aria-hidden="true" fill="none" stroke="#e2bd66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${art}</svg>`;
   }
+  /** v17: what an effect does, as icons and numbers: {grain: -1.5, treasury: 300} */
+  function effChips(eff) {
+    return Object.entries(eff || {}).filter(([n]) => E.CORE.includes(n) || E.GOODS.includes(n)).map(([n, v]) => {
+      const lo = Array.isArray(v) ? Math.min(...v) : v, hi = Array.isArray(v) ? Math.max(...v) : v, num = (x) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x)}`;
+      return `<span class="chip ${hi > 0 ? "up" : "down"}" title="${esc(E.nameOf(n))}">${kIcon(n, 15)}${lo === hi ? num(lo) : `${num(lo)}…${Math.abs(hi)}`}</span>`;
+    }).join("");
+  }
+  const firstLine = (x) => { const m = String(x).replace(/\s+/g, " ").trim().match(/^.*?[.!?](?=\s|$)/); return m ? m[0] : String(x); };
   function cardHTML(c, i, flipped) {
-    const eff = c.choice ? `<div class="eff decide">Your decision</div>` : `<div class="eff">${esc(E.effectsText(c.effects))}</div>`;
+    const eff = c.choice ? `<div class="eff decide">Your decision</div>` : `<div class="eff">${effChips(c.effects)}</div>`;
     const who = c.advisor && E.ADVISORS[c.advisor] ? ` · ${E.ADVISORS[c.advisor].name}` : "";
-    const hint = c.choice ? String(c.choice.prompt).replace(/\s+/g, " ") : c.scribe_hint || "";
     return `<button class="card${c.quiet ? " quiet" : ""}${flipped ? " flip" : ""}" data-deck="${c.deck}" ${c.letter ? "data-letter" : ""} id="card-${i}" type="button" aria-label="${flipped ? esc(c.title) : `Turn over the ${E.DECK_LABEL[c.deck]} card`}">
       <div class="back"><span>${E.DECK_LABEL[c.deck].toUpperCase()}</span><em>click to turn over</em></div>
       <div class="face"><div class="band"><span>${c.letter ? `Letter from ${c.id === "h07-scribonianus" ? "Salona" : "Rome"}` : E.DECK_LABEL[c.deck]}${esc(who)}</span>${DECK_ICON[c.deck]}</div>
       <div class="art">${cardArt(c)}</div>
-      <div class="body"><span class="title">${esc(c.title)}</span><span class="hint">${esc(hint)}</span></div>${eff}</div></button>`;
+      <div class="body"><span class="title">${esc(c.title)}</span></div>${eff}</div></button>`;
   }
 
   // ---------- what the engine asks of the page ----------
@@ -1663,8 +1731,9 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
           if (el.classList.contains("flip")) return;
           el.classList.remove("next"); el.classList.add("flip"); el.setAttribute("aria-label", c.title);
           if (c.shake) { rumble(); setTimeout(() => { el.classList.add("quake"); }, 500); }
-          else if (c.letter) rustle();
-          else ({ omen: gong, land: cornu, sea: bell }[c.deck] || rustle)();
+          if (c.letter) rustle();
+          else if (c.deck === "land") horn();
+          else if (!c.shake) ({ omen: gong, sea: bell }[c.deck] || rustle)();
           setTimeout(done, reduce() ? 50 : 750);
         };
       });
@@ -1672,23 +1741,23 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     },
     async decide(c, i, list, tone, letbe) {
       const box = $("decide");
-      if (c.rolled && Object.values(c.effects || {}).some(Array.isArray)) { const e = $("card-" + i).querySelector(".eff"); if (e) e.textContent = E.effectsText(c.rolled); }
+      if (c.rolled && Object.values(c.effects || {}).some(Array.isArray)) { const e = $("card-" + i).querySelector(".eff"); if (e) e.innerHTML = effChips(c.rolled); }
       document.querySelectorAll(".card").forEach((el) => el.classList.remove("active"));
       $("card-" + i).classList.add("active"); $("cards").classList.add("deciding");
-      const effect = tone === "quiet" ? "Nothing presses this season. Your council suggests how to use the calm." : `This season: ${E.effectsText(c.rolled || c.effects)}.`;
       const costText = (o) => { const [c0, m] = E.costOf(s, o); return [c0 ? E.intc(c0) + " den" : "", ...Object.entries(m).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ") || "costs nothing"; };
-      box.innerHTML = `<p class="eyebrow">${E.DECK_LABEL[c.deck]} card · ${i + 1} of ${seasonCards.length} · your decision</p><h2>${esc(c.title)}</h2>
-        <p class="voice">${esc(String(c.scribe_hint || "").replace(/\s+/g, " "))}</p><p class="sum" style="margin:6px 0 0">${esc(effect)}</p>
+      const hasEff = Object.keys(c.rolled || c.effects || {}).length;
+      box.innerHTML = `<p class="eyebrow">${E.DECK_LABEL[c.deck]} · ${i + 1} of ${seasonCards.length}</p><h2>${esc(c.title)}</h2>
+        ${hasEff ? `<div class="chips">${effChips(c.rolled || c.effects)}</div>` : ""}
         <div class="advice">${list.map((p, k) => { const a = E.ADVISORS[p.who];
-          return `<button class="prop" type="button" data-i="${k}">${coin(p.who)}<span class="who">${esc(a.name)} <span class="tag ${p.risk}">${p.risk}</span></span>
-            <span class="say">“${esc(p.say)}”</span><span class="what">${orderIcon(p.order, 30)}<span>${esc(E.describe(s, p.order))} <small>· ${esc(costText(p.order))}</small></span></span>
+          return `<button class="prop" type="button" data-i="${k}" title="“${esc(p.say)}”">${coin(p.who)}<span class="who">${esc(a.name)} <span class="tag ${p.risk}">${p.risk}</span></span>
+            <span class="what">${orderIcon(p.order, 30)}<span>${esc(E.describe(s, p.order))} <small>· ${esc(costText(p.order))}</small></span></span>
             ${checkHTML(p.check)}</button>`; }).join("")
-          || `<p class="sum">Your council has nothing it can afford to propose.</p>`}</div>
-        <div class="own"><label for="ownwords" class="eyebrow" style="margin:0">Or your own order</label>
-          <textarea id="ownwords" placeholder="${tone === "bad" ? "Buy 2 months of grain from the merchants" : "Plant olives"}"></textarea>
+          || `<p class="sum">Nothing we can afford.</p>`}
+          <button class="prop letbe" type="button" id="letbe"><span class="who" style="grid-column:1/-1">Let it be</span>${checkHTML(letbe)}</button></div>
+        <details class="more own"><summary>Or your own order</summary>
+          <textarea id="ownwords" aria-label="Your own order" placeholder="${tone === "bad" ? "Buy 2 months of grain from the merchants" : "Plant olives"}"></textarea>
           <div class="row"><button class="btn small" type="button" id="owngo">Ask the scribe</button></div>
-          <div id="ownans"></div></div>
-        <button class="letbe" type="button" id="letbe"><span style="color:var(--gold-pale)">Let it be: give no order and see how it falls</span>${checkHTML(letbe)}</button>`;
+          <div id="ownans"></div></details>`;
       box.hidden = false;
       box.scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "nearest" });
       const pick = await new Promise((res) => {
@@ -1749,8 +1818,10 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
       document.querySelectorAll(".card").forEach((el) => el.classList.remove("active"));
       if (i >= 0) { $("card-" + i).classList.add("active"); $("cards").classList.add("deciding"); }
       const box = $("decide");
-      box.innerHTML = `<p class="eyebrow">${E.DECK_LABEL[c.deck]} · your decision</p><h2>${esc(c.title)}</h2>
-        <p class="voice">${esc(String(c.choice.prompt).replace(/\s+/g, " "))}</p><div class="choice" style="margin-top:10px">${opts.map((o, k) => `<button class="opt" type="button" data-i="${k}"><span class="key">${"ABCDEFG"[k]}</span><span class="what">${esc(o.label)}</span><span class="sub">${esc(o.sub || "")}</span>${checkHTML(o.check)}</button>`).join("")}</div>`;
+      const whole = String(c.choice.prompt).replace(/\s+/g, " ").trim(), first = firstLine(whole), rest = whole.slice(first.length).trim();
+      box.innerHTML = `<p class="eyebrow">${E.DECK_LABEL[c.deck]}</p><h2>${esc(c.title)}</h2>
+        <p class="voice">${esc(first)}</p>${rest ? `<details class="more"><summary>More</summary>${esc(rest)}</details>` : ""}
+        <div class="choice" style="margin-top:10px">${opts.map((o, k) => `<button class="opt" type="button" data-i="${k}"><span class="key">${"ABCDEFG"[k]}</span><span class="what">${esc(o.label)}</span><span class="sub chips">${o.eff ? effChips(o.eff) : esc(o.sub || "")}${o.gain ? `<span class="chip up">${esc(o.gain)}</span>` : ""}</span>${checkHTML(o.check)}</button>`).join("")}</div>`;
       box.hidden = false;
       box.scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "nearest" });
       const pick = await waitPick(box);
@@ -1925,17 +1996,16 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     box.hidden = false;
     const sugs = E.suggestions(s);
     const costText = (o) => { const [c0, m] = E.costOf(s, o); return [c0 ? E.intc(c0) + " den" : "", ...Object.entries(m).map(([g, q]) => `${q} ${E.nameOf(g).toLowerCase()}`)].filter(Boolean).join(", ") || "costs nothing"; };
-    box.innerHTML = `<p class="eyebrow">The scribe</p><h2>One order of your own</h2>
-      <p class="voice">“${esc(E.situation(s))} The dice have fallen. One more order this season: make good what went wrong, or make the most of what went right.”</p>
-      ${(s.season_outcomes || []).length ? `<p class="sum" style="margin:6px 0 0">${s.season_outcomes.map(esc).join(" · ")}</p>` : ""}
+    box.innerHTML = `<h2>One order of your own</h2>
       <div class="sugs" style="margin-top:12px">${sugs.map((p, k) => { const a = E.ADVISORS[p.who];
-        return `<button class="prop" type="button" data-sug="${k}">${coin(p.who)}<span class="who">${esc(a.name)}</span>
-          <span class="say">“${esc(p.say)}”</span><span class="what">${orderIcon(p.order, 30)}<span>${esc(E.describe(s, p.order))} <small>· ${esc(costText(p.order))}</small></span></span></button>`; }).join("")
-        || `<p class="sum">Your council has nothing the chest can pay for.</p>`}</div>
-      <div class="scribe" style="margin-top:14px"><div class="head"><label for="words" class="eyebrow" style="margin:0">Or speak to your scribe</label><span class="mode" id="scribemode">${sampleReady ? "AI scribe" : "word scribe"}</span></div>
-        <textarea id="words" placeholder="Ask anything: “How do I get more money without raising taxes?” or give an order: “Send wine to Aquileia”"></textarea>
-        <div class="row"><button class="btn small" type="button" id="read">Ask the scribe</button><button class="btn small quiet" type="button" id="allacts">All actions…</button></div>
-        <div id="answer"></div></div>
+        return `<button class="prop" type="button" data-sug="${k}" title="“${esc(p.say)}”">${coin(p.who)}<span class="who">${esc(a.name)}</span>
+          <span class="what">${orderIcon(p.order, 30)}<span>${esc(E.describe(s, p.order))} <small>· ${esc(costText(p.order))}</small></span></span></button>`; }).join("")
+        || `<p class="sum">Nothing the chest can pay for.</p>`}</div>
+      <div class="row" style="margin-top:10px"><button class="btn small quiet" type="button" id="allacts">All actions…</button></div>
+      <details class="more scribe"><summary>Speak to your scribe <span class="mode" id="scribemode">${sampleReady ? "AI scribe" : "word scribe"}</span></summary>
+        <textarea id="words" aria-label="Speak to your scribe" placeholder="“Send wine to Aquileia”"></textarea>
+        <div class="row"><button class="btn small" type="button" id="read">Ask the scribe</button></div>
+        <div id="answer"></div></details>
       <div id="bookcol" style="margin-top:14px"></div>`;
     $("orders").querySelectorAll("[data-sug]").forEach((b) => (b.onclick = () => addOrders([sugs[+b.dataset.sug].order])));
     $("allacts").onclick = allActions;
@@ -2216,10 +2286,10 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     if (!ch) return "";
     const need = ch.dc - ch.bonus;
     const seg = Array.from({ length: 20 }, (_, k) => { const f = k + 1, t = f === 1 ? "disaster" : f === 20 ? "triumph" : f >= need ? "success" : "setback"; return `<i class="t-${t}" title="${f}: ${t}"></i>`; }).join("");
+    if (ch.parts[0] && /a battle/.test(ch.parts[0][0])) return `<span class="check"><span class="chip">⚔ a battle</span></span>`;
     const parts = ch.parts.length ? ch.parts.map(([l, v]) => `${esc(l)} ${v > 0 ? "+" : "−"}${Math.abs(v)}`).join(" · ") : "no bonus";
-    return `<span class="check"><span class="strip" aria-hidden="true">${seg}</span>
-      <span class="odds"><b>${ch.chance}%</b> <span class="die-name">${esc(DIE_LABEL[ch.die] || ch.die)}</span> d20 ${ch.bonus >= 0 ? "+" : "−"} ${Math.abs(ch.bonus)} against DC ${ch.dc}</span>
-      <span>${parts}</span><span class="stakes">Success: ${esc(ch.win)}. Setback: ${esc(ch.lose)}. A 1 is a disaster, a 20 a triumph.</span></span>`;
+    return `<span class="check" title="d20 ${ch.bonus >= 0 ? "+" : "−"} ${Math.abs(ch.bonus)} against ${ch.dc}: ${parts}. Success: ${esc(ch.win)}. Setback: ${esc(ch.lose)}."><span class="strip" aria-hidden="true">${seg}</span>
+      <span class="odds"><b>${ch.chance}%</b></span></span>`;
   }
   function scoreHTML() {
     const sc = E.score(s);
@@ -2231,10 +2301,18 @@ Reply with only JSON: {"reply": "your words", "orders": []}`;
     refresh();
     $("stage").innerHTML = "";
     $("cardsbar").innerHTML = `<section class="panel"><p class="eyebrow">AD 30 · Acruvium, on the Gulf of Rhizon</p><h2>Tiberius sends you to govern Acruvium</h2>
-      <p class="voice">Each turn is one season. Three cards are turned over one by one: the land, the sea and the gods. On each card two of your council propose what to do, one cautious and one bold, and you see the odds of each before you choose. When all three are decided, three dice are thrown together: opal for the land, aquamarine for the sea, onyx for the gods. Then one more order of your own, to make good the losses or make the most of a success.</p>
-      <p class="voice" style="margin-top:8px"><b style="font-weight:400;color:var(--gold-pale)">Four paths to victory</b> (see the Glory tab): be proclaimed Caesar when an Emperor dies, rule all Illyria by the sword, raise a wonder and be hailed a living god, or fill the chest with 100,000 denarii and buy the coast. Or simply govern well for sixty years, until you die in your ninetieth year, in AD 89.</p>
-      <p class="voice" style="margin-top:8px">Letters from Rome arrive on their true dates: the fall of Sejanus, the death of Tiberius, Caligula, Claudius, Nero, the year of the four emperors, Vesuvius, the Dacian war. Beyond your fields live the Illyrian tribes; their land can be won with gifts or with the sword. Your council grows old with you: advisors learn with the years, and when one dies a younger man takes his place. You are 31; you govern until you die, in your ninetieth year, in AD 89.</p>
-      <p class="sum">Feed the people first: a town at peace grows every season, and more people pay more taxes. Things take time. A harbour takes two years to build and a temple three; vines give their first wine a year after planting. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p>
+      <div class="tiles">
+        <div class="tile">${DECK_ICON.land}<span>Turn 3 cards</span></div><div class="tile">${kIcon("advice", 40)}<span>Take advice</span></div>
+        <div class="tile">${(D.dice.opal || D.dice[stone])[19]}<span>Throw the dice</span></div><div class="tile">${kIcon("order", 40)}<span>Give an order</span></div></div>
+      <p class="eyebrow" style="margin:16px 0 0">Four ways to win</p>
+      <div class="tiles">
+        <div class="tile">${kIcon("favour", 40)}<span>Caesar</span></div><div class="tile">${kIcon("sword", 40)}<span>The sword</span></div>
+        <div class="tile">${icon("temple", 40)}<span>A living god</span></div><div class="tile">${kIcon("treasury", 40)}<span>100,000 denarii</span></div></div>
+      <p class="voice" style="margin-top:12px">Feed the people. Pay Rome. Live to ninety.</p>
+      <details class="more"><summary>How to play</summary>
+        <p>Each turn is one season. Three cards are turned over: the land, the sea and the gods. On each, two of your council propose what to do, and you see the chance of each. Then three dice fall together, and you give one more order of your own.</p>
+        <p>Letters from Rome arrive on their true dates, from the fall of Sejanus to the Dacian war. Your council grows old with you: advisors learn with the years, and when one dies a younger man takes his place. You are 31; you govern until you die in AD 89, unless you win first.</p>
+        <p>Things take time: a harbour takes two years, a temple three, vines give their first wine after a year. You lose if Roman favour reaches 0, if the town rises while the garrison is under 100 men, or after two hungry seasons in a row. The tribute of ${E.intc(E.TRIBUTE)} denarii falls due each summer.</p></details>
       <div class="row"><label class="sum" for="govname">Your name, Governor</label><input id="govname" type="text" maxlength="40" placeholder="for the hall of fame" value="${esc(s.gov_name || "")}">
         <button class="btn" type="button" id="begin">Take up the governorship</button></div></section>`;
     $("begin").onclick = () => { s.gov_name = $("govname").value.trim().slice(0, 40); startSeason(); };

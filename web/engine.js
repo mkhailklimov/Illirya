@@ -54,7 +54,7 @@
   const TOWNS = D.towns.map((t) => ({ ...t, sellsTo: parseList(t.sells), buysFrom: parseList(t.buys), seasons: num(t.seasons, 1) }));
   const TOWN = byId(TOWNS);
   const CARDS = D.cards;
-  const TRIBES = (D.tribes || []).map((t) => ({ ...t, plots: num(t.plots), strength: num(t.strength) }));
+  const TRIBES = (D.tribes || []).map((t) => ({ ...t, plots: num(t.plots), strength: num(t.strength), people: num(t.people), coast: !!num(t.coast), villages: String(t.villages || "").split(";").map((x) => x.trim()).filter(Boolean) }));
   const TRIBE = byId(TRIBES);
   const DECK_LABEL = Object.fromEntries(DECKS);
   const nameOf = (n) => (RULES[n] ? RULES[n].name : GOOD[n] ? GOOD[n].name : n);
@@ -173,6 +173,7 @@
     for (const k of s.shipyard) if (!k.name) k.name = newShipName(s);
     delete s.discontent; delete s.discontent_parts;   // rules v10: one number, loyalty
     s.restless = s.restless || 0;
+    if (s.tribes && s.tribes.ardiaei) { s.tribes.labeatae = s.tribes.ardiaei; delete s.tribes.ardiaei; }   // v17: the coast tribe
     for (const aid of Object.keys(s.council || {})) {   // v15: every advisor is a person with an age and skills
       const st = s.council[aid], b = BASE_ADVISORS[aid];
       if (!st.person && b) st.person = { name: b.name, age: ADVISOR_AGE[aid] + Math.floor(((s.turn || 1) - 1) / 4), skills: Object.fromEntries(SKILLS.map((k) => [k, num(b[k], 3)])), since: 1 };
@@ -213,6 +214,8 @@
   const tribalPlots = (s) => TRIBES.filter((t) => tribeWon(s, t.id)).reduce((a, t) => a + t.plots, 0);
   const hostile = (s, id) => tribeState(s, id).hostile_until > s.turn;
   const anyHostile = (s) => TRIBES.some((t) => hostile(s, t.id));
+  const hasJustCause = (s, id) => !!tribeState(s, id).just;   // v17: they attacked us and we beat them off
+  const freeTribes = (s) => TRIBES.filter((t) => !tribeWon(s, t.id));
   /** Field plots open now: the twelve, the cleared hillside, and the land won from the tribes. */
   const fieldPlots = (s) => clearedPlots(s) + tribalPlots(s);
   const emperorOf = (turn) => EMPERORS.filter(([t]) => turn >= t).pop()[1];
@@ -225,7 +228,7 @@
   const SHIPS_MAX = 6, TRIREME_UPKEEP = 40, TRIREME_CUT = .15, TRIREMES_COUNT = 2;   // rules v11: one harbour, six berths, merchant galleys and triremes together
   const berths = (s) => Math.min(SHIPS_MAX, Math.trunc(stat(s, "ships_cap")));
   const berthsUsed = (s) => Math.trunc(s.ships) + (s.warships || 0) + (s.shipyard || []).length;
-  const housing = (s) => Math.trunc(stat(s, "housing"));
+  const housing = (s) => Math.trunc(stat(s, "housing")) + TRIBES.reduce((a, t) => a + (tribeState(s, t.id).gained || 0), 0);   // v17: the villages that joined us house their own people
   const turnsToTribute = (s) => [0, 1, 2, 3].find((i) => seasonOf(s.turn + i)[0].tribute_due === "yes");
   function buildingState(s, b) {
     const B = BLD[b.kind];
@@ -468,8 +471,9 @@
       }
       if (o.id === "treat_tribe" || o.id === "march_tribe") {
         const t = TRIBE[o.tribe];
-        if (!t) { problems.push("Which tribe? The Docleatae, the Ardiaei or the Pirustae."); return; }
+        if (!t) { problems.push("Which tribe? The Docleatae, the Labeatae or the Pirustae."); return; }
         if (tribeWon(s, t.id)) { problems.push(`The land of the ${t.name} is already ours.`); return; }
+        if (o.id === "treat_tribe" && (tribeState(s, t.id).goodwill || 0) >= GOODWILL_MAX) { problems.push(`The chiefs of the ${t.name} are as friendly as gifts can make them.`); return; }
         if (o.id === "march_tribe" && army < MARCH_MIN_ARMY) { problems.push(`Antistius: ${MARCH_MIN_ARMY} soldiers at least to march into the hills; we have ${Math.trunc(army)}.`); return; }
         if (o.id === "march_tribe" && season.season === "Winter") { problems.push("Antistius: no one marches into the mountains in winter."); return; }
       }
@@ -674,24 +678,74 @@
     const bonus = Math.max(-6, Math.min(6, num(ADVISORS[talker].persuasion, 3) - 3 + st.tries - t.strength - (hostile(s, t.id) ? 3 : 0)));
     const r = o.preRoll || await roll(20, bonus, TREATY_TARGET, `${ADVISORS[talker].name} treats with the ${t.name}`);
     if (r.ok) {
-      st.state = "ally"; st.hostile_until = 0;
-      s.loyalty += 2;
-      notes.push(`The chiefs of the ${t.name} accept the gifts and swear friendship: ${t.land} is open to us (${t.plots} new field plots).`);
+      st.goodwill = Math.min(GOODWILL_MAX, (st.goodwill || 0) + 1); st.hostile_until = 0;
+      s.loyalty += 1;
+      notes.push(`The chiefs of the ${t.name} accept the gifts and drink with your envoy. They will not give up their land for gifts, but they will remember your friendship.`);
     } else {
       st.tries += 1;
       notes.push(`The ${t.name} take the gifts and ask for more. Their chiefs will listen better next time (+1 on the die).`);
     }
   }
+  // v17: the tribes' land is a trap. March on a tribe that has done us no wrong and you win easily; a year later the hordes
+  // of every valley come, more than you can stop, and take it all back. The right way is to wait: beat off their attack,
+  // show mercy, and they may ask to join Acruvium. If they do not, you have just cause: a harder war, but the land stays yours.
+  const GOODWILL_MAX = 3, HORDE_AFTER = 4, EASY_MARCH = .55, JOIN_BASE = .35, JOIN_GIFT = .15, JOIN_AGAIN = .1;
   async function marchTribe(s, o, notes) {
-    const t = TRIBE[o.tribe], st = ((s.tribes = s.tribes || {})[t.id] = { ...tribeState(s, t.id) });
+    const t = TRIBE[o.tribe], just = hasJustCause(s, t.id), st = ((s.tribes = s.tribes || {})[t.id] = { ...tribeState(s, t.id) });
     const won = await battle(s, makeEnemy(s, "march", t.id), notes);
-    st.hostile_until = s.turn + HOSTILE_SEASONS;
-    if (won) {
-      const loot = parseList(t.loot);
-      st.state = "conquered";
-      s.treasury += num(t.loot_treasury); for (const [g, q] of Object.entries(loot)) s[g] += q;
-      notes.push(`${t.land} is ours (${t.plots} new field plots), with ${intc(num(t.loot_treasury))} denarii and ${listText(loot)} in loot. The ${t.name} will raid us for years.`);
-    } else notes.push(`The ${t.name} are now hostile.`);
+    st.hostile_until = s.turn + (just ? 4 : HOSTILE_SEASONS);
+    if (!won) { notes.push(`The ${t.name} are now hostile.`); return; }
+    const loot = parseList(t.loot);
+    st.state = "conquered";
+    s.treasury += num(t.loot_treasury); for (const [g, q] of Object.entries(loot)) s[g] += q;
+    if (just) {
+      st.gained = Math.round(t.people / 2); st.hostile_until = 0;
+      s.people += st.gained; s.favour += 3;
+      notes.push(`${t.land} is ours by right: they struck first. ${t.plots} new field plots, ${intc(st.gained)} people, ${intc(num(t.loot_treasury))} denarii and ${listText(loot)}. Their villages will fight beside us.`);
+      news(s, "land", `Just war: the land of the ${t.name} is yours, and ${intc(st.gained)} of their people with it.`);
+    } else {
+      st.seized = true;
+      s.horde = { turn: s.turn + HORDE_AFTER, tribe: t.id, grown: s.horde ? s.horde.grown + 1 : 0 };
+      notes.push(`${t.land} is ours: ${t.plots} new field plots, ${intc(num(t.loot_treasury))} denarii and ${listText(loot)}. It was easy. The villagers have fled to the high valleys, and they are telling their story.`);
+    }
+  }
+  /** v17: mercy after a tribe's attack: they may ask to join. Either way we now have just cause against them. */
+  async function tribeAfterJudgement(s, enemy, pardoned, notes) {
+    const t = TRIBE[enemy.tribe]; if (!t || tribeWon(s, t.id)) return;
+    const st = ((s.tribes = s.tribes || {})[t.id] = { ...tribeState(s, t.id) }), first = !st.just;
+    st.just = true; st.defeats = (st.defeats || 0) + 1;
+    if (!pardoned) { st.hostile_until = s.turn + 8; notes.push(`The ${t.name} will not forget their chiefs. But they struck first: you have just cause to march on them.`); return; }
+    const chance = JOIN_BASE + JOIN_GIFT * (st.goodwill || 0) + JOIN_AGAIN * (st.defeats - 1) + (reputation(s).id === "just" ? .1 : 0);
+    if (Math.random() < chance) {
+      const pick = await ui.choose(`The ${t.name} ask to join Acruvium`, `Their chiefs lay down their swords in the forum.`,
+        [{ label: "Welcome them", sub: `+${intc(t.people)} people, +${t.plots} field plots; their warriors fight beside us` }, { label: "Send them home", sub: "you keep your just cause" }], "general");
+      if (pick === 0) {
+        st.state = "ally"; st.gained = t.people; st.hostile_until = 0;
+        s.people += t.people; s.loyalty += 2; s.favour += 3;
+        notes.push(`The ${t.name} join Acruvium: ${t.land}, ${t.plots} new field plots and ${intc(t.people)} people, without another drop of blood.`);
+        news(s, "land", `The ${t.name} have joined Acruvium: ${intc(t.people)} people and ${t.plots} field plots.`);
+        return;
+      }
+    }
+    notes.push(first ? `The ${t.name} go home, and do not ask to join us. But they struck first: you have just cause to march on them.` : `The ${t.name} go home, unbowed.`);
+  }
+  /** v17: the hordes a year after an unjust conquest. */
+  async function hordeComes(s, notes) {
+    const h = s.horde; s.horde = null;
+    notes.push("Every valley has answered: the hordes come down from the mountains.");
+    const enemy = makeEnemy(s, "horde", h.tribe, "fields");
+    if (h.grown) enemy.men = Math.round(enemy.men * (1 + .25 * h.grown));
+    const won = await battle(s, enemy, notes);
+    if (won) { notes.push("The hordes break against your line. The land you seized is yours; no one in the hills will try again soon."); news(s, "rebellion", "The hordes are beaten: the land you seized stays yours."); for (const x of TRIBES) if (tribeState(s, x.id).seized) s.tribes[x.id].seized = false; return; }
+    if (s.over) return;
+    const lost = [];
+    for (const x of TRIBES) if (tribeState(s, x.id).seized) { lost.push(x.name); s.tribes[x.id] = { ...tribeState(s, x.id), state: "free", seized: false, gained: 0, hostile_until: s.turn + HOSTILE_SEASONS }; }
+    const fields = s.buildings.filter((b) => BLD[b.kind].zone === "field").sort((a, b) => b.done - a.done);   // what stood on their land goes with it
+    for (const b of fields) { if (plotsUsed(s, "field") <= fieldPlots(s)) break; s.buildings.splice(s.buildings.indexOf(b), 1); }
+    burnFields(s, 2, notes);
+    const dead = Math.round(s.people * .08); s.people -= dead; s.loyalty -= 6; s.favour -= 8;
+    notes.push(`The hordes take back the land of the ${lost.join(" and the ") || "tribes"}, burn the fields and kill ${intc(dead)} people. Rome asks why you started a war you could not finish.`);
+    news(s, "rebellion", `The hordes have taken back the land of the ${lost.join(" and the ") || "tribes"}. They had done you no wrong; the mountains did not forget.`);
   }
 
 
@@ -705,6 +759,8 @@
       say: "Runaway slaves and hill men, led by a deserter: they hold the pass road and raid the terraces at night." },
     tribes: { name: "Warriors of the tribes", who: "general", fury: 2, home: true, terrain: "fields", where: "in the fields below the walls",
       say: "Men from beyond the mountains come down in a howling mass, shields painted, to burn the harvest." },
+    horde: { name: "The hordes of the hills", who: "general", fury: 6, home: true, terrain: "valley", where: "before the walls, from every valley",
+      say: "They are past counting: every valley has sent its men. They remember what you did." },
     march: { name: "Warriors of the tribes", who: "general", fury: 1, home: false, terrain: "valley", where: "in their own valley",
       say: "Their whole people stands across the valley, on ground they know." },
     rebels: { name: "The rebels of Acruvium", who: "general", fury: 2, home: false, terrain: "fields", where: "in the streets and the forum",
@@ -720,7 +776,7 @@
   const AT_NAME = { walls: "to storm the walls", fields: "to raid the fields" };
   // rules v9: how close the enemy stands. Stones from a sling fly far but wide: they do best against a dense crowd.
   // Arrows are fewer but aimed: the same against any enemy.
-  const DENSITY = { tribes: 1, march: 1, rebels: 1, pirates: .5, brigands: .4 };
+  const DENSITY = { tribes: 1, march: 1, horde: 1, rebels: 1, pirates: .5, brigands: .4 };
   const densityOf = (enemy) => Math.min(1, (DENSITY[enemy.kind] ?? .7) + (enemy.at === "walls" ? .3 : 0));   // an assault packs them at the gate
   const missileOf = (type, enemy) => { const d = densityOf(enemy);
     return type === "sling" ? .04 + .12 * d : type === "militia_sling" ? .03 + .08 * d : type === "archer" ? .14 - .05 * d : type === "militia_archer" ? .10 - .04 * d : MISSILE[type] || 0; };
@@ -735,7 +791,7 @@
   }
   /** Who comes this year, and whether they storm the town or raid the fields. */
   function rollConflict(s) {
-    const w = { pirates: Math.max(1, 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0) - (s.warships || 0) + (reputation(s).id === "weak" ? 2 : 0)), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0) + (reputation(s).id === "weak" ? 3 : 0), tribes: 1 + (anyHostile(s) ? 5 : 0) };
+    const w = { pirates: Math.max(1, 3 + (s.ships >= 3 ? 1 : 0) + (s.treasury > 8000 ? 2 : 0) - (s.warships || 0) + (reputation(s).id === "weak" ? 2 : 0)), brigands: 2 + (s.loyalty < 45 ? 3 : 0) + (s.army < ORDER_ARMY ? 2 : 0) + (reputation(s).id === "weak" ? 3 : 0), tribes: !freeTribes(s).length ? 0 : 1 + (seasonOf(s.turn)[1] >= 33 ? 2 : 0) + (anyHostile(s) ? 5 : 0) };
     const kind = choices(Object.keys(w), Object.values(w));
     const at = kind === "pirates" ? (rint(1, 2) === 1 ? "walls" : "fields") : kind === "tribes" ? (rint(1, 5) <= 2 ? "walls" : "fields") : "fields";
     return { kind, at };
@@ -747,15 +803,22 @@
     let men, share;
     if (kind === "pirates") { men = rint(110, 200) + Math.min(80, Math.floor(s.treasury / 250)); const wing = rint(0, 1) ? 0 : 2; share = [0, 0, 0]; share[wing] = .55; share[1] = .35; share[2 - wing] = .1; }
     else if (kind === "brigands") { men = rint(100, 170) + (s.loyalty < 40 ? 60 : 0); const a = rint(15, 35) / 100, c = rint(20, 40) / 100; share = rint(0, 1) ? [a, c, 1 - a - c] : [1 - a - c, c, a]; }
-    else { const t = TRIBE[tribe] || TRIBES[rint(0, TRIBES.length - 1)]; tribe = t.id; men = rint(150, 260) + t.strength * 60 + (hostile(s, t.id) ? 60 : 0) + (kind === "march" ? 60 : 0); share = [.25, .5, .25]; }
+    else if (kind === "horde") { men = rint(950, 1200); share = [.33, .34, .33]; }
+    else {
+      const free = freeTribes(s), pool = free.filter((x) => hostile(s, x.id)), t = TRIBE[tribe] || (pool.length ? pool : free.length ? free : TRIBES)[rint(0, (pool.length ? pool : free.length ? free : TRIBES).length - 1)];
+      tribe = t.id; men = rint(150, 260) + t.strength * 60 + (hostile(s, t.id) ? 60 : 0) + (kind === "march" ? 60 : 0); share = [.25, .5, .25];
+      if (kind === "march" && !hasJustCause(s, t.id)) men = Math.round(men * EASY_MARCH);   // v17: they do not expect it
+    }
     men = Math.round(men * (1 + GROWTH_OF_RAIDERS * (seasonOf(s.turn)[1] - 30)));   // word of a rich town spreads
     const navy = kind === "pirates" ? Math.min(TRIREMES_COUNT, s.warships || 0) : 0;
     if (navy) men = Math.round(men * (1 - TRIREME_CUT * navy));   // our triremes sink some of their boats before they land
     const name = kind === "tribes" || kind === "march" ? `${E0.name}: the ${TRIBE[tribe].name}` : E0.name;
-    const [where, say] = (AT_TEXT[kind] && AT_TEXT[kind][at]) || [E0.where, E0.say];
+    let [where, say] = (AT_TEXT[kind] && AT_TEXT[kind][at]) || [E0.where, E0.say];
+    const byBoat = kind === "tribes" && TRIBE[tribe].coast;   // v17: the coast tribe comes in its boats
+    if (byBoat) say = at === "walls" ? "Boats from the coast south of the gulf: the Labeatae land below the walls with ladders." : "Boats from the coast south of the gulf: the Labeatae land on the shore farms and burn them.";
     const features = [], free = [0, 1, 2], nf = kind === "rebels" ? 0 : rint(0, 2);
     for (let k = 0; k < nf; k++) features.push({ lane: free.splice(rint(0, free.length - 1), 1)[0], kind: GROUND[rint(0, GROUND.length - 1)] });
-    return { kind, tribe, name, men, share, fury: E0.fury, home: E0.home, terrain: E0.terrain, where, say: navy ? `${say} Our trireme${navy > 1 ? "s" : ""} caught them in the gulf and sank ${navy > 1 ? "several" : "some"} of their boats.` : say, who: E0.who, at, walled: at === "walls" && built(s, "walls"), navy, features, seed: rint(1, 99999) };
+    return { kind, tribe, name, men, share, fury: kind === "march" && !hasJustCause(s, tribe) ? 0 : E0.fury, home: E0.home, terrain: byBoat ? "shore" : E0.terrain, where, say: navy ? `${say} Our trireme${navy > 1 ? "s" : ""} caught them in the gulf and sank ${navy > 1 ? "several" : "some"} of their boats.` : say, who: E0.who, at, walled: at === "walls" && built(s, "walls"), navy, features, seed: rint(1, 99999) };
   }
   // the mixed army (rules v7)
   const SLING_GROUP = 25, ARCHER_GROUP = 30, CAVALRY_MIN = 5, ENGINES_MAX = 4;
@@ -942,7 +1005,8 @@
   }
   /** Allied tribes send warriors when we are attacked. */
   function alliesFor(s) {
-    return TRIBES.filter((t) => tribeState(s, t.id).state === "ally").map((t) => ({ name: t.name, men: rint(30, 60) }));
+    return TRIBES.filter((t) => tribeState(s, t.id).state === "ally" || (tribeState(s, t.id).state === "conquered" && !tribeState(s, t.id).seized))   // v17: land seized without cause sends no one
+      .map((t) => ({ name: t.name, men: tribeState(s, t.id).state === "ally" ? rint(40, 70) : rint(25, 45) }));
   }
   /** Fight the battle. Returns true for a victory. A governor who leads and loses falls or is taken, unless his horsemen carry him off. */
   async function battle(s, enemy, notes) {
@@ -1071,18 +1135,19 @@
       : { id: "fair", text: "they think you fair enough", drift: 0 };
     return { ...r, ratio, pardoned: J.pardoned, executed: J.executed };
   }
-  const CAPTIVES = { pirates: "the pirate captains", brigands: "the brigand leaders", tribes: "the chieftains taken in the field", march: "the chieftains taken in their valley", rebels: "the ringleaders of the revolt" };
+  const CAPTIVES = { pirates: "the pirate captains", brigands: "the brigand leaders", horde: "the war chiefs of the hordes", tribes: "the chieftains taken in the field", march: "the chieftains taken in their valley", rebels: "the ringleaders of the revolt" };
   /** After a victory: execute or pardon the defeated. */
   async function judgement(s, enemy, notes) {
     const J = (s.justice = s.justice || { pardoned: 0, executed: 0 }), rep0 = reputation(s), who = CAPTIVES[enemy.kind] || "the prisoners";
     const pick = await ui.choose(`Judgement on ${who}`,
       `They stand in chains in the forum. So far you have pardoned ${J.pardoned} and executed ${J.executed}: ${rep0.text}. A wise ruler pardons about one in three or four; never pardoning makes a tyrant, pardoning too often makes a weak one: then pirates and brigands come more often, and Rome thinks less of you every season.`,
-      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is frightened (loyalty −2)" }, { label: "Pardon them", sub: TURNCOAT_KINDS.includes(enemy.kind) ? "loyalty +3; they swear never to return, and some may ask to serve you" : "loyalty +3; they swear never to return" }], "general");
+      [{ label: "Execute them", sub: "Rome approves (favour +1); the town is frightened (loyalty −2)" }, { label: "Pardon them", sub: TURNCOAT_KINDS.includes(enemy.kind) ? "loyalty +3; they swear never to return, and some may ask to serve you" : enemy.kind === "tribes" ? "loyalty +3; their tribe may ask to join Acruvium" : "loyalty +3; they swear never to return" }], "general");
     const streak = (J.recent || []).slice(-2).filter((x) => x === "x").length;   // how many of the last two were executed
     J.recent = (J.recent || []).concat([pick === 1 ? "p" : "x"]).slice(-6);
     if (pick === 1) { J.pardoned++; s.loyalty += 3; notes.push(`You pardon ${who}: they kneel and swear by their gods. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
     else { J.executed++; s.favour += 1; s.loyalty -= 2; notes.push(`${who.replace(/^./, (m) => m.toUpperCase())} are executed outside the Sea Gate. ${reputation(s).text.replace(/^./, (m) => m.toUpperCase())}.`); }
     if (pick === 1 && TURNCOAT_KINDS.includes(enemy.kind)) await turncoats(s, enemy, rep0, streak, notes);
+    if (enemy.kind === "tribes") await tribeAfterJudgement(s, enemy, pick === 1, notes);
   }
   // v16: mercy from a stern judge is worth something. Pardoned pirates or brigands may ask to serve: always after two
   // executions in a row, often from a just judge, seldom from a soft one. 20-30% of the band, armed already, for a bounty.
@@ -1150,6 +1215,7 @@
   async function conflictPhase(s, notes) {
     await purpleChance(s, notes);
     if (s.over) return null;
+    if (s.horde && s.horde.turn <= s.turn) { if (s.conflict && s.conflict.turn === s.turn) s.conflict.turn++; return hordeComes(s, notes); }
     if ((s.restless || 0) >= 2 && s.loyalty < REBELLION_BELOW && !s.over) { if (s.conflict && s.conflict.turn === s.turn) s.conflict.turn++; return rebellion(s, notes); }
     planConflict(s);
     if (!s.conflict || s.conflict.turn !== s.turn || s.over) return null;
@@ -1319,6 +1385,7 @@
   /** The most important thing the gods can tell this year, with one order to give. */
   function greatSign(s) {
     const near = (t) => t > s.turn && t <= s.turn + 4, when = (t) => { const [se, y] = seasonOf(t); return `${se.season} AD ${y}`; };
+    if (s.horde && s.horde.turn > s.turn) return { kind: "war", title: "The hills are gathering", text: `I saw smoke on every ridge. In ${when(s.horde.turn)} the hordes will come for the land you took.`, order: order("recruit"), why: "Every man you can arm. It may not be enough." };
     for (const c of CARDS) {
       const L = LETTER_SIGNS[c.id], t = c.date ? dateTurn(c.date) : null;
       if (L && t && near(t) && !(s.once_fired || []).includes(c.id)) {
@@ -1825,7 +1892,7 @@
         if (o.id === "march_tribe") { const en = makeEnemy(s, "march", o.tribe), bo = battleOdds(s, en, defaultPlan(s, en, "general"), "general");
           return { die, dc: BATTLE_DC, parts: [["a battle: see the battlefield", 0]], bonus: 0, chance: bo.chance, win: "their land and loot", lose: "men lost; they turn hostile" }; }
         return { die, dc: w.target, parts: [[o.id === "treat_tribe" ? "the chiefs' mood" : "our strength against theirs", w.bonus]], bonus: w.bonus, chance: chanceOf(w.bonus, w.target),
-          win: o.id === "treat_tribe" ? "their land and their friendship" : "their land and loot", lose: o.id === "treat_tribe" ? "the gifts are wasted" : "men lost; they turn hostile" };
+          win: o.id === "treat_tribe" ? "their goodwill" : "their land and loot", lose: o.id === "treat_tribe" ? "the gifts are wasted" : "men lost; they turn hostile" };
       }
       const risk = pick.kind === "order" ? "own" : pick.risk;
       dc = CHECK_DC[risk];
@@ -1943,7 +2010,7 @@
       if (c.plague) s.plague_due = s.turn + rint(1, 3);                                  // ...or a plague on its way
       let pick;
       if (c.choice) {
-        const opts = c.choice.options.map((o, k) => ({ label: o.label, sub: o.roll ? "" : effectsText(o.effects), check: checkFor(s, c, { kind: "option", i: k }) }));
+        const opts = c.choice.options.map((o, k) => ({ label: o.label, sub: o.roll ? "" : effectsText(o.effects), eff: o.roll ? {} : o.effects, gain: o.invention && INVENTIONS[o.invention] ? INVENTIONS[o.invention].text : o.tip ? `${nameOf(o.tip.good)} ${pct(num(o.tip.bonus, .3))} in ${TOWN[o.tip.town].name} for a year` : o.plots ? `+${num(o.plots)} field plot` : "", check: checkFor(s, c, { kind: "option", i: k }) }));
         pick = { kind: "option", i: await ui.cardChoice(c, opts) };
       } else {
         const eff = heal(s, concrete(c.effects));
@@ -2104,8 +2171,8 @@
     ["hear_petitions", /\b(petitions?|hear the people|judge\w*|judgement|court|assizes)\b/],
     ["build_ship", /\b(keel|(build|lay down|construct|new)\b[^.,;]*\b(ship|galley|boat)s?)\b/],
     ["listen_sages", /\b(sages?|elders?|wise men|philosoph\w*|astrolog\w*|soothsay\w*)\b/],
-    ["march_tribe", /\b(march|attack|war|conquer|invade|burn)\b[^.,;]*\b(docleatae|ardiaei|pirustae|tribes?|hills)\b/],
-    ["treat_tribe", /\b(treat|treaty|talk|negotiat\w*|gifts? to|envoys?|peace)\b[^.,;]*\b(docleatae|ardiaei|pirustae|tribes?|chiefs?)\b/],
+    ["march_tribe", /\b(march|attack|war|conquer|invade|burn)\b[^.,;]*\b(docleatae|labeatae|pirustae|tribes?|hills)\b/],
+    ["treat_tribe", /\b(treat|treaty|talk|negotiat\w*|gifts? to|envoys?|peace)\b[^.,;]*\b(docleatae|labeatae|pirustae|tribes?|chiefs?)\b/],
     ["honour_tiberius", /\b(tiberius|gaius|caligula|claudius|inscription|statue|decree\b[^.,;]*\bemperor)\b/],
     ["honour_rome", /\b(gifts?|send\b[^.,;]*\bto rome)\b/],
     ["visit_temple", /\b(sacrific\w*|pray\w*|offering|visit\b[^.,;]*\btemple|go to the temple)\b/],
@@ -2163,7 +2230,7 @@
     for (let clause of t.split(/\band then\b|\bthen\b|\band\b|[,;.]/)) {
       clause = clause.trim();
       if (!clause) continue;
-      const tribal = /\b(docleatae|ardiaei|pirustae|tribes?)\b/.test(clause);
+      const tribal = /\b(docleatae|labeatae|pirustae|tribes?)\b/.test(clause);
       const hit = !tribal && BUILD_WORDS.find(([, rx]) => rx.test(clause));
       const trade = /\b(sell|buy|export|import|convoy)\b/.test(clause);
       if (hit && !trade && (BUILD_VERB.test(clause) || !PATTERNS.some(([, rx]) => rx.test(clause)))) {
@@ -2192,7 +2259,7 @@
     newGame, seasonOf, rollWeather, revealCards, council, plans, situation, validate, totals, describe, order, costOf, priceAt, loads,
     sailing, abilityState, updateMoods, applyDecrees, resolve, clampAndCheck, wordParse, fmt, intc, pct, housing, berths, shipsAtSea,
     plotsUsed, effectsText, num, parseList, nameOf, unitOf, buildingState, listText, playCards, proposals, canDo, giveOrder, cardTone,
-    TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN, GOV_AGE0, govAge, keepName, judgement, BASE_ADVISORS, SKILLS, shortName, syncCouncil, ageCouncil,
+    TRIBES, TRIBE, tribeState, tribeWon, hostile, clearedPlots, tribalPlots, emperorOf, gambleOf, suggestions, score, END_TURN, GOV_AGE0, govAge, keepName, judgement, hasJustCause, GOODWILL_MAX, marchTribe, hordeComes, BASE_ADVISORS, SKILLS, shortName, syncCouncil, ageCouncil,
     stateText, rulesText, sanitizeOrder, MARCH_MIN_ARMY, tribeOdds, HOSTILE_SEASONS, checkFor, chanceOf, DIE_OF,
     CITY, conflictPhase, migrate, fleetNames, reputation, refillOf, INVENTIONS, inventionsOf, DENSITY, densityOf, REBELLION_BELOW, loyaltyParts, canShut, SHUT, AT_NAME, foresee, harvestForecast, berthsUsed, SHIPS_MAX, TRIREME_UPKEEP, glory, GLORY_NEED, soldiersOf, tribesWon, battleOdds, defaultPlan, makeEnemy, unitsOf, LANES, UNIT, BATTLE_DC, forces, troopsOf, XP_MAX, CUT,
     tributeInfo, muster, setup, FIELD, laneAt, domainOf, MELEE_ROUNDS, MACHINES_MAX, GROUND_TEXT, missileOf,
