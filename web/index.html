@@ -153,7 +153,9 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .cards.deciding .card:not(.active) .face { filter: brightness(.32) saturate(.4); transition: filter .3s; }   /* on the face, not the card: opacity or a filter on the card breaks the 3D flip */
 #decide { border-color: var(--gold); box-shadow: 0 0 30px rgba(246,227,161,.18); }
 .card .face { transform: rotateY(180deg); background: var(--wine); display: grid; grid-template-rows: auto auto 1fr auto; }
-.card .art { height: 168px; border-bottom: 1px solid var(--line); }
+.card .art { height: 216px; border-bottom: 1px solid var(--line); }
+.card .art.pic { background: #070604 !important; }
+.card .art.pic img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .card[data-deck="land"] .art { background: linear-gradient(180deg, rgba(196,146,34,.72), rgba(44,8,25,.1)); }
 .card[data-deck="sea"] .art { background: linear-gradient(180deg, rgba(20,136,178,.72), rgba(44,8,25,.1)); }
 .card[data-deck="omen"] .art { background: linear-gradient(180deg, rgba(176,40,132,.72), rgba(44,8,25,.1)); }
@@ -1709,7 +1711,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
     return `<button class="card${c.quiet ? " quiet" : ""}${flipped ? " flip" : ""}" data-deck="${c.deck}" ${c.letter ? "data-letter" : ""} id="card-${i}" type="button" aria-label="${flipped ? esc(c.title) : `Turn over the ${E.DECK_LABEL[c.deck]} card`}">
       <div class="back"><span>${E.DECK_LABEL[c.deck].toUpperCase()}</span><em>click to turn over</em></div>
       <div class="face"><div class="band"><span>${c.letter ? `Letter from ${c.id === "h07-scribonianus" ? "Salona" : "Rome"}` : E.DECK_LABEL[c.deck]}${esc(who)}</span>${DECK_ICON[c.deck]}</div>
-      <div class="art">${cardArt(c)}</div>
+      <div class="art${(D.card_pics || []).includes(c.id) ? " pic" : ""}">${(D.card_pics || []).includes(c.id) ? `<img src="img/card-${c.id}.webp" alt="">` : cardArt(c)}</div>
       <div class="body"><span class="title">${esc(c.title)}</span></div>${eff}</div></button>`;
   }
 
