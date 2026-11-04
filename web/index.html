@@ -114,7 +114,7 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .coin { width: var(--d); height: var(--d); border-radius: 50%; overflow: hidden; position: relative; box-shadow: 0 0 0 2px var(--gold), 0 6px 16px rgba(0,0,0,.5); display: block; }
 .badge { position: absolute; right: calc(var(--d) * -.12); bottom: calc(var(--d) * -.1); width: calc(var(--d) * .48); height: calc(var(--d) * .48); border-radius: 50%; background: #2c0819; box-shadow: 0 0 0 1.5px var(--gold), 0 3px 8px rgba(0,0,0,.6); display: grid; place-items: center; }
 .badge svg { width: 80%; height: 80%; display: block; }
-.coin img { position: absolute; width: calc(var(--d) * 1.911); max-width: none; left: calc(var(--d) * -0.4555); top: calc(var(--d) * -0.2643); }
+.coin img { display: block; width: 100%; height: 100%; }
 .adv .who { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; align-items: baseline; }
 .adv .name { color: var(--gold-pale); font-size: 16px; }
 .leaves { display: inline-flex; gap: 3px; }
@@ -1429,7 +1429,7 @@ footer .opts button[aria-pressed="true"] { color: var(--gold-pale); border-color
   // each copy of a badge gets its own gradient id: a copy left in a hidden panel would otherwise blank the others
   let badgeN = 0;
   const coin = (aid) => { const k = ++badgeN, em = String((D.emblems || {})[aid] || "").split(`gold-${aid}`).join(`gold-${aid}-${k}`);
-    return `<span class="coinwrap"><span class="coin"><img src="img/advisor-${aid}.webp" alt=""></span><span class="badge">${em}</span></span>`; };
+    return `<span class="coinwrap"><span class="coin"><img src="img/coin-${aid}.webp" alt=""></span><span class="badge">${em}</span></span>`; };
   // Full-length figures for the important moments (v11): a dark silhouette in the advisor's colour, rimmed in gold, holding his things.
   const FIG_TINT = { fleet: "#24506a", general: "#6a1830", economist: "#2f5a3a", treasurer: "#6a5020", priest: "#4a2a66" };
   const HEAD = "M118,40c14,-1 24,9 25,21l5,7 -5,2c1,3 0,6 -3,7l1,3c-2,6 -9,9 -16,9c-12,0 -22,-10 -22,-24c0,-14 6,-24 15,-25Z";

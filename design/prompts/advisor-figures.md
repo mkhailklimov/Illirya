@@ -1,6 +1,6 @@
 # Prompts: the five advisors at full length
 
-These pictures replace the line drawings in the game's big pop-ups (the enemy at the gates, the judgement, the haruspex's prophecy, the inventions, the advisors' special abilities). The round coin portraits on the council stay as they are.
+These pictures replace the line drawings in the game's big pop-ups (the enemy at the gates, the judgement, the haruspex's prophecy, the inventions, the advisors' special abilities). The small round portraits are cut from these same pictures (`COIN_CROP` in `web/build.py`), so if a figure is replaced, check its crop.
 
 ## Version 4 (28 October 2026): a red-figure vase, copied as it is
 

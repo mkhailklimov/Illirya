@@ -96,6 +96,10 @@ def emblems():
     return out
 
 
+COIN_SIDE = 340   # pixels of the figure PNG (1024 x 1536) shown in the round portrait
+COIN_CROP = {"priest": (556, 44), "general": (456, 158), "fleet": (526, 85), "economist": (556, 172), "treasurer": (536, 150)}   # centre x, top y
+
+
 def images():
     os.makedirs(IMG, exist_ok=True)
     for path in glob.glob(os.path.join(PIECES, "advisors", "*.png")):
@@ -108,6 +112,11 @@ def images():
             pad = Image.new("RGB", (w, w * 2), im.getpixel((2, 2))); pad.paste(im, (0, (w * 2 - h) // 2)); im = pad
         im = im.resize((480, 960), Image.LANCZOS)
         im.save(os.path.join(IMG, "figure-" + os.path.basename(path)[:-4] + ".webp"), quality=86)
+        aid = os.path.basename(path)[:-4]   # the small round portrait: the head of the same figure
+        if aid in COIN_CROP:
+            cx, top = COIN_CROP[aid]
+            im0 = Image.open(path).convert("RGB")
+            im0.crop((cx - COIN_SIDE // 2, top, cx + COIN_SIDE // 2, top + COIN_SIDE)).resize((256, 256), Image.LANCZOS).save(os.path.join(IMG, "coin-" + aid + ".webp"), quality=88)
     for path in glob.glob(os.path.join(PIECES, "winds", "*.png")):
         im = Image.open(path).convert("RGBA")
         im.thumbnail((420, 420), Image.LANCZOS)
