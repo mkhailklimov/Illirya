@@ -1799,9 +1799,10 @@
       : food.concat([houses, crowded ? order("treat_tribe", { tribe: nextTribe.id }) : null, fieldsFull(s) && fieldPlots(s) < FIELD_PLOTS_MAX ? order("clear_land") : null, s.fleece >= 6 && !built(s, "weavers") ? b("weavers") : null,
         built(s, "olives") && !(s.inventions || []).includes("screw_press") && s.treasury > 1500 ? order("commission_press") : null,
         tone === "good" ? b("wheat") : b("vineyard"), b("olives"), b("vineyard"), b("wheat"), b("pasture"), sellConvoy(s, ["wine", "oil"], { wine: FESTIVAL_WINE_KEEP })]);
+    const landGrab = s.grain < 4.5 && nextTribe && s.army >= MARCH_MIN_ARMY ? order("march_tribe", { tribe: nextTribe.id }) : null;   // v18: hungry, and the tribes have land
     if (who === "general") return tone === "bad"
-      ? [refillOf(s).n >= 30 ? order("refill_ranks") : null, s.army < 250 ? order("recruit") : null, order("hang_brigands"), b("walls"), b("barracks")]
-      : [crowded && s.army >= MARCH_MIN_ARMY ? order("march_tribe", { tribe: nextTribe.id }) : null, !(s.kit || {}).pila && s.iron >= 12 ? order("arm_pila") : null,
+      ? [landGrab, refillOf(s).n >= 30 ? order("refill_ranks") : null, s.army < 250 ? order("recruit") : null, order("hang_brigands"), b("walls"), b("barracks")]
+      : [landGrab, crowded && s.army >= MARCH_MIN_ARMY ? order("march_tribe", { tribe: nextTribe.id }) : null, !(s.kit || {}).pila && s.iron >= 12 ? order("arm_pila") : null,
         troopsOf(s).slingers < 50 ? order("train_slingers") : null, s.buildings.some((x) => x.kind === "walls") && troopsOf(s).archers < 60 ? order("raise_archers") : null,
         anyHostile(s) && troopsOf(s).engines < 2 ? order("build_engine") : null, troopsOf(s).cavalry < 10 && s.treasury > 4000 ? order("raise_cavalry") : null, b("walls"), b("barracks"), s.army < 300 ? order("recruit") : null, s.iron < 8 ? b("mine") : null, order("hang_brigands")];
     if (who === "fleet") return tone === "bad"
@@ -1830,19 +1831,64 @@
       treasurer: { good: `While fortune smiles, fill the chest: ${what}.`, bad: `Losses must be made good, Governor. Let us ${what}.`, quiet: `Every quiet season should leave the chest fuller: ${what}.` },
       priest: { good: `The gods have spoken kindly. Thank them, and Rome: ${what}.`, bad: `This is a warning. Appease the gods: ${what}.`, quiet: `Silence from the gods is a question. ${what.replace(/^./, (m) => m.toUpperCase())}.` },
     };
+    if (o.id === "march_tribe" && TRIBE[o.tribe]) return s.grain < 4.5
+      ? `The granary is nearly empty, and the ${TRIBE[o.tribe].name} sit on good valleys for wheat and olives. Give me the word and they are ours by autumn.`
+      : `We have no more room for fields. The ${TRIBE[o.tribe].name} have land enough for all of us. Let me take it.`;
     return lines[who][tone];
   }
+  /** v18: on a card that asks no question, the advisors answer what the card is about. Each: [moderate, risky], their wishes, and their words. */
+  const freeTribeOf = (s) => TRIBES.find((t) => !tribeWon(s, t.id));
+  const marchFor = (s) => { const t = freeTribeOf(s); return t && s.army >= MARCH_MIN_ARMY ? order("march_tribe", { tribe: t.id }) : null; };
+  const CARD_ADVICE = {
+    "e001-drought": { pair: ["economist", "general"],
+      economist: (s) => [b("aqueduct"), merchantOrder(s, { grain: 2 })], general: (s) => [s.grain < 4.5 ? marchFor(s) : null, order("clear_land")],
+      say: { aqueduct: "Rain will not come because we wish it. Bring the mountain spring into town on arches, and no summer will dry us out again.",
+        merchants: "Buy grain from the passing ships now, before the price climbs with the heat.", clear_land: "Clear new terraces higher up the mountain, where the mists still water the ground." } },
+    "e009-flood": { pair: ["economist", "general"],
+      economist: (s) => [b("woodcutters"), merchantOrder(s, { grain: 1 }), b("wheat")], general: () => [order("clear_land")],
+      say: { woodcutters: "The water took our timber. Send men up to cut more before the terraces must be rebuilt.", merchants: "The stores are soaked. Buy dry grain from the ships while we can.",
+        wheat: "Replant the lower fields at once, while the mud is rich.", clear_land: "Let my men cut new fields higher up, where no torrent can reach them." } },
+    "e010-earthquake": { pair: ["economist", "general"],
+      economist: () => [b("houses")], general: () => [b("walls"), b("barracks")],
+      say: { houses: "Families sleep in the street. Build them new houses before the winter.", walls: "The walls are cracked, and the hill tribes have seen it. Rebuild them now.",
+        barracks: "The barracks are rubble. Soldiers without a roof soon have no discipline." } },
+    "e012-bumper-crop": { pair: ["economist", "general"],
+      economist: () => [order("clear_land"), b("olives"), b("houses")], general: () => [order("recruit"), order("train_slingers")],
+      say: { clear_land: "A year like this should be the first of many. Clear new fields while the people have strength.", olives: "Bread for this year; plant olives for the next twenty.",
+        houses: "Full bellies bring new families. Build houses for them.", recruit: "Full granaries can feed more soldiers. Let me take fifty young men into the ranks.",
+        train_slingers: "Full granaries can feed more soldiers. Let me train slingers from the farm boys." } },
+    "e014-great-vintage": { pair: ["priest", "economist"],
+      priest: () => [order("hold_festival"), order("visit_temple")], economist: (s) => [sellConvoy(s, ["wine"], { wine: FESTIVAL_WINE_KEEP })],
+      say: { hold_festival: "Liber has filled our vats. Give the people a festival in his honour.", visit_temple: "Pour the first wine for the gods who gave it.",
+        send_convoy: "Wine like this fetches double in Aquileia and Brundisium. Load a ship." } },
+    "e017-rome-praise": { pair: ["treasurer", "fleet"],
+      treasurer: () => [order("honour_tiberius"), order("honour_rome")], fleet: (s) => [sellConvoy(s, ["wine", "oil", "fish", "cloth"], { wine: FESTIVAL_WINE_KEEP })],
+      say: { honour_tiberius: "Answer praise with praise: a decree in the Emperor's honour costs little and is remembered.", honour_rome: "Send a gift with the reply. Favour is easier kept than won back.",
+        send_convoy: "Rome smiles on us: the merchants of Brundisium will too. Let our ships sail." } },
+    "e019-eagles": { pair: ["priest", "treasurer"],
+      priest: () => [order("visit_temple"), b("temple")], treasurer: () => [order("honour_tiberius")],
+      say: { visit_temple: "Jupiter's birds! Sacrifice to him while the sign is fresh.", build: "The gods ask for a house in our town. Build them a temple.",
+        honour_tiberius: "The eagles flew towards Rome. Let Rome hear of it, with a decree in the Emperor's honour." } },
+    "e024-sacred-snake": { pair: ["priest", "treasurer"],
+      priest: () => [order("hold_festival"), b("temple")], treasurer: () => [order("hear_petitions")],
+      say: { hold_festival: "The Illyrians see their old gods in the serpent. A festival would bind them to us.", build: "Give the serpent a temple, and the Illyrians a reason to pray with us.",
+        hear_petitions: "The townspeople are in good spirits. Hear their petitions now, while they ask little." } },
+  };
+  const adviceKey = (o) => (o.id === "build" ? (CARD_ADVICE_BUILD_KEY[o.building] || o.building) : o.id);
+  const CARD_ADVICE_BUILD_KEY = { temple: "build" };
   /** The two proposals for a card that asks no question of its own. */
   function proposals(s, c) {
-    const tone = cardTone(c), [mod, risky] = (PAIRS[c.deck] || PAIRS.land)[tone];
+    const tone = cardTone(c), ca = CARD_ADVICE[c.id], [mod, risky] = ca ? ca.pair : (PAIRS[c.deck] || PAIRS.land)[tone];
     const out = [];
     const fallback = { sea: [order("build_ship"), merchantOrder(s, { grain: 1 }), b("fishery"), b("saltpans"), b("harbour"), b("market"), sellConvoy(s, ["wine", "oil", "fish", "cloth", "timber"], { wine: FESTIVAL_WINE_KEEP, timber: 20 })],
       land: [b("wheat"), b("houses"), order("hear_petitions"), order("recruit"), order("train_slingers"), b("woodcutters"), order("hang_brigands")],
       omen: [order("visit_temple"), order("honour_tiberius"), order("listen_sages"), order("honour_rome"), order("hold_festival"), b("temple")] }[c.deck] || [];
     const inDeck = (x) => domainOf(x) === c.deck || (c.deck === "omen" && x.id === "lower_taxes");
     for (const [who, risk] of [[mod, "moderate"], [risky, "risky"]]) {
-      const o = wishes(s, who, tone).concat(fallback).find((x) => x && inDeck(x) && !canDo(s, x) && !out.some((p) => sameOrder(p.order, x)));
-      if (o) out.push({ who, risk, order: o, say: pitch(s, who, tone, o, c) });
+      const fit = (ca && ca[who] ? ca[who](s) : []).find((x) => x && !canDo(s, x) && !out.some((p) => sameOrder(p.order, x)));   // first what answers the card
+      const o = fit || wishes(s, who, tone).concat(fallback).find((x) => x && inDeck(x) && !canDo(s, x) && !out.some((p) => sameOrder(p.order, x)));
+      const said = fit && ca.say && ca.say[adviceKey(fit)];
+      if (o) out.push({ who, risk, order: o, say: said || pitch(s, who, tone, o, c) });
     }
     for (const p of out) p.check = checkFor(s, c, { kind: "advice", who: p.who, risk: p.risk, order: p.order });
     return { tone, list: out, letbe: checkFor(s, c, { kind: "none" }) };
@@ -2014,6 +2060,7 @@
         pick = { kind: "option", i: await ui.cardChoice(c, opts) };
       } else {
         const eff = heal(s, concrete(c.effects));
+        if (c.id === "e001-drought" && built(s, "aqueduct")) { if (eff.grain < 0) eff.grain /= 2; delete eff.loyalty; notes.push("The aqueduct keeps the fountains running: half the loss, and no anger."); }   // v18
         applyEffects(s, eff);
         if (!c.quiet) notes.push(`${c.title}: ${effectsText(eff)}.`);
         if (isCalamity(c, eff)) s.calamity_turn = s.turn;

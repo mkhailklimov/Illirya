@@ -129,6 +129,20 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v18 (13 November 2026): advice that answers the card, and the aqueduct
+
+- **Advice fits the card.** On a card that asks no question of its own, the two advisors first propose what answers that card (`CARD_ADVICE` in `web/engine.js`); only if none of it can be done now do they fall back to their usual wishes.
+  - The springs run dry: Nikandros an aqueduct, else grain from the merchants; Antistius a march on a free tribe if the granary is under 4.5 months, else new fields.
+  - The torrents flood the fields: woodcutters, grain or wheat; Antistius new fields higher up.
+  - The earth shakes: houses; Antistius walls, else barracks.
+  - A bumper harvest: new fields, olives or houses; Antistius recruits or slingers.
+  - A great vintage: Tertius a festival (moderate), Nikandros a wine convoy (risky).
+  - A letter from Capri: Felix a decree for Tiberius or gifts; Epicadus a convoy.
+  - Eagles over the forum: Tertius a sacrifice or a temple; Felix a decree for Tiberius.
+  - A serpent in the temple: Tertius a festival or a temple; Felix hears petitions.
+- **Hunger tempts the general.** Whenever the granary is under 4.5 months and a tribe is still free, Antistius's first wish on a land card is to march on it for its land. With no just cause this is the trap of v17: the hordes come a year later.
+- **Aqueduct** (`rules/buildings.csv`): 1,500 denarii, 10 timber and 4 iron, a year to build, one only, takes no plot (it runs from the mountain spring). When the springs run dry, the town loses half the grain and no loyalty.
+
 ## Rules v17 (4 November 2026): the three tribes, and the trap
 
 - **Three tribes** (`rules/tribes.csv`): the Labeatae on the coast (3 villages, 500 people, they come by boat), the Docleatae (4 villages, 700 people) and the Pirustae (3 villages, 400 people) inland. The Labeatae replace the Ardiaei, whom Rome had moved inland; old saves carry over.

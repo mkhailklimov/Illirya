@@ -3,6 +3,7 @@ forum,Forum,Forum,town,1,1,0,,0,0,0,,,,,,,,,,,,,,Seat of the governor and the to
 houses,Residential district,Houses,town,3,8,400,timber 10,2,0,0,,,,,,,,1500,,,,,,"DRAFT. Houses 1,500 people."
 harbour,Harbour,Harbour,town,1,1,1500,timber 30; iron 6,8,0,0,,,,,,,,,6,,,,,"DRAFT (v11). Two years to build. Berths for 6 ships: merchant galleys and triremes together, keels on the slipway included."
 walls,Walls and towers,Walls,ring,1,2,800,timber 10; iron 4,6,0,0,,,,,,,,,,,2,,,"DRAFT. +2 to every battle fought at home (not on a march). The walls are the ring round the town and take no plot inside it; a second build raises more towers (+2 again)."
+aqueduct,Aqueduct,Aqueduct,ring,0,1,1500,timber 10; iron 4,4,0,0,,,,,,,,,,,,,,"DRAFT (v18). Brings the mountain spring into town on arches and takes no plot. When the springs run dry, the town loses half as much grain and no loyalty."
 weavers,Weavers' workshop,Weavers,town,0,4,500,timber 6,2,0,1,any,cloth 3,fleece 3,,,,,,,,,,,DRAFT. Turns 3 fleece into 3 cloth every season.
 market,Trading district,Traders,town,0,1,900,timber 12,4,0,0,,,,,100,,,,,,,,0.1,DRAFT. Stall fees +100 denarii a season; convoys trade 10% better.
 temple,Temple,Temple,town,0,1,2000,marble 20; timber 15; bronze 4,12,0,0,,,,,,1,1,,,,,,,DRAFT. Three years to build. +1 loyalty and +1 Roman favour every season.
