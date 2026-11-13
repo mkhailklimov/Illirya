@@ -653,6 +653,44 @@
     clear_land: ["cleared in one season", "rocks everywhere: a season more"],
   };
   const DEFAULT_GAMBLE = ["fortune smiles: +150 denarii", "it goes badly: −150 denarii"];
+  // rules v19: every decision has four real outcomes. [triumph, setback, disaster]; success = as planned.
+  // Land: a disaster is done but dear. Sea: a disaster loses the cargo, never the ship and crew.
+  // Omen: a disaster is unrest in the streets, and below 50 loyalty the town rises.
+  const UNREST = "unrest in the streets: loyalty −5, and below 50 the town rises";
+  const OUTCOMES = {
+    build: ["built in half the time", "built a season late", "built, but at twice the price"],
+    commission_press: ["ready for this very harvest: twice the extra oil at once", "it works badly at first: half the extra oil for a year", "it works, but the Greek charges double"],
+    clear_land: ["cleared in one season", "rocks everywhere: a season more", "cleared, but at twice the price"],
+    send_convoy: ["a big margin: half as much again on her sales", "a thin margin: a third less on her sales", "robbed at sea: the cargo is lost, but the ship and crew come home"],
+    merchants: ["they throw in a fifth more", "they cheat on the measure: a fifth less", "the goods are stolen on the quay: the money is gone"],
+    build_ship: ["ready next season", "the keel cracks: 150 denarii more", "the keel cracks twice: half the price again and a season late"],
+    build_warship: ["launched a season early", "the ram is cast badly: a season late", "the ram is recast: a season late and half the price again"],
+    recruit: ["75 men instead of 50", "only 35 come", "the recruits riot and run off: nobody enlisted, loyalty −4"],
+    train_slingers: ["two in five more men", "two in five fewer men", "the drill ground floods: the money is wasted"],
+    raise_archers: ["two in five more men", "two in five fewer men", "the bows are badly made: the money is wasted"],
+    hang_brigands: ["the town cheers: loyalty +3", "nobody cares: no effect on loyalty", "a riot at the gallows: loyalty −4"],
+    raise_taxes: ["they pay without a murmur", "they pay, and curse you: twice the loyalty lost", "they pay, and riot: " + UNREST],
+    hold_festival: ["the best games in memory: twice the effect", "rain and a brawl: half the effect", UNREST],
+    visit_temple: ["a perfect sacrifice: twice the effect", "the liver is malformed: half the effect and no prophecy", UNREST],
+    honour_tiberius: ["the Emperor hears of it: twice the effect", "few in Rome notice: half the effect", "the statue is mocked in Rome: no effect, favour −2"],
+    honour_rome: ["the gifts are praised: twice the effect", "the gifts are thought mean: half the effect", "the gifts are thought an insult: no effect, favour −2"],
+  };
+  const DOMAIN_OUTCOMES = {
+    land: ["done better than hoped: +150 denarii", "it costs a quarter more", "done, but at twice the price"],
+    sea: ["fair winds: +150 denarii", "it costs a quarter more", "a loss at sea: −150 denarii"],
+    omen: ["the town rejoices: loyalty +3", "done, but the town grumbles: loyalty −2", UNREST],
+  };
+  /** The four outcomes of an order, for the page to show before you choose. A risky plan is all or nothing. */
+  function outcomesOf(o, risk) {
+    const [t, sb, d] = OUTCOMES[o.id] || DOMAIN_OUTCOMES[domainOf(o) || "land"];
+    return risk === "risky" ? { triumph: t, success: t, setback: d, disaster: d } : { triumph: t, success: "carried out as planned", setback: sb, disaster: d };
+  }
+  /** v19: unrest in the streets; below the rebellion line the town rises this very season. */
+  function unrest(s, notes, why) {
+    s.loyalty -= 5; s.calamity_turn = s.turn;
+    if (s.loyalty < REBELLION_BELOW) { s.restless = 2; notes.push(`${why}: unrest in the streets (loyalty −5). Loyalty is below ${REBELLION_BELOW}: the town rises!`); }
+    else notes.push(`${why}: unrest in the streets (loyalty −5).`);
+  }
   function gambleOf(s, who, o) {
     const a = ADVISORS[who] || {}, stat = GAMBLE_STAT[who] || "experience";
     const bonus = num(a[stat], 3) - 3 + (s.council[who] && s.council[who].mood >= 4 ? 1 : 0);
@@ -942,26 +980,31 @@
   /** One battle in three throws. rnd is the random source; returns the lanes' fates and every die thrown, phase by phase. */
   function fight(s, enemy, st, rnd) {
     const d20 = () => 1 + Math.floor(rnd() * 20);
-    const L = st.lanes.map((l) => ({ ...l, ourMor: 100 + (s.morale || 0) * 10, foeMor: 100 + enemy.fury * 5, now: l.ours, foeNow: l.foe, res: l.reserve, fate: l.empty ? "won" : null, lost: 0, caught: false }));
+    // fm / fq turn fighting strength back into men (cohort weight, enemy quality), so each throw can say who fell
+    const L = st.lanes.map((l) => ({ ...l, ourMor: 100 + (s.morale || 0) * 10, foeMor: 100 + enemy.fury * 5, now: l.ours, foeNow: l.foe, res: l.reserve, fate: l.empty ? "won" : null, lost: 0, caught: false,
+      fm: l.ours ? l.men / l.ours : 1, fq: l.foe ? l.foe0 / l.foe : 1 }));
     const bonusOf = (l) => l.parts.reduce((a2, [, v]) => a2 + v, 0);
-    const snap = (l, x) => Object.assign(x, { ourMor: Math.max(0, Math.round(l.ourMor)), foeMor: Math.max(0, Math.round(l.foeMor)), fate: l.fate, foeLeft: Math.max(0, Math.round(l.foeNow)) });
+    const snap = (l, x, pre) => Object.assign(x, { ourMor: Math.max(0, Math.round(l.ourMor)), foeMor: Math.max(0, Math.round(l.foeMor)), fate: l.fate,
+      foeLeft: Math.max(0, Math.round(l.foeNow * l.fq)), ourLeft: Math.max(0, Math.round(l.now * l.fm)),
+      killed: Math.max(0, Math.round((pre.foe - l.foeNow) * l.fq)), fell: Math.max(0, Math.round((l.lost - pre.lost) * l.fm)) });
+    const pre = (l) => ({ foe: l.foeNow, lost: l.lost });
     const phases = [];
     // 1. our engines, slingers and archers: one die for each lane where any of them stand
     const shots = L.filter((l) => !l.empty && l.fire > 0).map((l) => {
-      const b = hasGround(enemy, l.i, "hill") ? 1 : 0, r = d20(), tier = throwTier(r, r + b, BATTLE_DC);
+      const p0 = pre(l), b = hasGround(enemy, l.i, "hill") ? 1 : 0, r = d20(), tier = throwTier(r, r + b, BATTLE_DC);
       const frac = Math.min(MISSILE_CAP, l.fire * tier * (hasGround(enemy, l.i, "forest") ? .5 : 1) * (hasGround(enemy, l.i, "hill") ? 1.25 : 1)), k = Math.round(l.foeNow * frac);
       l.foeNow -= k; l.foeMor -= Math.round(frac * 90);
       if (l.foeNow < 5) l.fate = "won";
-      return snap(l, { lane: l.i, who: "missiles", roll: r, bonus: b, dc: BATTLE_DC, ok: tier >= 1, killed: k });
+      return snap(l, { lane: l.i, who: "missiles", roll: r, bonus: b, dc: BATTLE_DC, ok: tier >= 1, great: r === 20 }, p0);
     });
     if (shots.length) phases.push({ id: "missiles", rolls: shots });
     // 2. their charge: a die for each lane
     const charges = L.filter((l) => !l.fate).map((l) => {
-      const r = d20();
+      const p0 = pre(l), r = d20();
       if (l.exposed) {   // slingers and archers with no shields before them: almost always cut down, and the lane with them
         const caught = r >= EXPOSED_DC;
         if (caught) { l.fate = "lost"; l.caught = true; l.ourMor = 0; l.lost = l.now; l.now = 0; }
-        return snap(l, { lane: l.i, who: "charge", roll: r, bonus: 0, dc: EXPOSED_DC, ok: caught, exposed: true });
+        return snap(l, { lane: l.i, who: "charge", roll: r, bonus: 0, dc: EXPOSED_DC, ok: caught, exposed: true }, p0);
       }
       const B = bonusOf(l), push = l.charge.reduce((a2, [, v]) => a2 + v, 0), total = r + push - B;
       const ok = B <= -50 || r === 20 || (r !== 1 && total >= BATTLE_DC), m = Math.min(8, Math.abs(total - BATTLE_DC));
@@ -970,17 +1013,17 @@
       if (l.ourMor < 50 && l.res > 0) { l.now += l.res; l.ourMor += 30; l.res = 0; l.relieved = true; }
       l.held = !ok;
       if (l.ourMor <= 0) l.fate = "lost"; else if (l.foeMor <= 0 || l.foeNow < 5) l.fate = "won";
-      return snap(l, { lane: l.i, who: "charge", roll: r, bonus: push - B, dc: BATTLE_DC, ok, relieved: !!l.relieved });
+      return snap(l, { lane: l.i, who: "charge", roll: r, bonus: push - B, dc: BATTLE_DC, ok, relieved: !!l.relieved }, p0);
     });
     if (charges.length) phases.push({ id: "charge", rolls: charges });
     // 3. our counter-attack: a die for each lane where our line still stands
     for (const l of L) if (!l.fate && !l.ours) l.fate = l.held ? "won" : "lost";   // the walls or the farmers held, or not
     const back = L.filter((l) => !l.fate).map((l) => {
-      const B = bonusOf(l), r = d20(), total = r + B, ok = r === 20 || (r !== 1 && total >= BATTLE_DC), m = Math.min(8, Math.abs(total - BATTLE_DC));
+      const p0 = pre(l), B = bonusOf(l), r = d20(), total = r + B, ok = r === 20 || (r !== 1 && total >= BATTLE_DC), m = Math.min(8, Math.abs(total - BATTLE_DC));
       if (ok) { l.foeNow *= 1 - Math.min(.34, .14 + .02 * m); l.foeMor -= Math.min(60, 28 + 3 * m) + (r === 20 ? 20 : 0); const lo = l.now * .03; l.now -= lo; l.lost += lo; }
       else { const lo = l.now * Math.min(.24, .07 + .02 * m); l.now -= lo; l.lost += lo; l.ourMor -= Math.min(50, 18 + 3 * m) + (r === 1 ? 20 : 0); }
       if (l.foeMor <= 0 || l.foeNow < 5) l.fate = "won"; else if (l.ourMor <= 0) l.fate = "lost";
-      return snap(l, { lane: l.i, who: "counter", roll: r, bonus: B, dc: BATTLE_DC, ok });
+      return snap(l, { lane: l.i, who: "counter", roll: r, bonus: B, dc: BATTLE_DC, ok }, p0);
     });
     if (back.length) phases.push({ id: "counter", rolls: back });
     // the day: in each lane still undecided, whoever keeps the better heart holds the field
@@ -1233,27 +1276,40 @@
       s.treasury -= c;
       for (const [g, q] of Object.entries(mats)) s[g] -= q;
       const eff = effectsOf(d);
-      const win = o.boost === "win", lose = o.boost === "lose";
+      const lost = o.boost === "lost", win = o.boost === "win", lose = o.boost === "lose" || (lost && ["build_ship", "build_warship"].includes(o.id));
+      const dom = domainOf(o), own = !!OUTCOMES[o.id], tribal = ["treat_tribe", "march_tribe"].includes(o.id);
       if (o.id === "merchants" && o.boost) for (const g of Object.keys(o.buy || {})) o.buy[g] = Math.max(0, Math.round(o.buy[g] * (win ? 1.2 : 0.8) * 10) / 10);
-      if (["hold_festival", "visit_temple", "honour_tiberius", "honour_rome"].includes(o.id) && o.boost) for (const n of Object.keys(eff)) eff[n] = win ? eff[n] * 2 : 0;
+      if (["hold_festival", "visit_temple", "honour_tiberius", "honour_rome"].includes(o.id) && o.boost) for (const n of Object.keys(eff)) eff[n] = win ? eff[n] * 2 : lose ? eff[n] / 2 : 0;
       if (o.id === "raise_taxes" && o.boost) eff.loyalty = win ? 0 : (eff.loyalty || 0) * 2;
-      if (o.id === "hang_brigands" && o.boost) eff.loyalty = win ? 3 : -4;
+      if (o.id === "hang_brigands" && o.boost) eff.loyalty = win ? 3 : lose ? 0 : -4;
       if (o.id === "recruit" && win) eff.army = 75;
-      if (o.id === "recruit" && lose) { eff.army = 25; eff.loyalty = (eff.loyalty || 0) - 2; }
-      if (o.id === "build_ship" && lose) s.treasury -= 150;
-      if (!GAMBLE_TEXT[o.id] && o.boost && !["treat_tribe", "march_tribe"].includes(o.id)) s.treasury += win ? 150 : -150;
-      if (o.boost === "lost" && !["treat_tribe", "march_tribe"].includes(o.id)) {   // a disaster on the die: paid for, and nothing to show
+      if (o.id === "recruit" && lose) eff.army = 35;
+      if (o.id === "build_ship" && o.boost === "lose") s.treasury -= 150;
+      // orders with no outcome of their own follow their domain (DOMAIN_OUTCOMES)
+      if (!own && !tribal && win) { if (dom === "omen") eff.loyalty = (eff.loyalty || 0) + 3; else s.treasury += 150; }
+      if (!own && !tribal && lose) {
+        if (dom === "omen") { eff.loyalty = (eff.loyalty || 0) - 2; notes.push(`A setback: '${describe(s, o)}' is done, but the town grumbles (loyalty −2).`); }
+        else { const more = Math.max(50, Math.round(c * 0.25)); s.treasury -= more; notes.push(`A setback: '${describe(s, o)}' costs ${more} denarii more than planned.`); }
+      }
+      if (lost && !tribal) {   // a disaster on the die (v19): land = done but dear, sea = the cargo lost, omen = unrest
+        s.calamity_turn = s.turn;
         if (o.id === "send_convoy") {
           for (const [g, q] of Object.entries(o.sell || {})) s[g] -= q;
-          s.ships = Math.max(0, s.ships - 1); s.army = Math.max(0, s.army - 10); fleetNames(s);
-          notes.push(`Disaster at sea: the ship for ${TOWN[o.town] ? TOWN[o.town].name : "the coast"} goes down with her cargo, the money paid and ten marines.`);
-        } else if (o.id === "build") notes.push(`Disaster: the works on the ${BLD[o.building].name.toLowerCase()} collapse; the money and materials are lost.`);
-        else if (o.id === "recruit") { s.loyalty -= 4; notes.push("Disaster: the recruits riot in the forum and run off to the hills; nobody is enlisted."); }
-        else { s.treasury -= 150; s.loyalty -= 2; notes.push(`Disaster: '${describe(s, o)}' goes badly wrong (−150 denarii, loyalty −2).`); }
-        s.calamity_turn = s.turn;
-        continue;
+          notes.push(`Disaster at sea: pirates take the cargo bound for ${TOWN[o.town] ? TOWN[o.town].name : "the coast"} and the money paid for the return load. The ship and her crew come home empty.`);
+          continue;
+        }
+        if (o.id === "merchants") { notes.push("Disaster: the goods are stolen on the quay at night; the money is gone."); continue; }
+        if (o.id === "recruit") { s.loyalty -= 4; notes.push("Disaster: the recruits riot in the forum and run off to the hills; nobody is enlisted."); continue; }
+        if (["train_slingers", "raise_archers"].includes(o.id)) { notes.push(`Disaster: '${describe(s, o)}' fails; the money is wasted.`); continue; }
+        if (["honour_tiberius", "honour_rome"].includes(o.id)) { s.favour -= 2; notes.push(`Disaster: '${describe(s, o)}' is mocked in Rome (favour −2).`); continue; }
+        if (["hold_festival", "visit_temple"].includes(o.id) || (!own && dom === "omen")) { unrest(s, notes, `Disaster: '${describe(s, o)}'`); continue; }
+        if (o.id === "raise_taxes") { unrest(s, notes, "Disaster: the new taxes"); }
+        else if (o.id === "hang_brigands") notes.push("Disaster: a riot at the gallows (loyalty −4).");
+        else if (["build_ship", "build_warship"].includes(o.id)) { s.treasury -= Math.round(c / 2); notes.push(`Disaster: '${describe(s, o)}' goes wrong on the slipway: half the price again (${Math.round(c / 2)} denarii) and a season late.`); }
+        else if (o.id === "build" || o.id === "clear_land" || o.id === "commission_press" || dom === "land") {
+          s.treasury -= c; notes.push(`Disaster: '${describe(s, o)}' is done, but at twice the price (${intc(c)} denarii more).`);
+        } else { s.treasury -= 150; notes.push(`Disaster: '${describe(s, o)}' goes badly at sea (−150 denarii).`); continue; }
       }
-      if (o.dearer) { s.treasury -= o.dearer; notes.push(`A setback: '${describe(s, o)}' costs ${o.dearer} denarii more than planned.`); }
       if (o.id === "refill_ranks") {
         const R = refillOf(s), n = Math.round(R.n * (win ? 1 : lose ? .6 : 1));
         s.army += n; s.people -= n;
@@ -1280,19 +1336,21 @@
       } else if (d.id === "build") {
         const B = BLD[o.building], base = Math.trunc(num(B.seasons_to_build));
         const wait = win ? Math.max(1, Math.ceil(base / 2)) : lose ? base + 1 : base;
-        if (lose) s.treasury -= Math.round(c / 2);
         s.buildings.push({ kind: B.id, done: s.turn + wait });
         notes.push(`Work begins on ${B.name.toLowerCase()}; ready in turn ${s.turn + wait}${num(B.matures) ? `, first yield ${num(B.matures)} seasons later` : ""}.`);
       } else if (d.id === "build_ship") {
         const name = newShipName(s);
-        s.shipyard.push({ done: s.turn + (win ? 1 : 2), name });
-        notes.push(`The keel of the ${name} is laid on the slipway; she will be launched in ${win ? "one season" : "two seasons"}.`);
+        const wait = win ? 1 : lost ? 3 : 2;
+        s.shipyard.push({ done: s.turn + wait, name });
+        notes.push(`The keel of the ${name} is laid on the slipway; she will be launched in ${wait === 1 ? "one season" : wait + " seasons"}.`);
       } else if (d.id === "build_warship") {
         const name = newWarName(s), wait = win ? 2 : lose ? 4 : 3;
         s.shipyard.push({ done: s.turn + wait, name, war: true });
         notes.push(`The keel of the trireme ${name} is laid: three banks of oars and a bronze ram; she will be launched in ${wait} seasons.`);
       } else if (d.id === "commission_press") {
         invent(s, { invention: "screw_press" }, true, notes);
+        s.inv_tier = { ...(s.inv_tier || {}), screw_press: win ? { from: s.turn, boost: s.turn } : { from: s.turn + 1, weak: lose ? s.turn + 4 : 0 } };
+        notes.push(win ? "The press is ready before the olives are in: this harvest gives twice the extra oil." : lose ? "The press creaks and leaks: for a year it gives only half the extra oil." : "The press will be ready for next season's olives.");
       } else if (d.id === "merchants") {
         for (const [g, q] of Object.entries(o.buy || {})) s[g] += q;
         notes.push(`Merchants at the quay sell you ${listText(o.buy)} for ${intc(merchantCost(o))} denarii.`);
@@ -1342,7 +1400,7 @@
       const f = s.buildings.filter((x) => x.kind === B.id).reduce((a, x) => a + yieldFactor(later, x), 0);
       for (const [g, q] of Object.entries(parseList(B.produces))) if (g !== "grain" && q * f) goods[g] = (goods[g] || 0) + Math.round(q * f);
     }
-    for (const v of inventionsOf(s)) for (const [g, m] of Object.entries(v.more || {})) if (goods[g]) goods[g] += Math.round(goods[g] * m);
+    for (const v of inventionsOf(s)) for (const [g, m] of Object.entries(v.more || {})) if (goods[g]) goods[g] += Math.round(goods[g] * m * invPower(s, v));
     return { season: season.season, wind: w, mult, grain, goods, after: Math.round((s.grain + grain - GRAIN_EATEN) * 10) / 10 };
   }
   /** The omen card of next season, drawn now and kept for it. */
@@ -1457,8 +1515,8 @@
     // goods leave the stores now; the money for purchases was paid with the order (costOf)
     for (const [g, q] of Object.entries(o.sell || {})) s[g] -= q;
     let revenue = Object.entries(o.sell || {}).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "sell", deal), 0);
-    if (o.boost === "win") revenue = Math.round(revenue * 1.3);
-    if (o.boost === "lose") { revenue = Math.round(revenue / 2); for (const g of Object.keys(o.buy || {})) o.buy[g] = Math.floor(o.buy[g] / 2); }
+    if (o.boost === "win") revenue = Math.round(revenue * 1.5);
+    if (o.boost === "lose") revenue = Math.round(revenue * 2 / 3);
     if (deal) { refund = buyCost(s, o) - Object.entries(o.buy || {}).reduce((v, [g, q]) => v + q * priceAt(s, t.id, g, "buy", deal), 0); s.treasury += refund; }
     if (delay) notes.push("Dead calm: the convoy waits a season in harbour before it can sail.");
     fleetNames(s);
@@ -1570,8 +1628,8 @@
       ratio = Math.max(0, Math.min(1, ratio));
       for (const [g, q] of Object.entries(use)) s[g] -= Math.round(q * f * ratio);
       const made = Object.fromEntries(Object.entries(out).map(([g, q]) => [g, Math.round(q * f * ratio)]));
-      for (const v of inventionsOf(s)) for (const [g, m] of Object.entries(v.more || {})) if (made[g]) {
-        const extra = Math.round(made[g] * m), base = made[g]; made[g] += extra;
+      for (const v of inventionsOf(s)) for (const [g, m] of Object.entries(v.more || {})) if (made[g] && invPower(s, v)) {
+        const extra = Math.round(made[g] * m * invPower(s, v)), base = made[g]; made[g] += extra;
         (s.inv_report = s.inv_report || []).push({ name: v.name, good: g, extra, base, unit: unitOf(g) });
         notes.push(`${v.name}: +${extra} ${nameOf(g).toLowerCase()} from the same harvest.`);
       }
@@ -1624,7 +1682,9 @@
     new_rig: { name: "The new rig", trade: .08, text: "Convoys trade 8% better: with a foresail our ships reach the markets first." },
     physician: { name: "The physician's house", health: .5, text: "Plague, fever and the losses of hard seasons kill half as many." },
   };
-  const inventionsOf = (s) => (s.inventions || []).map((id) => INVENTIONS[id]).filter(Boolean);
+  const inventionsOf = (s) => (s.inventions || []).filter((id) => INVENTIONS[id]).map((id) => ({ id, ...INVENTIONS[id] }));
+  /** v19: 0 before a machine is ready, 2 in the season of a triumph, 1/2 in its weak first year, else 1. */
+  const invPower = (s, v) => { const t = (s.inv_tier || {})[v.id]; if (!t) return 1; if (s.turn < t.from) return 0; if (t.boost === s.turn) return 2; return t.weak && s.turn <= t.weak ? .5 : 1; };
   const invSum = (s, k) => inventionsOf(s).reduce((a, v) => a + (v[k] || 0), 0);
   /** v15: the physician (and the haruspex's warning) halve the dead of a bad card. */
   const healthOf = (s) => inventionsOf(s).reduce((a, v) => a * (1 - (v.health || 0)), 1) * ((s.ward_until || 0) >= s.turn ? .4 : 1);
@@ -1929,7 +1989,7 @@
   /** The check for one choice on a card: {die, dc, parts, bonus, chance, win, lose}. */
   function checkFor(s, c, pick) {
     const die = DIE_OF[c.deck] || "opal";
-    let dc, parts = [], win = "", lose = "", bonus;
+    let dc, parts = [], win = "", lose = "", bonus, tiers = null;
     const tone = cardTone(c);
     if (pick.kind === "advice" || pick.kind === "order") {
       const o = pick.order, who = pick.kind === "advice" ? pick.who : null;
@@ -1943,9 +2003,8 @@
       const risk = pick.kind === "order" ? "own" : pick.risk;
       dc = CHECK_DC[risk];
       parts = conditions(s, c, o, who);
-      const [gw, gl] = GAMBLE_TEXT[o.id] || DEFAULT_GAMBLE;
-      win = risk === "risky" ? gw : "carried out as ordered";
-      lose = risk === "risky" ? gl : "it costs a quarter more";
+      tiers = outcomesOf(o, risk);
+      win = tiers.success; lose = tiers.setback;
     } else if (pick.kind === "option") {
       const opt = c.choice.options[pick.i];
       if (opt.roll) {
@@ -1953,14 +2012,24 @@
         const base = rollBonus(s, opt.roll.bonus);
         parts = (base ? [[String(opt.roll.bonus).replace(/_/g, " ").replace("army / 50", "soldiers / 50"), base]] : []).concat(conditions(s, c, null, c.advisor));
         win = effectsText(opt.roll.success); lose = effectsText(opt.roll.failure);
-      } else { dc = CHECK_DC.option; parts = conditions(s, c, null, null); win = effectsText(opt.effects); lose = "things go worse than you hoped"; }
+        tiers = { triumph: effectsText(scale(concrete(opt.roll.success), 1.5)), success: win, setback: lose, disaster: effectsText(scale(concrete(opt.roll.failure), 1.5)) };
+      } else {
+        dc = CHECK_DC.option; parts = conditions(s, c, null, null);
+        const e = concrete(opt.effects), pos = positives(e), neg = negatives(e), txt = (x) => effectsText(x) || "no effect";
+        win = txt(e); lose = txt({ ...scale(pos, .5), ...neg });
+        tiers = { triumph: txt({ ...scale(pos, 1.5), ...neg }), success: win, setback: lose,
+          disaster: txt(scale(neg, 1.5)) + (c.deck === "omen" ? (Object.keys(neg).length ? "; " : "") + UNREST : "") };
+      }
     } else {
       dc = tone === "bad" ? CHECK_DC.letbe_bad : CHECK_DC.letbe;
       parts = conditions(s, c, null, null);
       win = tone === "bad" ? "the trouble passes" : "nothing changes"; lose = tone === "bad" ? "it gets worse: half of it again" : "a little bad luck";
+      const neg = negatives(c.rolled || c.effects), pos = positives(c.rolled || c.effects);
+      tiers = tone === "bad" ? { triumph: "it turns out well: " + (effectsText(scale(neg, -.5)) || "a small gain"), success: "the trouble passes", setback: "half the harm: " + (effectsText(scale(neg, .5)) || "a little"), disaster: "the full harm: " + (effectsText(neg) || "a loss") }
+        : { triumph: effectsText(scale(pos, .5)) || "a little luck", success: "nothing changes", setback: "nothing changes", disaster: "−100 denarii" };
     }
     bonus = Math.max(-BONUS_CAP, Math.min(BONUS_CAP, parts.reduce((a, [, v]) => a + v, 0)));
-    return { die, dc, parts, bonus, chance: chanceOf(bonus, dc), win, lose };
+    return { die, dc, parts, bonus, chance: chanceOf(bonus, dc), win, lose, tiers };
   }
   const TIER = (r, total, dc) => (r === 1 ? "disaster" : r === 20 ? "triumph" : total >= dc ? "success" : "setback");
   const scale = (eff, k) => Object.fromEntries(Object.entries(eff || {}).map(([n, v]) => [n, typeof v !== "number" ? v : n === "grain" ? Math.round(v * k * 10) / 10 : Math.round(v * k)]));
@@ -1974,10 +2043,10 @@
       const o = { ...d.pick.order };
       if (o.id === "treat_tribe") o.preRoll = { r: res.r, total: res.total, ok: tier === "success" || tier === "triumph", tag: res.tag };
       else if (o.id === "march_tribe") { /* the battle decides */ }
-      else if (tier === "disaster") o.boost = "lost";
-      else if (tier === "triumph") o.boost = "win";
-      else if (d.pick.risk === "risky") o.boost = tier === "success" ? "win" : "lose";
-      else if (tier === "setback") o.dearer = Math.max(50, Math.round(costOf(s, o)[0] * 0.25));
+      else {
+        const eff = d.pick.risk === "risky" ? { success: "triumph", setback: "disaster" }[tier] || tier : tier;
+        o.boost = { triumph: "win", setback: "lose", disaster: "lost" }[eff] || null;
+      }
       notes.push(`${title}: the ${d.check.die} die says ${said} (${res.r}${res.bonus ? (res.bonus > 0 ? " + " : " − ") + Math.abs(res.bonus) : ""} against ${d.check.dc}).`);
       const [ok, pr] = validate(s, [{ ...d.pick.order }]);   // the cards since may have emptied the chest
       if (!ok.length) { notes.push(`${title}: the order lapses: ${pr[0] || "it can no longer be done"}`); return; }
@@ -1992,7 +2061,8 @@
         if (tier === "triumph") extra = scale(extra, 1.5);
         if (tier === "disaster") extra = scale(extra, 1.5);
         for (const [n, v] of Object.entries(extra)) eff[n] = (eff[n] || 0) + v;
-      } else if (tier === "disaster") eff = { ...scale(positives(eff), 0.5), ...scale(negatives(eff), 1.5) };
+      } else if (tier === "disaster") eff = scale(negatives(eff), 1.5);
+      else if (tier === "setback") eff = { ...scale(positives(eff), 0.5), ...negatives(eff) };
       else if (tier === "triumph") eff = { ...scale(positives(eff), 1.5), ...negatives(eff) };
       heal(s, eff);
       notes.push(`${title}: you chose '${opt.label}', and the ${d.check.die} die says ${said} (${effectsText(eff)}).`);
@@ -2000,6 +2070,7 @@
       invent(s, opt, tier !== "disaster", notes);
       cardExtras(s, opt, tier !== "disaster", notes);
       if (isCalamity({}, eff)) s.calamity_turn = s.turn;
+      if (tier === "disaster" && c.deck === "omen" && !opt.roll) unrest(s, notes, title);
     } else {
       const neg = negatives(c.rolled || c.effects), pos = positives(c.rolled || c.effects), bad = cardTone(c) === "bad";
       let eff = {};
