@@ -129,6 +129,33 @@ Acruvium has **12 plots inside the walls** (the harbour and the walls take two o
 
 An event option can carry a `roll` (see `../events/README.md`): roll the die (usually a d20), add the bonus (e.g. 1 per 50 soldiers, at most +5) and compare with the target. Equal or higher succeeds. As in tabletop role-playing games, the highest face (a natural 20) always succeeds and a 1 always fails.
 
+## Rules v19 (13 November 2026): four real outcomes, and battle numbers
+
+- **Every decision has four outcomes,** shown before you choose with the faces of the d20 for each, and named on the throw. Success is always "as planned". The other three come from `OUTCOMES` (by order) or `DOMAIN_OUTCOMES` (by deck) in `web/engine.js`:
+
+| Order or deck | Triumph | Setback | Disaster |
+|---|---|---|---|
+| Build | half the time | a season late | twice the price |
+| Olive press | ready this harvest, twice the extra oil | half the extra oil for a year | the Greek charges double |
+| Clear land | one season | a season more | twice the price |
+| Convoy | +50% on her sales | a third less | cargo lost; ship and crew come home |
+| Merchants | a fifth more | a fifth less | goods stolen, money gone |
+| Ship / trireme | a season early | costs more / a season late | costs more and a season late |
+| Recruit 50 | 75 men | 35 men | nobody, loyalty −4 |
+| Slingers / archers | two in five more | two in five fewer | money wasted |
+| Hang brigands | loyalty +3 | no loyalty effect | riot, loyalty −4 |
+| Raise taxes | no murmur | twice the loyalty lost | unrest |
+| Festival / sacrifice | twice the effect | half the effect | unrest |
+| Honour Tiberius / gifts to Rome | twice the effect | half the effect | no effect, favour −2 |
+| Other land orders | +150 denarii | a quarter more cost | twice the price |
+| Other sea orders | +150 denarii | a quarter more cost | −150 denarii |
+| Other omen orders | loyalty +3 | loyalty −2 | unrest |
+| A card's own answer with no die of its own | 1.5× the good | half the good | only the harm, 1.5× |
+
+- **Unrest:** loyalty −5; if loyalty is then under 50 (the rebellion line), the town rises that same season.
+- **A risky plan stays all or nothing:** its success counts as a triumph and its setback as a disaster.
+- **Battle numbers:** every throw records the men killed and fallen on both sides, and each lane shows ours and theirs after every throw.
+
 ## Rules v18 (13 November 2026): advice that answers the card, and the aqueduct
 
 - **Advice fits the card.** On a card that asks no question of its own, the two advisors first propose what answers that card (`CARD_ADVICE` in `web/engine.js`); only if none of it can be done now do they fall back to their usual wishes.
