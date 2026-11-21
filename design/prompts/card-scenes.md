@@ -4,7 +4,7 @@ These pictures will replace the line drawings on the Land, Sea and Omen cards, o
 
 ## Done so far
 
-14 of 57 cards have pictures. Cards marked **DONE** below are finished: do not generate them again.
+15 of 57 cards have pictures. Cards marked **DONE** below are finished: do not generate them again.
 
 - `e001-drought`
 - `e004-general-pay`
@@ -20,6 +20,7 @@ These pictures will replace the line drawings on the Land, Sea and Omen cards, o
 - `e021-storm`
 - `e027-wheeled-plough`
 - `e028-upright-loom`
+- `e029-brick-kiln`
 
 ## How to use them (ChatGPT)
 
@@ -50,6 +51,7 @@ Fields, townspeople, raiders, inventions and disasters.
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e001-drought.png`. Attach `references/crop-vase-judge.png`.
@@ -63,6 +65,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### The garrison wants its pay raised
+
 
 
 
@@ -84,6 +87,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e005-economist-salt.png`. Attach `economist.png`.
@@ -97,6 +101,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### Raiders come down from the hills
+
 
 
 
@@ -118,6 +123,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e009-flood.png`. Attach `references/crop-vase-judge.png`.
@@ -131,6 +137,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### The earth shakes
+
 
 
 
@@ -152,6 +159,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e011-unrest.png`. Attach `references/crop-vase-judge.png`.
@@ -165,6 +173,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### A bumper harvest
+
 
 
 
@@ -186,6 +195,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e013-treasure.png`. Attach `references/crop-vase-judge.png`.
@@ -199,6 +209,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### A great vintage
+
 
 
 
@@ -217,6 +228,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ### A plough on wheels
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e027-wheeled-plough.png`. Attach `references/crop-vase-judge.png`.
@@ -231,6 +243,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 ### A better loom
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e028-upright-loom.png`. Attach `references/crop-vase-judge.png`.
@@ -244,6 +257,8 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### Clay by the river
+
+**DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e029-brick-kiln.png`. Attach `references/crop-vase-judge.png`.
 
@@ -380,6 +395,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### A storm scatters the shipping
+
 
 
 
@@ -633,6 +649,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 Signs from the gods, mostly read by Tertius Volusius.
 
 ### The haruspex reads a dark omen
+
 
 
 
