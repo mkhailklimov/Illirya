@@ -19,7 +19,7 @@
   --line: rgba(226, 189, 102, .35);
   --faint: rgba(226, 189, 102, .16);
   --good: #9fdcae; --bad: #ff9b9b;
-  --land: #6d5a1e; --seacard: #11485a; --omen: #5a1640;
+  --land: #8e2b1f; --seacard: #0f3c5c; --omen: #3f5a2a;
   --f-display: "Caesar Dressing", "Marcellus", Georgia, serif;
   --f-label: "Marcellus", Georgia, "Times New Roman", serif;
   --f-voice: "Marcellus", Georgia, serif;
@@ -139,7 +139,7 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .card.next .back { animation: beckon 1.6s ease-in-out infinite; overflow: hidden; }
 .cards .card:not(.flip):not(.next) .back { filter: brightness(.42) saturate(.6); }
 .card .eff.done { color: var(--good); letter-spacing: .06em; text-transform: none; font-size: 13.5px; }
-.card { --glow: 255, 196, 64; } .card[data-deck="sea"] { --glow: 64, 214, 255; } .card[data-deck="omen"] { --glow: 246, 92, 226; }
+.card { --glow: 255, 196, 64; } .card[data-deck="sea"] { --glow: 70, 150, 230; } .card[data-deck="omen"] { --glow: 160, 210, 90; }
 @keyframes beckon { 0%, 100% { box-shadow: inset 0 0 0 3px rgb(var(--glow)), 0 0 18px rgba(var(--glow), .55), 0 0 44px rgba(var(--glow), .3); } 50% { box-shadow: inset 0 0 0 5px #fff4c8, 0 0 34px rgb(var(--glow)), 0 0 90px rgba(var(--glow), .75); } }
 @keyframes lift { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 @keyframes sweep { 0% { transform: translateX(-130%) skewX(-18deg); } 60%, 100% { transform: translateX(230%) skewX(-18deg); } }
@@ -156,9 +156,9 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .card .art { height: 216px; border-bottom: 1px solid var(--line); }
 .card .art.pic { background: #070604 !important; }
 .card .art.pic img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.card[data-deck="land"] .art { background: linear-gradient(180deg, rgba(196,146,34,.72), rgba(44,8,25,.1)); }
-.card[data-deck="sea"] .art { background: linear-gradient(180deg, rgba(20,136,178,.72), rgba(44,8,25,.1)); }
-.card[data-deck="omen"] .art { background: linear-gradient(180deg, rgba(176,40,132,.72), rgba(44,8,25,.1)); }
+.card[data-deck="land"] .art { background: linear-gradient(180deg, rgba(142,43,31,.8), rgba(44,8,25,.1)); }
+.card[data-deck="sea"] .art { background: linear-gradient(180deg, rgba(15,60,92,.85), rgba(44,8,25,.1)); }
+.card[data-deck="omen"] .art { background: linear-gradient(180deg, rgba(63,90,42,.85), rgba(44,8,25,.1)); }
 .card .art svg { width: 100%; height: 100%; display: block; }
 .card .band { padding: 7px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--gold-pale); }
 .card[data-deck="land"] .band { background: var(--land); } .card[data-deck="sea"] .band { background: var(--seacard); } .card[data-deck="omen"] .band { background: var(--omen); }
