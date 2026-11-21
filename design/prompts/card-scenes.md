@@ -4,9 +4,10 @@ These pictures will replace the line drawings on the Land, Sea and Omen cards, o
 
 ## Done so far
 
-18 of 57 cards have pictures. Cards marked **DONE** below are finished: do not generate them again.
+19 of 57 cards have pictures. Cards marked **DONE** below are finished: do not generate them again.
 
 - `e001-drought`
+- `e002-pirates`
 - `e004-general-pay`
 - `e005-economist-salt`
 - `e007-priest-omens`
@@ -58,6 +59,7 @@ Fields, townspeople, raiders, inventions and disasters.
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e001-drought.png`. Attach `references/crop-vase-judge.png`.
@@ -71,6 +73,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### The garrison wants its pay raised
+
 
 
 
@@ -100,6 +103,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e005-economist-salt.png`. Attach `economist.png`.
@@ -113,6 +117,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### Raiders come down from the hills
+
 
 
 
@@ -142,6 +147,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e009-flood.png`. Attach `references/crop-vase-judge.png`.
@@ -155,6 +161,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### The earth shakes
+
 
 
 
@@ -184,6 +191,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e011-unrest.png`. Attach `references/crop-vase-judge.png`.
@@ -197,6 +205,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### A bumper harvest
+
 
 
 
@@ -226,6 +235,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e013-treasure.png`. Attach `references/crop-vase-judge.png`.
@@ -239,6 +249,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### A great vintage
+
 
 
 
@@ -265,6 +276,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e027-wheeled-plough.png`. Attach `references/crop-vase-judge.png`.
@@ -278,6 +290,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### A better loom
+
 
 
 
@@ -300,6 +313,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e029-brick-kiln.png`. Attach `references/crop-vase-judge.png`.
@@ -313,6 +327,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### Plague in the harbour quarter
+
 
 
 
@@ -331,6 +346,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ### Fever from the marsh
 
 
+
 **DONE: the picture is in the game. Do not generate it again.**
 
 Save as `e031-marsh-fever.png`. Attach `references/crop-vase-judge.png`.
@@ -344,6 +360,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### A quiet season in the fields
+
 
 **DONE: the picture is in the game. Do not generate it again.**
 
@@ -363,6 +380,8 @@ Ships, trade, the harbour and the fleet.
 
 ### Sails off Risinium
 
+**DONE: the picture is in the game. Do not generate it again.**
+
 Save as `e002-pirates.png`. Attach `references/crop-vase-hoplite.png`.
 
 ```
@@ -380,7 +399,7 @@ Save as `e003-fleet-liburna.png`. Attach `fleet.png`.
 ```
 A scene from an ancient Greek red-figure vase painting, about 480 BC, in exactly the style of the attached reference: everything in flat clay orange (#D2742C) on a flat black background (#0E0B0A), drawn with a few thin black lines. Not a modern illustration. Show only the flat painting, unrolled like a frieze, with no vase shape and no reflections.
 
-The scene: Epicadus the sea captain, with a full curly beard, a small pointed cap and a short belted tunic, stands at the left holding his long steering oar and points at an unfinished galley: a bare hull with a few plain ribs, on wooden props. A shipwright in a short tunic swings an axe at the hull.
+The scene: A big, long war galley seen from the side, filling almost the whole width of the picture, like the ship Argo on old Greek vases. A long low hull with a sharp pointed bronze ram at the waterline at the bow. A large painted eye on the bow, just above the ram. A high stern that rises and curls inward. One tall mast with the sail furled on its yard. Two rows of many oars, one above the other, slanting down into the water. The ship rests on a short row of plain waves. In front of the bow stands Epicadus the sea captain, with a full curly beard, a small pointed cap and a short belted tunic, holding his long steering oar and pointing up at the ship with pride. The ship is at least five times as long as he is tall. The painted eye is the only decoration.
 
 Style: two colours only, clay orange and black. No shading, no hatching, no gradient, no glow. Any face is in strict profile with a large eye and no wrinkles, in a calm, stiff pose, and all people are fully clothed. Everything is seen flat from the side, with no perspective, on one short black ground line. A few big, simple shapes that read at a small size. No muscles, no ornament, no pattern, no text, no border. Keep the whole scene in the middle of the picture, with empty black space above, below and on both sides. Landscape 3:2.
 ```
@@ -446,6 +465,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 ```
 
 ### A storm scatters the shipping
+
 
 
 
@@ -703,6 +723,7 @@ Style: two colours only, clay orange and black. No shading, no hatching, no grad
 Signs from the gods, mostly read by Tertius Volusius.
 
 ### The haruspex reads a dark omen
+
 
 
 
